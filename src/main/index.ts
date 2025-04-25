@@ -5,9 +5,10 @@ import icon from '../../resources/icon.png?asset'
 import { SendEnum } from '../type/ipc-constants'
 import { captureArea } from './utils/captureArea'
 import { analyzeScreenshot, TranslateTextBlock } from './utils/imageAnalyzer'
-import { Model } from '../type/model'
+import { Model, ModelName } from '../type/model'
 import { NoticeType } from '../type/notice'
 import { getErrorMessage } from './utils/error'
+import { getModelType } from '../utils/ai'
 
 let mainWindow: BrowserWindow | null = null
 let screenshotWindow: BrowserWindow | null = null
@@ -15,7 +16,7 @@ let resultWindow: BrowserWindow | null = null
 let notificationWindow: BrowserWindow | null = null
 let isScreenshotting = false
 let lastBounds = null
-let currentTranslationModel = Model.GEMINI
+let currentTranslationModel = ModelName.GEMINI_2_0_FLASH
 let currentApiKeys: { [key in Model]?: string } = {
   [Model.GEMINI]: '',
   [Model.GLM]: ''
@@ -64,7 +65,7 @@ function createScreenshotWindow() {
 
 // 截图启动逻辑
 function initiateScreenshotSequence() {
-  const apiKey = currentApiKeys[currentTranslationModel]
+  const apiKey = currentApiKeys[getModelType(currentTranslationModel)]
 
   if (!apiKey) {
     createNotificationWindow(
@@ -278,7 +279,7 @@ app.whenReady().then(() => {
     try {
       const imageData = await captureArea(lastBounds)
 
-      const apiKey = currentApiKeys[currentTranslationModel]
+      const apiKey = currentApiKeys[getModelType(currentTranslationModel)]
 
       analysisResult = await analyzeScreenshot(imageData, currentTranslationModel, apiKey as string)
 

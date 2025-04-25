@@ -1,5 +1,5 @@
 import { ZhipuAI } from 'zhipuai-sdk-nodejs-v4'
-import { getPrompt } from './ai'
+import { getPrompt } from '../../utils/ai'
 
 /**
  * 使用智谱 AI (GLM) 翻译文本内容
@@ -7,13 +7,15 @@ import { getPrompt } from './ai'
  * @returns {Promise<{success: boolean, translation: string, msg?: string}>} 翻译结果
  */
 async function translateText(
+  modelName: string,
   text: string,
   apiKey: string
 ): Promise<{ success: boolean; translation: string; msg?: string }> {
   try {
     const ai = new ZhipuAI({ apiKey: apiKey })
+    console.log(`${modelName} 翻译文本 ：${text}`)
 
-    const systemInstruction =getPrompt()
+    const systemInstruction = getPrompt()
     const userContent = text
 
     const messages = [
@@ -22,7 +24,7 @@ async function translateText(
     ]
 
     const result = await ai.createCompletions({
-      model: 'glm-4-flash-250414',
+      model: modelName,
       messages: messages,
       stream: false
     })

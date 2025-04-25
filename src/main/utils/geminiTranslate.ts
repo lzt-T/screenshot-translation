@@ -1,17 +1,17 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { getPrompt } from './ai'
+import { getPrompt } from '../../utils/ai'
 
 /**
  * 翻译文本内容
  * @param {string} text 需要翻译的文本
  * @returns {Promise<{success: boolean, translation: string, error?: string}>} 翻译结果
  */
-export async function translateText(text: string, apiKey: string) {
+export async function translateText(modelName: string, text: string, apiKey: string) {
   try {
-    console.log(`翻译文本 ：${text}`)
+    console.log(`${modelName} 翻译文本 ：${text}`)
     const genAI = new GoogleGenerativeAI(apiKey)
-    // 确保使用的模型 ID 正确，例如 'gemini-1.5-flash'
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+
+    const model = genAI.getGenerativeModel({ model: modelName })
 
     const prompt = `${getPrompt()}:\n\n${text}`
 

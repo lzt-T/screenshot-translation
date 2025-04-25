@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Model } from '@src/type/model' // 导入模型枚举
+import { Model, ModelName } from '@src/type/model' // 导入模型枚举
 import { Container, FormGroup, Label, ApiKeySection, ApiKeyInputGroup } from './style'
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import TechButton from '@renderer/components/Button'
@@ -9,8 +9,8 @@ import TechSelect from '@renderer/components/Select'
 const SettingPage: React.FC = () => {
   const { storeSetting, isInit, changeStoreSetting, saveStoreSetting } = useLocalForage()
 
-  const handleModelChange = useCallback(
-    (value: Model) => {
+  const handleModelNameChange = useCallback(
+    (value: ModelName) => {
       changeStoreSetting({
         ...storeSetting,
         activeModel: value
@@ -46,11 +46,11 @@ const SettingPage: React.FC = () => {
 
         <TechSelect
           defaultValue={storeSetting.activeModel}
-          onChange={handleModelChange}
+          onChange={handleModelNameChange}
           style={{ width: '100%' }}
           placeholder="请选择翻译模型"
         >
-          {Object.values(Model).map((modelValue) => (
+          {Object.values(ModelName).map((modelValue) => (
             <TechSelect.Option key={modelValue} value={modelValue}>
               {modelValue}
             </TechSelect.Option>

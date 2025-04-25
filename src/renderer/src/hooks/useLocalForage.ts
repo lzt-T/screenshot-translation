@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { SendEnum } from '@src/type/ipc-constants'
-import { Model } from '@src/type/model'
+import { Model, ModelName } from '@src/type/model'
 import localForage from 'localforage'
 
 interface StoreSetting {
-  activeModel: Model
+  activeModel: ModelName
   apiKeys: {
     [key in Model]: string
   }
@@ -13,7 +13,7 @@ interface StoreSetting {
 export default function useLocalForage() {
   /** 设置 */
   const [storeSetting, setStoreSetting] = useState<StoreSetting>({
-    activeModel: Model.GEMINI,
+    activeModel: ModelName.GEMINI_2_0_FLASH,
     apiKeys: {
       [Model.GEMINI]: '',
       [Model.GLM]: ''
@@ -37,7 +37,7 @@ export default function useLocalForage() {
   /** 初始化 */
   const onInit = useCallback(async () => {
     let result = {
-      activeModel: Model.GEMINI,
+      activeModel: ModelName.GEMINI_2_0_FLASH,
       apiKeys: {
         [Model.GEMINI]: '',
         [Model.GLM]: ''
@@ -47,7 +47,7 @@ export default function useLocalForage() {
     const activeModel = await localForage.getItem('activeModel')
 
     if (activeModel) {
-      result.activeModel = activeModel as Model
+      result.activeModel = activeModel as ModelName
     }
 
     if (apiKeys) {

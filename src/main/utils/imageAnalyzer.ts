@@ -3,7 +3,8 @@ import { TextBlock } from './imageOCR'
 import { translateText as translateTextGemini } from './geminiTranslate'
 import { translateText as translateTextGLM } from './GLMTranslate'
 import { extractTextFromImage } from './imageOCR'
-import { Model } from '../../type/model'
+import { Model, ModelName } from '../../type/model'
+import { getModelType } from '../../utils/ai'
 
 export interface TranslateTextBlock extends TextBlock {
   translation: string
@@ -12,10 +13,10 @@ export interface TranslateTextBlock extends TextBlock {
 /**
  * 分析截图，提取文字并翻译
  * @param {string} imageDataUrl 图像的base64数据URL
- * @param {Model} modelIdentifier 选择的翻译模型标识符
+ * @param {ModelName} modelName 选择的翻译模型名称
  * @returns {Promise<{success: boolean, textBlocks: TranslateTextBlock[], msg?: string}>} 分析和翻译结果，包含文本位置信息
  */
-export async function analyzeScreenshot(imageDataUrl, modelIdentifier = Model.GLM, apiKey: string) {
+export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiKey: string) {
   try {
     // 1. 提取文字和位置
     const { success, textBlocks, msg } = await extractTextFromImage(imageDataUrl)
@@ -40,8 +41,8 @@ export async function analyzeScreenshot(imageDataUrl, modelIdentifier = Model.GL
       [Model.GEMINI]: translateTextGemini
     }
 
-    const translateFunction = translateConfig[modelIdentifier]
-    const translateResult = await translateFunction(combinedText, apiKey)
+    const translateFunction = translateConfig[getModelType(modelName)]
+    const translateResult = await translateFunction(modelName, combinedText, apiKey)
     console.log(`翻译结果: ${translateResult.translation}`)
 
     if (!translateResult.success) {
