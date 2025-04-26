@@ -1,10 +1,14 @@
 # screenshot-translation
 
-An Electron application with React and TypeScript
+一个使用 Electron、React 和 TypeScript 构建的 AI 截图翻译工具。
 
-## Recommended IDE Setup
+## 功能特性
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+*   [ ] 快速截图屏幕区域
+*   [ ] 图片文字识别 (OCR)
+*   [ ] 调用 **AI 引擎**将识别出的文字翻译成目标语言
+*   [ ] 在截图区域附近显示翻译结果
+
 
 ## Project Setup
 
