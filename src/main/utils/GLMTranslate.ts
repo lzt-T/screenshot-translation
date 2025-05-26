@@ -13,7 +13,7 @@ async function translateText(
 ): Promise<{ success: boolean; translation: string; msg?: string }> {
   try {
     const ai = new ZhipuAI({ apiKey: apiKey })
-    console.log(`${modelName} 翻译文本 ：${text}`)
+    console.log(`${modelName} translateText ：${text}`)
 
     const systemInstruction = getPrompt()
     const userContent = text
@@ -51,21 +51,21 @@ async function translateText(
       ) {
         translation = choice.message.content.trim()
       } else {
-        console.log('[GLMTranslate] GLM 翻译响应结构不完整:', result) // Use console.log
+        console.log('[GLMTranslate] GLM translateText response structure is incomplete:', result) // Use console.log
       }
     } else {
-      console.log('[GLMTranslate] GLM 翻译响应格式不符合预期 (非对象或无choices):', result) // Use console.log
+      console.log('[GLMTranslate] GLM translateText response format is not expected (not an object or no choices):', result) // Use console.log
     }
 
-    console.log(`[GLMTranslate] 翻译结果 (GLM): ${translation}`) // Use console.log
+    console.log(`[GLMTranslate] translateText result (GLM): ${translation}`) // Use console.log
 
     if (!translation) {
-      throw new Error('翻译失败: GLM 返回空结果')
+      throw new Error('translateText fail: GLM return empty result')
     }
     return {
       success: true,
       translation: translation,
-      msg: '翻译成功'
+      msg: 'translateText success'
     }
   } catch (error) {
     throw error

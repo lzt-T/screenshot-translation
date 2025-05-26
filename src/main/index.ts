@@ -5,18 +5,25 @@ import icon from '../../resources/icon.png?asset'
 import { SendEnum } from '../type/ipc-constants'
 import { captureArea } from './utils/captureArea'
 import { analyzeScreenshot, TranslateTextBlock } from './utils/imageAnalyzer'
-import { Model, ModelName } from '../type/model'
+import { Model, GeminiModel } from '../type/model'
 import { NoticeType } from '../type/notice'
 import { getErrorMessage } from './utils/error'
 import { getModelType } from '../utils/ai'
 
+/** 最小结果窗口宽度 */
+const MIN_RESULT_WINDOW_WIDTH = 160
+/** 最小结果窗口高度 */
+const MIN_RESULT_WINDOW_HEIGHT = 70
+
+
 let mainWindow: BrowserWindow | null = null
 let screenshotWindow: BrowserWindow | null = null
 let resultWindow: BrowserWindow | null = null
+/** 通知窗口 */
 let notificationWindow: BrowserWindow | null = null
 let isScreenshotting = false
 let lastBounds = null
-let currentTranslationModel = ModelName.GEMINI_2_0_FLASH
+let currentTranslationModel = GeminiModel.GEMINI_2_0_FLASH
 let currentApiKeys: { [key in Model]?: string } = {
   [Model.GEMINI]: '',
   [Model.GLM]: ''
@@ -93,7 +100,7 @@ function initiateScreenshotSequence() {
   if (resultWindow && !resultWindow.isDestroyed()) {
     try {
       resultWindow.close()
-    } catch (e) {}
+    } catch (e) { }
     resultWindow = null
   }
 
@@ -108,8 +115,8 @@ async function createResultWindow(resultData, boundsData) {
   resultWindow = new BrowserWindow({
     x: Math.round(boundsData.x),
     y: Math.round(boundsData.y),
-    width: Math.round(boundsData.width),
-    height: Math.max(Math.round(boundsData.height), 70),
+    width: Math.max(Math.round(boundsData.width), MIN_RESULT_WINDOW_WIDTH),
+    height: Math.max(Math.round(boundsData.height + 36), MIN_RESULT_WINDOW_HEIGHT),
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -131,10 +138,16 @@ async function createResultWindow(resultData, boundsData) {
   }
 
   resultWindow.webContents.on('did-finish-load', () => {
-    resultWindow?.show()
+    if (resultWindow && !resultWindow.isDestroyed()) {
+      resultWindow.show()
+    }
 
-    if (notificationWindow) {
-      notificationWindow.close()
+    if (notificationWindow && !notificationWindow.isDestroyed()) {
+      try {
+        notificationWindow.close()
+      } catch (e) {
+        console.warn('Error closing notification window during result window load:', e);
+      }
     }
   })
 
@@ -155,7 +168,7 @@ async function createNotificationWindow(message, type: NoticeType = NoticeType.I
   if (notificationWindow && !notificationWindow.isDestroyed()) {
     try {
       notificationWindow.close()
-    } catch (e) {}
+    } catch (e) { }
   }
 
   const primaryDisplay = screen.getPrimaryDisplay()
@@ -192,11 +205,13 @@ async function createNotificationWindow(message, type: NoticeType = NoticeType.I
   }
 
   notificationWindow.on('ready-to-show', () => {
-    notificationWindow?.show()
-    notificationWindow?.webContents.send(SendEnum.DISPLAY_NOTIFICATION, {
-      message: message,
-      type: type
-    })
+    if (notificationWindow && !notificationWindow.isDestroyed()) {
+      notificationWindow.show()
+      notificationWindow.webContents.send(SendEnum.DISPLAY_NOTIFICATION, {
+        message: message,
+        type: type
+      })
+    }
   })
 }
 
@@ -248,7 +263,7 @@ app.whenReady().then(() => {
 
   // 截图区域选择完成监听器
   ipcMain.on(SendEnum.SCREENSHOT_SELECTED, async (event, bounds) => {
-    console.log('SCREENSHOT_SELECTED: 收到边界', bounds)
+    console.log('SCREENSHOT_SELECTED: received bounds', bounds)
     if (!isScreenshotting) {
       return
     }
@@ -257,10 +272,10 @@ app.whenReady().then(() => {
 
     // 立即关闭选择窗口
     if (screenshotWindow && !screenshotWindow.isDestroyed()) {
-      console.log('SCREENSHOT_SELECTED: 关闭选择窗口。')
+      console.log('SCREENSHOT_SELECTED: close the selection window.')
       try {
         screenshotWindow.close()
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 显示加载窗口
@@ -283,16 +298,13 @@ app.whenReady().then(() => {
 
       analysisResult = await analyzeScreenshot(imageData, currentTranslationModel, apiKey as string)
 
-      console.log('SCREENSHOT_SELECTED: 分析结果', analysisResult)
-
       // 检查分析结果是否成功
       if (analysisResult && analysisResult.success) {
         // 仅在成功时创建和显示结果窗口
         await createResultWindow(analysisResult, lastBounds)
       }
     } catch (error) {
-      console.error('SCREENSHOT_SELECTED: 分析失败', error)
-      if (notificationWindow) {
+      if (notificationWindow && !notificationWindow.isDestroyed()) {
         notificationWindow.close()
       }
       const errorMessage = getErrorMessage(error)
@@ -323,6 +335,14 @@ app.whenReady().then(() => {
     if (notificationWindow) {
       notificationWindow.close()
     }
+  })
+
+  /** 复制文本成功 */
+  ipcMain.on(SendEnum.COPY_TEXT_SUCCESS, () => {
+    if (notificationWindow && !notificationWindow.isDestroyed()) {
+      notificationWindow.close()
+    }
+    createNotificationWindow('复制成功', NoticeType.SUCCESS)
   })
 
   /** 设置localForage */

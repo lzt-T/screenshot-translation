@@ -13,5 +13,7 @@ export enum SendEnum {
   /** 设置 */
   SET_LOCAL_FORAGE = 'SET_LOCAL_FORAGE',
   /** 初始化设置 */
-  INIT_LOCAL_FORAGE = 'INIT_LOCAL_FORAGE'
+  INIT_LOCAL_FORAGE = 'INIT_LOCAL_FORAGE',
+  /** 复制文本成功 */
+  COPY_TEXT_SUCCESS = 'COPY_TEXT_SUCCESS'
 } 

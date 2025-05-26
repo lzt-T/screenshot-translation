@@ -11,17 +11,12 @@ const router = createHashRouter([
   {
     path: '/',
     element: <App />,
-    /**
-     * 嵌套路由。通过<Outlet />可以设置那里放置子路由
-     * 对于嵌套路由没有 / 会自动拼接  /home/contacts/12 ,有/则表示具体的路径
-     */
     children: [
       {
         path: '/',
         element: <Navigate to='/home' />
       },
       {
-        //params传参
         path: 'home',
         element: <Home />
       },
@@ -35,7 +30,6 @@ const router = createHashRouter([
       }
     ]
   },
-  // Add route for the screenshot selector window
   {
     path: '/windows/screenshotSelector',
     element: <ScreenshotSelector />

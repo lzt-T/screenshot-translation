@@ -8,7 +8,7 @@ import { getPrompt } from '../../utils/ai'
  */
 export async function translateText(modelName: string, text: string, apiKey: string) {
   try {
-    console.log(`${modelName} 翻译文本 ：${text}`)
+    console.log(`${modelName} translateText ：${text}`)
     const genAI = new GoogleGenerativeAI(apiKey)
 
     const model = genAI.getGenerativeModel({ model: modelName })
@@ -17,14 +17,15 @@ export async function translateText(modelName: string, text: string, apiKey: str
 
     const result = await model.generateContent(prompt)
     const response = await result.response
-    const translation = response.text ? response.text().trim() : '翻译API未返回文本'
+    const translation = response.text ? response.text().trim() : 'The translation API did not return the text'
 
     return {
       success: true,
       translation: translation,
-      msg: '翻译成功'
+      msg: 'translateText success'
     }
   } catch (error) {
+    console.error(`${modelName} translateText fail:${error}`)
     throw error
   }
 }

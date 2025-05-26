@@ -65,7 +65,7 @@ async function extractTextFromImage(imageDataUrl) {
           // 遍历当前块中的所有段落
           for (const paragraph of block.paragraphs) {
             if (paragraph && paragraph.text && paragraph.bbox) {
-              console.log('处理段落:', {
+              console.log('Handle the paragraph:', {
                 text: paragraph.text.substring(0, 50) + '...',
                 bbox: paragraph.bbox
               })

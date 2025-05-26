@@ -26,3 +26,26 @@ export const TranslatedTextOverlay = styled.div`
   border-radius: 4px; // 文本块稍大的圆角
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); // 添加细微文本阴影
 `;
+
+
+export const FooterContainer = styled.div`
+  display:flex;
+  align-items: center;
+  position: absolute;
+  height: 36px;
+  bottom: 0px;
+  right: 10px;
+  display: flex;
+  gap: 10px;
+  -webkit-app-region: no-drag; 
+`;
+
+export const CopyButton = styled.div`
+  cursor: pointer;
+  color: white;
+  font-size: 12px;
+  z-index: 1000;
+  &:hover {
+    color: #007bff;
+  }
+`;

@@ -30,7 +30,7 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
     }
 
     // 2. 合并所有有效文本块进行单次翻译
-    console.log(`准备合并和翻译 ${textBlocks.length} 个有效文本块...`)
+    console.log(`prepare to translate ${textBlocks.length} valid text blocks...`)
     const separator = '\n<translate_separator>\n'
     const combinedText = textBlocks.map((block) => block.text.trim()).join(separator)
 
@@ -43,7 +43,7 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
 
     const translateFunction = translateConfig[getModelType(modelName)]
     const translateResult = await translateFunction(modelName, combinedText, apiKey)
-    console.log(`翻译结果: ${translateResult.translation}`)
+    console.log(`translate result: ${translateResult.translation}`)
 
     if (!translateResult.success) {
       return { success: false, textBlocks: [], msg: translateResult.msg }
@@ -61,11 +61,11 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
       .map((segment) => segment.trim())
       .filter((segment) => segment !== '')
 
-    console.log(`拆分得到 ${translatedSegments.length} 个翻译片段.`)
+    console.log(`split into ${translatedSegments.length} translation segments.`)
 
     const finalBlocks: TranslateTextBlock[] = []
     if (translatedSegments.length === textBlocks.length) {
-      console.log('翻译片段数量与原始块数量匹配，开始映射...')
+      console.log('translation segments number matches the original block number, start mapping...')
       for (let i = 0; i < textBlocks.length; i++) {
         finalBlocks.push({
           ...textBlocks[i],
@@ -73,9 +73,9 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
         })
       }
     } else {
-      throw new Error('翻译片段数量与原始块数量不匹配')
+      throw new Error('translation segments number does not match the original block number')
     }
-    return { success: true, textBlocks: finalBlocks, msg: '分析和翻译成功' }
+    return { success: true, textBlocks: finalBlocks, msg: 'analyze and translate success' }
   } catch (error: any) {
     throw error
   }

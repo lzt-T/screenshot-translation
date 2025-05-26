@@ -1,4 +1,4 @@
-import { Model, ModelName } from '../type/model'
+import { Model, GlmModel, GeminiModel } from '../type/model'
 
 /** 获取prompt */
 export const getPrompt = () => {
@@ -6,13 +6,12 @@ export const getPrompt = () => {
 }
 
 /** 获取模型类型 */
-export const getModelType = (modelName: ModelName): Model => {
-  let glmList = [ModelName.GLM_4_FLASH_250414]
-  let geminiList = [ModelName.GEMINI_2_0_FLASH, ModelName.GEMINI_1_5_FLASH]
-  if (glmList.includes(modelName)) {
+export const getModelType = (modelName: GlmModel | GeminiModel): Model => {
+  if (Object.values(GlmModel).includes(modelName as unknown as GlmModel)) {
     return Model.GLM
   }
-  if (geminiList.includes(modelName)) {
+
+  if (Object.values(GeminiModel).includes(modelName as unknown as GeminiModel)) {
     return Model.GEMINI
   }
   return Model.GEMINI

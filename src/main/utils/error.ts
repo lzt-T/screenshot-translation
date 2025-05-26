@@ -1,5 +1,5 @@
 function getErrorMessage(error: unknown): string {
-  let errorMessage = '发生未知错误';
+  let errorMessage = 'unknown error';
   if (error instanceof Error) {
     errorMessage = error.message;
   } else if (typeof error === 'string') {

@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
-import { OverlayContainer, TranslatedTextOverlay } from './style'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { CopyButton, FooterContainer, OverlayContainer, TranslatedTextOverlay } from './style'
 import { SendEnum } from '@src/type/ipc-constants'
+
+const EXTRA_WIDTH = 16
 
 interface BoundingBox {
   x: number
@@ -24,6 +26,12 @@ interface ResultData {
 const ResultOverlay = () => {
   const [blocksToRender, setBlocksToRender] = useState<TextBlock[]>([])
 
+  /** 原始文本 */ 
+  const originalText=useRef('')
+
+  /** 翻译文本 */ 
+  const translatedText=useRef('')
+
   useEffect(() => {
     window.electron.ipcRenderer.on(
       SendEnum.DISPLAY_TRANSLATION_RESULT,
@@ -43,6 +51,8 @@ const ResultOverlay = () => {
               typeof block.boundingBox.height === 'number'
           )
           setBlocksToRender(validBlocks)
+          originalText.current=validBlocks.map((block)=>block.text||'').join('\n')
+          translatedText.current=validBlocks.map((block)=>block.translation||'').join('\n')
         } else {
           console.log('[ResultOverlay] 收到不成功的结果或无文本块。错误弹窗应处理显示。')
         }
@@ -69,6 +79,22 @@ const ResultOverlay = () => {
     [handleClose]
   )
 
+  const handleCopyText=useCallback((text:string)=>{
+    navigator.clipboard.writeText(text)
+    window.electron.ipcRenderer.send(SendEnum.COPY_TEXT_SUCCESS)
+  },[])
+
+  /** 复制原文 */
+  const copyOriginalText=useCallback(()=>{
+    handleCopyText(originalText.current)
+  },[handleCopyText])
+
+  /** 复制译文 */
+  const copyTranslatedText=useCallback(()=>{
+    handleCopyText(translatedText.current)
+  },[handleCopyText])
+
+
   // 添加/移除键盘事件监听器
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -86,13 +112,17 @@ const ResultOverlay = () => {
             style={{
               left: `${block.boundingBox.x}px`,
               top: `${block.boundingBox.y}px`,
-              width: `${block.boundingBox.width}px`
+              width: `${block.boundingBox.width + EXTRA_WIDTH}px`
             }}
           >
             {block.translation}
           </TranslatedTextOverlay>
         ) : null
       )}
+      <FooterContainer>
+        <CopyButton onClick={copyOriginalText}>复制原文</CopyButton>
+        <CopyButton onClick={copyTranslatedText}>复制译文</CopyButton>
+      </FooterContainer>
     </OverlayContainer>
   )
 }

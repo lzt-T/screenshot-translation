@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Model, ModelName } from '@src/type/model' // 导入模型枚举
+import { Model, ModelName, GeminiModel, GlmModel } from '@src/type/model' // 导入模型枚举
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import {
   Select,
@@ -58,11 +58,13 @@ const SettingPage: React.FC = () => {
             <SelectValue placeholder="选择模型" />
           </SelectTrigger>
           <SelectContent>
-            {Object.values(ModelName).map((modelValue) => (
-              <SelectItem key={modelValue} value={modelValue}>
-                {modelValue}
-              </SelectItem>
-            ))}
+            {[...Object.values(GeminiModel), ...Object.values(GlmModel)].map(
+              (modelValue) => (
+                <SelectItem key={modelValue} value={modelValue}>
+                  {modelValue}
+                </SelectItem>
+              )
+            )}
           </SelectContent>
         </Select>
       </div>
