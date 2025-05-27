@@ -10,8 +10,6 @@ const NOTIFICATION_BAR_HEIGHT = 100
 const NOTIFICATION_BAR_WIDTH = 360
 /** 消息提示栏水平间距 */
 const NOTIFICATION_BAR_MARGIN = 20
-/** 译文额外添加的宽度 */
-const TRANSLATION_EXTRA_WIDTH = 16
 
 export const getConfig = () => {
   return {
@@ -21,6 +19,5 @@ export const getConfig = () => {
     NOTIFICATION_BAR_HEIGHT,
     NOTIFICATION_BAR_WIDTH,
     NOTIFICATION_BAR_MARGIN,
-    TRANSLATION_EXTRA_WIDTH
   }
 }

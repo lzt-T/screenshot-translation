@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { CopyButton, FooterContainer, OverlayContainer, TranslatedTextOverlay } from './style'
 import { SendEnum } from '@src/type/ipc-constants'
-import { getConfig } from '../../../../utils/config'
-
-const { TRANSLATION_EXTRA_WIDTH } = getConfig()
 
 interface BoundingBox {
   x: number
@@ -15,6 +12,8 @@ interface BoundingBox {
 interface TextBlock {
   text: string // 原文在某些情况下可能丢失
   translation: string
+  /** 是否是单行 */
+  isSingleLine: boolean
   boundingBox: BoundingBox
 }
 
@@ -27,11 +26,11 @@ interface ResultData {
 const ResultOverlay = () => {
   const [blocksToRender, setBlocksToRender] = useState<TextBlock[]>([])
 
-  /** 原始文本 */ 
-  const originalText=useRef('')
+  /** 原始文本 */
+  const originalText = useRef('')
 
-  /** 翻译文本 */ 
-  const translatedText=useRef('')
+  /** 翻译文本 */
+  const translatedText = useRef('')
 
   useEffect(() => {
     window.electron.ipcRenderer.on(
@@ -52,8 +51,8 @@ const ResultOverlay = () => {
               typeof block.boundingBox.height === 'number'
           )
           setBlocksToRender(validBlocks)
-          originalText.current=validBlocks.map((block)=>block.text||'').join('\n')
-          translatedText.current=validBlocks.map((block)=>block.translation||'').join('\n')
+          originalText.current = validBlocks.map((block) => block.text || '').join('\n')
+          translatedText.current = validBlocks.map((block) => block.translation || '').join('\n')
         } else {
           console.log('[ResultOverlay] 收到不成功的结果或无文本块。错误弹窗应处理显示。')
         }
@@ -80,20 +79,20 @@ const ResultOverlay = () => {
     [handleClose]
   )
 
-  const handleCopyText=useCallback((text:string)=>{
+  const handleCopyText = useCallback((text: string) => {
     navigator.clipboard.writeText(text)
     window.electron.ipcRenderer.send(SendEnum.COPY_TEXT_SUCCESS)
-  },[])
+  }, [])
 
   /** 复制原文 */
-  const copyOriginalText=useCallback(()=>{
+  const copyOriginalText = useCallback(() => {
     handleCopyText(originalText.current)
-  },[handleCopyText])
+  }, [handleCopyText])
 
   /** 复制译文 */
-  const copyTranslatedText=useCallback(()=>{
+  const copyTranslatedText = useCallback(() => {
     handleCopyText(translatedText.current)
-  },[handleCopyText])
+  }, [handleCopyText])
 
 
   // 添加/移除键盘事件监听器
@@ -113,7 +112,12 @@ const ResultOverlay = () => {
             style={{
               left: `${block.boundingBox.x}px`,
               top: `${block.boundingBox.y}px`,
-              width: `${block.boundingBox.width + TRANSLATION_EXTRA_WIDTH}px`
+              width: `${block.boundingBox.width}px`,
+              ...(block.isSingleLine ? {
+                //单行显示
+                whiteSpace: 'nowrap'
+              } : {
+              })
             }}
           >
             {block.translation}

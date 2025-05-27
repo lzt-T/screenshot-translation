@@ -14,6 +14,8 @@ interface BoundingBox {
 export interface TextBlock {
   text: string
   boundingBox: BoundingBox
+  /** 是否是单行 */
+  isSingleLine: boolean
 }
 
 /**
@@ -70,6 +72,7 @@ async function extractTextFromImage(imageDataUrl) {
                 bbox: paragraph.bbox
               })
               textBlocks.push({
+                isSingleLine: true,
                 text: paragraph.text,
                 boundingBox: {
                   x: paragraph.bbox.x0,
@@ -99,6 +102,63 @@ async function extractTextFromImage(imageDataUrl) {
   }
 }
 
+/** 是否可以合并文本块 */
+function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
+  const HORIZONTAL_TOLERANCE = 5; // 水平容错值 (像素)
+  const VERTICAL_TOLERANCE = 5;   // 垂直容错值 (像素)
+
+  /** 垂直方向上可不可以合并 */
+  let verticalCanMerge = false
+  /** 水平方向上可不可以合并 */
+  let horizontalCanMerge = false
+
+  // --- 垂直合并逻辑 ---
+  const verticalGap = nextBlock.boundingBox.y - (currentBlock.boundingBox.y + currentBlock.boundingBox.height)
+  const MAX_VERTICAL_GAP_FACTOR = 1 // 最大垂直间隙容忍度（基于下一个块的高度）
+
+  const currentLeft = currentBlock.boundingBox.x
+  const currentRight = currentBlock.boundingBox.x + currentBlock.boundingBox.width
+  const nextLeft = nextBlock.boundingBox.x
+  const nextRight = nextBlock.boundingBox.x + nextBlock.boundingBox.width
+
+  // 水平重叠判断 (考虑容错)
+  const overlapsHorizontally =
+    currentLeft < nextRight + HORIZONTAL_TOLERANCE &&
+    nextLeft < currentRight + HORIZONTAL_TOLERANCE
+
+  verticalCanMerge =
+    verticalGap >= -VERTICAL_TOLERANCE && // 允许一定的垂直方向上的负间隙（轻微重叠）
+    verticalGap < nextBlock.boundingBox.height * MAX_VERTICAL_GAP_FACTOR &&
+    overlapsHorizontally
+
+  // --- 水平合并逻辑 ---
+  const horizontalGap = nextBlock.boundingBox.x - (currentBlock.boundingBox.x + currentBlock.boundingBox.width)
+
+  const MAX_HORIZONTAL_GAP_FACTOR = 1
+  const currentTop = currentBlock.boundingBox.y
+  const currentBottom = currentBlock.boundingBox.y + currentBlock.boundingBox.height
+  const nextTop = nextBlock.boundingBox.y
+  const nextBottom = nextBlock.boundingBox.y + nextBlock.boundingBox.height
+
+  // 垂直重叠判断 (考虑容错)
+  const overlapsVertically =
+    currentTop < nextBottom + VERTICAL_TOLERANCE &&
+    nextTop < currentBottom + VERTICAL_TOLERANCE
+
+  horizontalCanMerge =
+    horizontalGap >= -HORIZONTAL_TOLERANCE && // 允许一定的水平方向上的负间隙（轻微重叠）
+    horizontalGap < currentBlock.boundingBox.height * MAX_HORIZONTAL_GAP_FACTOR && // 示例：水平间隙小于当前块高度的2倍
+    overlapsVertically
+
+  if (verticalCanMerge) {
+    return { canMerge: true, type: 'vertical' as const };
+  }
+  if (horizontalCanMerge) {
+    return { canMerge: true, type: 'horizontal' as const };
+  }
+  return { canMerge: false, type: null };
+}
+
 /**
  * 根据几何邻近性和对齐方式合并可能属于同一段落的文本块。
  * 允许一个块与后续多个满足条件的块合并。
@@ -124,36 +184,38 @@ function mergeAdjacentTextBlocks(textBlocks) {
       let nextBlock = mutableBlocks[j]
       if (!nextBlock.boundingBox || nextBlock.boundingBox.height <= 0) continue
 
-      const verticalGap =
-        nextBlock.boundingBox.y - (currentBlock.boundingBox.y + currentBlock.boundingBox.height)
+      const mergeInfo = canMergeTextBlock(currentBlock, nextBlock);
 
-      // --- 检查条件 (使用方法一 + 水平重叠判断) ---
-      const MAX_VERTICAL_GAP_FACTOR = 1.5
+      if (mergeInfo.canMerge) {
+        const currentText = currentBlock.text || ''
+        const nextText = nextBlock.text || ''
+        let mergedX, mergedY, mergedWidth, mergedHeight;
 
-      // 计算水平重叠
-      const currentLeft = currentBlock.boundingBox.x
-      const currentRight = currentBlock.boundingBox.x + currentBlock.boundingBox.width
-      const nextLeft = nextBlock.boundingBox.x
-      const nextRight = nextBlock.boundingBox.x + nextBlock.boundingBox.width
-      const overlapsHorizontally = currentLeft < nextRight && nextLeft < currentRight
+        //垂直合并
+        if (mergeInfo.type === 'vertical') {
+          currentBlock.text = currentText.trim() + nextText.trim();
+          currentBlock.isSingleLine = false;
 
-      const shouldMerge =
-        verticalGap >= 0 &&
-        verticalGap < nextBlock.boundingBox.height * MAX_VERTICAL_GAP_FACTOR &&
-        overlapsHorizontally // <--- 使用水平重叠判断
-
-      if (shouldMerge) {
-        currentBlock.text = (currentBlock.text || '').trim() + (nextBlock.text || '').trim()
-
-        // 更新 currentBlock 的 bounding box 以包含 nextBlock
-        const mergedX = Math.min(currentBlock.boundingBox.x, nextBlock.boundingBox.x)
-        const mergedY = currentBlock.boundingBox.y // Y 坐标保持不变
-        const mergedWidth =
-          Math.max(
+          mergedX = Math.min(currentBlock.boundingBox.x, nextBlock.boundingBox.x);
+          mergedY = currentBlock.boundingBox.y; 
+          mergedWidth = Math.max(
             currentBlock.boundingBox.x + currentBlock.boundingBox.width,
             nextBlock.boundingBox.x + nextBlock.boundingBox.width
-          ) - mergedX
-        const mergedHeight = nextBlock.boundingBox.y + nextBlock.boundingBox.height - mergedY
+          ) - mergedX;
+          mergedHeight = (nextBlock.boundingBox.y + nextBlock.boundingBox.height) - mergedY;
+
+        }
+        //水平合并
+        else if (mergeInfo.type === 'horizontal') {
+          currentBlock.text = currentText.trim() + nextText.trim()
+          mergedX = currentBlock.boundingBox.x; 
+          mergedY = Math.min(currentBlock.boundingBox.y, nextBlock.boundingBox.y);
+          mergedWidth = (nextBlock.boundingBox.x + nextBlock.boundingBox.width) - mergedX;
+          mergedHeight = Math.max(
+            currentBlock.boundingBox.y + currentBlock.boundingBox.height,
+            nextBlock.boundingBox.y + nextBlock.boundingBox.height
+          ) - mergedY;
+        }
 
         // 更新 mutableBlocks[i] 的 boundingBox (因为 currentBlock 是它的引用)
         currentBlock.boundingBox = {

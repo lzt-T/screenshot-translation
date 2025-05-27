@@ -17,3 +17,11 @@ export enum GlmModel {
 
 /** 模型类型 */
 export type ModelName = GeminiModel | GlmModel
+
+
+/** 目标语言 */
+export enum TargetLanguage {
+  ZH_CN = "简体中文",
+  EN_US = "English"
+}
+

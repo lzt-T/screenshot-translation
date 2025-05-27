@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { SendEnum } from '@src/type/ipc-constants'
-import { Model, ModelName, GeminiModel, GlmModel } from '@src/type/model'
+import { Model, ModelName, GeminiModel, GlmModel, TargetLanguage } from '@src/type/model'
 import localForage from 'localforage'
 
 interface StoreSetting {
+  targetLanguage: TargetLanguage
   activeModel: ModelName
   apiKeys: {
     [key in Model]: string
@@ -13,6 +14,7 @@ interface StoreSetting {
 export default function useLocalForage() {
   /** 设置 */
   const [storeSetting, setStoreSetting] = useState<StoreSetting>({
+    targetLanguage: TargetLanguage.ZH_CN,
     activeModel: GeminiModel.GEMINI_2_0_FLASH,
     apiKeys: {
       [Model.GEMINI]: '',
@@ -37,6 +39,7 @@ export default function useLocalForage() {
   /** 初始化 */
   const onInit = useCallback(async () => {
     let result: StoreSetting = {
+      targetLanguage: TargetLanguage.ZH_CN,
       activeModel: GeminiModel.GEMINI_2_0_FLASH,
       apiKeys: {
         [Model.GEMINI]: '',

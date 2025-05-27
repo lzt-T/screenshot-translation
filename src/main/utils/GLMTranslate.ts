@@ -1,6 +1,6 @@
 import { ZhipuAI } from 'zhipuai-sdk-nodejs-v4'
 import { getPrompt } from '../../utils/ai'
-
+import { TargetLanguage } from '../../type/model'
 /**
  * 使用智谱 AI (GLM) 翻译文本内容
  * @param {string} text 需要翻译的文本
@@ -9,13 +9,14 @@ import { getPrompt } from '../../utils/ai'
 async function translateText(
   modelName: string,
   text: string,
-  apiKey: string
+  apiKey: string,
+  targetLanguage: TargetLanguage
 ): Promise<{ success: boolean; translation: string; msg?: string }> {
   try {
     const ai = new ZhipuAI({ apiKey: apiKey })
     console.log(`${modelName} translateText ：${text}`)
 
-    const systemInstruction = getPrompt()
+    const systemInstruction = getPrompt(targetLanguage)
     const userContent = text
 
     const messages = [

@@ -5,7 +5,7 @@ import icon from '../../resources/icon.png?asset'
 import { SendEnum } from '../type/ipc-constants'
 import { captureArea } from './utils/captureArea'
 import { analyzeScreenshot, TranslateTextBlock } from './utils/imageAnalyzer'
-import { Model, GeminiModel } from '../type/model'
+import { Model, GeminiModel, TargetLanguage } from '../type/model'
 import { NoticeType } from '../type/notice'
 import { getErrorMessage } from './utils/error'
 import { getModelType } from '../utils/ai'
@@ -27,7 +27,11 @@ let resultWindow: BrowserWindow | null = null
 let notificationWindow: BrowserWindow | null = null
 let isScreenshotting = false
 let lastBounds = null
+/** 当前目标语言 */
+let currentTargetLanguage = TargetLanguage.ZH_CN
+/** 当前翻译模型 */
 let currentTranslationModel = GeminiModel.GEMINI_2_0_FLASH
+/** 当前API Key */
 let currentApiKeys: { [key in Model]?: string } = {
   [Model.GEMINI]: '',
   [Model.GLM]: ''
@@ -300,7 +304,7 @@ app.whenReady().then(() => {
 
       const apiKey = currentApiKeys[getModelType(currentTranslationModel)]
 
-      analysisResult = await analyzeScreenshot(imageData, currentTranslationModel, apiKey as string)
+      analysisResult = await analyzeScreenshot(imageData, currentTranslationModel, apiKey as string, currentTargetLanguage)
 
       // 检查分析结果是否成功
       if (analysisResult && analysisResult.success) {
@@ -353,6 +357,7 @@ app.whenReady().then(() => {
   ipcMain.on(SendEnum.SET_LOCAL_FORAGE, (event, setting) => {
     currentTranslationModel = setting.activeModel
     currentApiKeys = setting.apiKeys
+    currentTargetLanguage = setting.targetLanguage
     createNotificationWindow('设置已保存', NoticeType.SUCCESS)
   })
 
@@ -360,6 +365,7 @@ app.whenReady().then(() => {
   ipcMain.on(SendEnum.INIT_LOCAL_FORAGE, (event, setting) => {
     currentTranslationModel = setting.activeModel
     currentApiKeys = setting.apiKeys
+    currentTargetLanguage = setting.targetLanguage
   })
 
   /**

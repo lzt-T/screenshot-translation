@@ -1,9 +1,8 @@
 import { TextBlock } from './imageOCR'
-
 import { translateText as translateTextGemini } from './geminiTranslate'
 import { translateText as translateTextGLM } from './GLMTranslate'
 import { extractTextFromImage } from './imageOCR'
-import { Model, ModelName } from '../../type/model'
+import { Model, ModelName, TargetLanguage } from '../../type/model'
 import { getModelType } from '../../utils/ai'
 
 export interface TranslateTextBlock extends TextBlock {
@@ -16,7 +15,7 @@ export interface TranslateTextBlock extends TextBlock {
  * @param {ModelName} modelName 选择的翻译模型名称
  * @returns {Promise<{success: boolean, textBlocks: TranslateTextBlock[], msg?: string}>} 分析和翻译结果，包含文本位置信息
  */
-export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiKey: string) {
+export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiKey: string, targetLanguage: TargetLanguage) {
   try {
     // 1. 提取文字和位置
     const { success, textBlocks, msg } = await extractTextFromImage(imageDataUrl)
@@ -42,7 +41,7 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
     }
 
     const translateFunction = translateConfig[getModelType(modelName)]
-    const translateResult = await translateFunction(modelName, combinedText, apiKey)
+    const translateResult = await translateFunction(modelName, combinedText, apiKey, targetLanguage)
     console.log(`translate result: ${translateResult.translation}`)
 
     if (!translateResult.success) {
@@ -73,7 +72,7 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
         })
       }
     } else {
-      throw new Error('translation segments number does not match the original block number')
+      throw new Error('翻译结果段落数与原始块数不匹配')
     }
     return { success: true, textBlocks: finalBlocks, msg: 'analyze and translate success' }
   } catch (error: any) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Model, ModelName, GeminiModel, GlmModel } from '@src/type/model' // 导入模型枚举
+import { Model, ModelName, GeminiModel, GlmModel, TargetLanguage } from '@src/type/model' 
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import {
   Select,
@@ -15,6 +15,7 @@ import { Label } from '@renderer/components/ui/label' // Import shadcn Label
 const SettingPage: React.FC = () => {
   const { storeSetting, isInit, changeStoreSetting, saveStoreSetting } = useLocalForage()
 
+  /** 设置模型名称 */
   const handleModelNameChange = useCallback(
     (value: ModelName) => {
       changeStoreSetting({
@@ -25,6 +26,7 @@ const SettingPage: React.FC = () => {
     [storeSetting, changeStoreSetting]
   )
 
+  /** 设置模型API Key */
   const handleApiKeyChange = useCallback(
     (model: Model, e: React.ChangeEvent<HTMLInputElement>) => {
       changeStoreSetting({
@@ -38,8 +40,19 @@ const SettingPage: React.FC = () => {
     [storeSetting, changeStoreSetting]
   )
 
+  /** 设置目标语言 */
+  const handleTargetLanguageChange = useCallback(
+    (value: TargetLanguage) => {
+      changeStoreSetting({
+        ...storeSetting,
+        targetLanguage: value
+      })
+    },
+    [storeSetting, changeStoreSetting]
+  )
+
   if (isInit) {
-    return <div>初始化中...</div> // Can style this later if needed
+    return <div>初始化中...</div> 
   }
 
   return (
@@ -50,6 +63,25 @@ const SettingPage: React.FC = () => {
         设置
       </h1>
 
+      {/* 设置目标语言 */}
+      <div className="space-y-2 w-full max-w-sm">
+        <Label htmlFor="targetLanguageSelect">设置目标语言:</Label>
+        <Select defaultValue={storeSetting.targetLanguage} onValueChange={handleTargetLanguageChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="选择目标语言" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.values(TargetLanguage).map(
+              (modelValue) => (
+                <SelectItem key={modelValue} value={modelValue}>
+                  {modelValue}
+                </SelectItem>
+              )
+            )}
+          </SelectContent>
+          
+        </Select>
+      </div>
       {/* Model Selection Group */}
       <div className="space-y-2 w-full max-w-sm">
         <Label htmlFor="modelSelect">选择当前使用的翻译模型:</Label>
