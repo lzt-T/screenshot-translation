@@ -67,13 +67,13 @@ const SettingPage: React.FC = () => {
       <div className="space-y-2 w-full max-w-sm">
         <Label htmlFor="targetLanguageSelect">设置目标语言:</Label>
         <Select defaultValue={storeSetting.targetLanguage} onValueChange={handleTargetLanguageChange}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full cursor-pointer">
             <SelectValue placeholder="选择目标语言" />
           </SelectTrigger>
           <SelectContent>
             {Object.values(TargetLanguage).map(
               (modelValue) => (
-                <SelectItem key={modelValue} value={modelValue}>
+                <SelectItem className='cursor-pointer' key={modelValue} value={modelValue}>
                   {modelValue}
                 </SelectItem>
               )
@@ -86,13 +86,13 @@ const SettingPage: React.FC = () => {
       <div className="space-y-2 w-full max-w-sm">
         <Label htmlFor="modelSelect">选择当前使用的翻译模型:</Label>
         <Select defaultValue={storeSetting.activeModel} onValueChange={handleModelNameChange}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full cursor-pointer">
             <SelectValue placeholder="选择模型" />
           </SelectTrigger>
           <SelectContent>
             {[...Object.values(GeminiModel), ...Object.values(GlmModel)].map(
               (modelValue) => (
-                <SelectItem key={modelValue} value={modelValue}>
+                <SelectItem className='cursor-pointer' key={modelValue} value={modelValue}>
                   {modelValue}
                 </SelectItem>
               )
@@ -119,7 +119,7 @@ const SettingPage: React.FC = () => {
         ))}
       </div>
 
-      <Button onClick={saveStoreSetting}>保存</Button>
+      <Button className='cursor-pointer' onClick={saveStoreSetting}>保存</Button>
     </div>
   )
 }

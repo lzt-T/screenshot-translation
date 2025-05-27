@@ -64,7 +64,7 @@ function App(): React.JSX.Element {
           <Button
             variant="ghost"
             className={cn(
-              'w-full justify-start',
+              'w-full justify-start cursor-pointer',
               isLinkActive('/home') && 'bg-accent text-accent-foreground'
             )}
             onClick={() => handleNavigate('/home')}
@@ -74,7 +74,7 @@ function App(): React.JSX.Element {
           <Button
             variant="ghost"
             className={cn(
-              'w-full justify-start',
+              'w-full justify-start cursor-pointer',
               isLinkActive('/version') && 'bg-accent text-accent-foreground'
             )}
             onClick={() => handleNavigate('/version')}
@@ -84,7 +84,7 @@ function App(): React.JSX.Element {
           <Button
             variant="ghost"
             className={cn(
-              'w-full justify-start',
+              'w-full justify-start cursor-pointer',
               isLinkActive('/setting') && 'bg-accent text-accent-foreground'
             )}
             onClick={() => handleNavigate('/setting')}

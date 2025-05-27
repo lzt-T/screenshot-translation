@@ -18,7 +18,7 @@ export default function Index() {
       <p className="text-base text-muted-foreground">
         快速捕捉屏幕区域并进行翻译。
       </p>
-      <Button size="lg" onClick={onScreenshot}>开始截图</Button>
+      <Button className='cursor-pointer' size="lg" onClick={onScreenshot}>开始截图</Button>
       {/* Replace HintText with p and Tailwind classes */}
       <p className="text-sm text-muted-foreground">
         或者直接按 F2 快捷键
