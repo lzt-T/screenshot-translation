@@ -27,7 +27,7 @@ $ pnpm dev
 ### Build
 
 ```bash
-# For windows
+# For windows  需要管理员权限
 $ pnpm build:win
 
 # For macOS

@@ -9,11 +9,15 @@ import { Model, GeminiModel } from '../type/model'
 import { NoticeType } from '../type/notice'
 import { getErrorMessage } from './utils/error'
 import { getModelType } from '../utils/ai'
+import { getConfig } from '../utils/config'
 
-/** 最小结果窗口宽度 */
-const MIN_RESULT_WINDOW_WIDTH = 160
-/** 最小结果窗口高度 */
-const MIN_RESULT_WINDOW_HEIGHT = 70
+const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT, 
+  RESULT_WINDOW_BAR_HEIGHT,
+  NOTIFICATION_BAR_HEIGHT,
+  NOTIFICATION_BAR_WIDTH,
+  NOTIFICATION_BAR_MARGIN
+} = getConfig()
+
 
 
 let mainWindow: BrowserWindow | null = null
@@ -116,7 +120,7 @@ async function createResultWindow(resultData, boundsData) {
     x: Math.round(boundsData.x),
     y: Math.round(boundsData.y),
     width: Math.max(Math.round(boundsData.width), MIN_RESULT_WINDOW_WIDTH),
-    height: Math.max(Math.round(boundsData.height + 36), MIN_RESULT_WINDOW_HEIGHT),
+    height: Math.max(Math.round(boundsData.height + RESULT_WINDOW_BAR_HEIGHT), MIN_RESULT_WINDOW_HEIGHT),
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -173,11 +177,11 @@ async function createNotificationWindow(message, type: NoticeType = NoticeType.I
 
   const primaryDisplay = screen.getPrimaryDisplay()
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize
-  const width = 360
+  const width = NOTIFICATION_BAR_WIDTH
 
   /** 计算初始高度 */
-  const height = 100
-  const margin = 20
+  const height = NOTIFICATION_BAR_HEIGHT
+  const margin = NOTIFICATION_BAR_MARGIN
   const newX = Math.round(screenWidth - width - margin)
   const newY = Math.round(screenHeight - height - margin)
 

@@ -143,7 +143,7 @@ function mergeAdjacentTextBlocks(textBlocks) {
         overlapsHorizontally // <--- 使用水平重叠判断
 
       if (shouldMerge) {
-        currentBlock.text = (currentBlock.text || '').trim() + '\n' + (nextBlock.text || '').trim()
+        currentBlock.text = (currentBlock.text || '').trim() + (nextBlock.text || '').trim()
 
         // 更新 currentBlock 的 bounding box 以包含 nextBlock
         const mergedX = Math.min(currentBlock.boundingBox.x, nextBlock.boundingBox.x)

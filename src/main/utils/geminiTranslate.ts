@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai';
 import { getPrompt } from '../../utils/ai'
 
 /**
@@ -9,15 +9,15 @@ import { getPrompt } from '../../utils/ai'
 export async function translateText(modelName: string, text: string, apiKey: string) {
   try {
     console.log(`${modelName} translateText ：${text}`)
-    const genAI = new GoogleGenerativeAI(apiKey)
+    const genAI = new GoogleGenAI({ apiKey });
 
-    const model = genAI.getGenerativeModel({ model: modelName })
+    const contents = `${getPrompt()}:\n\n${text}`
+    const response = await genAI.models.generateContent({
+      model: modelName,
+      contents: contents
+    })
 
-    const prompt = `${getPrompt()}:\n\n${text}`
-
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    const translation = response.text ? response.text().trim() : 'The translation API did not return the text'
+    const translation = response.text ? response.text.trim() : 'The translation API did not return the text'
 
     return {
       success: true,

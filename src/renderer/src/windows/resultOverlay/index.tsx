@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { CopyButton, FooterContainer, OverlayContainer, TranslatedTextOverlay } from './style'
 import { SendEnum } from '@src/type/ipc-constants'
+import { getConfig } from '../../../../utils/config'
 
-const EXTRA_WIDTH = 16
+const { TRANSLATION_EXTRA_WIDTH } = getConfig()
 
 interface BoundingBox {
   x: number
@@ -112,7 +113,7 @@ const ResultOverlay = () => {
             style={{
               left: `${block.boundingBox.x}px`,
               top: `${block.boundingBox.y}px`,
-              width: `${block.boundingBox.width + EXTRA_WIDTH}px`
+              width: `${block.boundingBox.width + TRANSLATION_EXTRA_WIDTH}px`
             }}
           >
             {block.translation}

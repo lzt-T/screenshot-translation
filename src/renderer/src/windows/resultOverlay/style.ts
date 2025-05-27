@@ -1,4 +1,8 @@
 import styled from 'styled-components'
+import { getConfig } from '../../../../utils/config'
+
+const { RESULT_WINDOW_BAR_HEIGHT } = getConfig()
+
 export const OverlayContainer = styled.div`
   position: relative;
   width: 100%;
@@ -32,7 +36,7 @@ export const FooterContainer = styled.div`
   display:flex;
   align-items: center;
   position: absolute;
-  height: 36px;
+  height: ${RESULT_WINDOW_BAR_HEIGHT}px;
   bottom: 0px;
   right: 10px;
   display: flex;

@@ -1,0 +1,26 @@
+/** 最小结果窗口宽度 */
+const MIN_RESULT_WINDOW_WIDTH = 160
+/** 最小结果窗口高度 */
+const MIN_RESULT_WINDOW_HEIGHT = 70
+/** 结果弹窗操作栏高度 */
+const RESULT_WINDOW_BAR_HEIGHT = 36
+/** 消息提示栏高度 */
+const NOTIFICATION_BAR_HEIGHT = 100
+/** 消息提示栏宽度 */
+const NOTIFICATION_BAR_WIDTH = 360
+/** 消息提示栏水平间距 */
+const NOTIFICATION_BAR_MARGIN = 20
+/** 译文额外添加的宽度 */
+const TRANSLATION_EXTRA_WIDTH = 16
+
+export const getConfig = () => {
+  return {
+    MIN_RESULT_WINDOW_WIDTH,
+    MIN_RESULT_WINDOW_HEIGHT,
+    RESULT_WINDOW_BAR_HEIGHT,
+    NOTIFICATION_BAR_HEIGHT,
+    NOTIFICATION_BAR_WIDTH,
+    NOTIFICATION_BAR_MARGIN,
+    TRANSLATION_EXTRA_WIDTH
+  }
+}
