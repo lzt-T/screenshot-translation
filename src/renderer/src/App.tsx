@@ -21,7 +21,9 @@ function App(): React.JSX.Element {
       activeModel: Model.GEMINI,
       apiKeys: {
         [Model.GEMINI]: '',
-        [Model.GLM]: ''
+        [Model.GLM]: '',
+        [Model.GPT]: '',
+        [Model.DEEP_SEEK]: ''
       }
     }
     const apiKeys = await localForage.getItem('apiKeys')

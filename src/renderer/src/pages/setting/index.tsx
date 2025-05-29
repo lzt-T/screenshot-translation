@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Model, ModelName, GeminiModel, GlmModel, TargetLanguage } from '@src/type/model' 
+import { Model, ModelName, GeminiModel, GlmModel, TargetLanguage, GptModel, DeepSeekModel } from '@src/type/model'
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import {
   Select,
@@ -52,7 +52,7 @@ const SettingPage: React.FC = () => {
   )
 
   if (isInit) {
-    return <div>初始化中...</div> 
+    return <div>初始化中...</div>
   }
 
   return (
@@ -79,7 +79,7 @@ const SettingPage: React.FC = () => {
               )
             )}
           </SelectContent>
-          
+
         </Select>
       </div>
       {/* Model Selection Group */}
@@ -90,7 +90,12 @@ const SettingPage: React.FC = () => {
             <SelectValue placeholder="选择模型" />
           </SelectTrigger>
           <SelectContent>
-            {[...Object.values(GeminiModel), ...Object.values(GlmModel)].map(
+            {[
+              ...Object.values(GeminiModel),
+              ...Object.values(GlmModel),
+              ...Object.values(GptModel),
+              ...Object.values(DeepSeekModel)
+            ].map(
               (modelValue) => (
                 <SelectItem className='cursor-pointer' key={modelValue} value={modelValue}>
                   {modelValue}

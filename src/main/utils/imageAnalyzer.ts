@@ -1,6 +1,8 @@
 import { TextBlock } from './imageOCR'
 import { translateText as translateTextGemini } from './geminiTranslate'
 import { translateText as translateTextGLM } from './GLMTranslate'
+import { translateText as translateTextGPT } from './GPTTranslate'
+import { translateText as translateTextDeepSeek } from './deepSeekTranslate'
 import { extractTextFromImage } from './imageOCR'
 import { Model, ModelName, TargetLanguage } from '../../type/model'
 import { getModelType } from '../../utils/ai'
@@ -37,7 +39,9 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
 
     const translateConfig = {
       [Model.GLM]: translateTextGLM,
-      [Model.GEMINI]: translateTextGemini
+      [Model.GEMINI]: translateTextGemini,
+      [Model.GPT]: translateTextGPT,
+      [Model.DEEP_SEEK]: translateTextDeepSeek
     }
 
     const translateFunction = translateConfig[getModelType(modelName)]

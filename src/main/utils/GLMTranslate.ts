@@ -1,6 +1,18 @@
 import { ZhipuAI } from 'zhipuai-sdk-nodejs-v4'
 import { getPrompt } from '../../utils/ai'
 import { TargetLanguage } from '../../type/model'
+
+const zhipuClients = new Map<string, ZhipuAI>();
+
+function getZhipuClient(apiKey: string): ZhipuAI {
+  if (zhipuClients.has(apiKey)) {
+    return zhipuClients.get(apiKey)!;
+  }
+
+  const client = new ZhipuAI({ apiKey });
+  zhipuClients.set(apiKey, client);
+  return client;
+}
 /**
  * 使用智谱 AI (GLM) 翻译文本内容
  * @param {string} text 需要翻译的文本
@@ -13,7 +25,7 @@ async function translateText(
   targetLanguage: TargetLanguage
 ): Promise<{ success: boolean; translation: string; msg?: string }> {
   try {
-    const ai = new ZhipuAI({ apiKey: apiKey })
+    const ai = getZhipuClient(apiKey);
     console.log(`${modelName} translateText ：${text}`)
 
     const systemInstruction = getPrompt(targetLanguage)
@@ -31,7 +43,6 @@ async function translateText(
     })
 
     let translation = ''
-    // Type guard to check if result has the expected structure for non-streaming response
     if (
       result &&
       typeof result === 'object' &&
@@ -39,7 +50,6 @@ async function translateText(
       Array.isArray(result.choices) &&
       result.choices.length > 0
     ) {
-      // Accessing properties after the type guard
       const choice = result.choices[0]
       if (
         choice &&

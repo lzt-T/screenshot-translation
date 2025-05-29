@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { SendEnum } from '@src/type/ipc-constants'
-import { Model, ModelName, GeminiModel, GlmModel, TargetLanguage } from '@src/type/model'
+import { Model, ModelName, GeminiModel, GlmModel, TargetLanguage, GptModel } from '@src/type/model'
 import localForage from 'localforage'
 
 interface StoreSetting {
@@ -18,7 +18,9 @@ export default function useLocalForage() {
     activeModel: GeminiModel.GEMINI_2_0_FLASH,
     apiKeys: {
       [Model.GEMINI]: '',
-      [Model.GLM]: ''
+      [Model.GLM]: '',
+      [Model.GPT]: '',
+      [Model.DEEP_SEEK]: ''
     }
   })
 
@@ -43,14 +45,16 @@ export default function useLocalForage() {
       activeModel: GeminiModel.GEMINI_2_0_FLASH,
       apiKeys: {
         [Model.GEMINI]: '',
-        [Model.GLM]: ''
+        [Model.GLM]: '',
+        [Model.GPT]: '',
+        [Model.DEEP_SEEK]: ''
       }
     }
     const apiKeys = await localForage.getItem('apiKeys')
     const activeModel = await localForage.getItem('activeModel')
 
     if (activeModel) {
-      result.activeModel = activeModel as unknown as GeminiModel | GlmModel
+      result.activeModel = activeModel as unknown as GeminiModel | GlmModel | GptModel
     }
 
     if (apiKeys) {

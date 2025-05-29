@@ -1,18 +1,22 @@
-import { GoogleGenAI } from '@google/genai';
 import { getPrompt } from '../../utils/ai'
 import { TargetLanguage } from '../../type/model';
+import OpenAI from "openai";
 
-const genAIclients = new Map<string, GoogleGenAI>();
 
-function getGenAIClient(apiKey: string): GoogleGenAI {
-  if (genAIclients.has(apiKey)) {
-    return genAIclients.get(apiKey)!;
+const openaiClients = new Map<string, OpenAI>();
+
+function getOpenAIClient(apiKey: string): OpenAI {
+  if (openaiClients.has(apiKey)) {
+    return openaiClients.get(apiKey)!;
   }
 
-  const client = new GoogleGenAI({ apiKey });
-  genAIclients.set(apiKey, client);
+  const client = new OpenAI({
+    apiKey: apiKey
+  });
+  openaiClients.set(apiKey, client);
   return client;
 }
+
 
 /**
  * 翻译文本内容
@@ -22,15 +26,16 @@ function getGenAIClient(apiKey: string): GoogleGenAI {
 export async function translateText(modelName: string, text: string, apiKey: string, targetLanguage: TargetLanguage) {
   try {
     console.log(`${modelName} translateText ：${text}`)
-    const genAI = getGenAIClient(apiKey);
 
     const contents = `${getPrompt(targetLanguage)}:\n\n${text}`
-    const response = await genAI.models.generateContent({
-      model: modelName,
-      contents: contents
-    })
 
-    const translation = response.text ? response.text.trim() : 'The translation API did not return the text'
+    const client = getOpenAIClient(apiKey);
+    const response = await client.responses.create({
+      model: modelName,
+      input: contents,
+    });
+
+    const translation = response.output_text ? response.output_text.trim() : 'The translation API did not return the text'
 
     return {
       success: true,

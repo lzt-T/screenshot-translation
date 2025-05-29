@@ -1,4 +1,4 @@
-import { Model, GlmModel, GeminiModel } from '../type/model'
+import { Model, GlmModel, GeminiModel, GptModel, DeepSeekModel } from '../type/model'
 import { TargetLanguage } from '../type/model'
 
 /** 获取prompt */
@@ -7,13 +7,21 @@ export const getPrompt = (targetLanguage: TargetLanguage) => {
 }
 
 /** 获取模型类型 */
-export const getModelType = (modelName: GlmModel | GeminiModel): Model => {
+export const getModelType = (modelName: GlmModel | GeminiModel | GptModel | DeepSeekModel): Model => {
   if (Object.values(GlmModel).includes(modelName as unknown as GlmModel)) {
     return Model.GLM
   }
 
   if (Object.values(GeminiModel).includes(modelName as unknown as GeminiModel)) {
     return Model.GEMINI
+  }
+
+  if (Object.values(GptModel).includes(modelName as unknown as GptModel)) {
+    return Model.GPT
+  }
+
+  if (Object.values(DeepSeekModel).includes(modelName as unknown as DeepSeekModel)) {
+    return Model.DEEP_SEEK
   }
   return Model.GEMINI
 }

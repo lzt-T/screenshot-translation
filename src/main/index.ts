@@ -34,7 +34,9 @@ let currentTranslationModel = GeminiModel.GEMINI_2_0_FLASH
 /** 当前API Key */
 let currentApiKeys: { [key in Model]?: string } = {
   [Model.GEMINI]: '',
-  [Model.GLM]: ''
+  [Model.GLM]: '',
+  [Model.GPT]: '',
+  [Model.DEEP_SEEK]: ''
 }
 
 /**
