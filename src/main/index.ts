@@ -10,8 +10,10 @@ import { NoticeType } from '../type/notice'
 import { getErrorMessage } from './utils/error'
 import { getModelType } from '../utils/ai'
 import { getConfig } from '../utils/config'
+import { setZhipuClient } from './utils/GLMTranslate'
+import { setAiClient } from './utils/ai'
 
-const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT, 
+const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT,
   RESULT_WINDOW_BAR_HEIGHT,
   NOTIFICATION_BAR_HEIGHT,
   NOTIFICATION_BAR_WIDTH,
@@ -32,7 +34,12 @@ let currentTargetLanguage = TargetLanguage.ZH_CN
 /** 当前翻译模型 */
 let currentTranslationModel = GeminiModel.GEMINI_2_0_FLASH
 /** 当前API Key */
-let currentApiKeys: { [key in Model]?: string } = {
+let currentApiKeys: {
+  [Model.GEMINI]: string,
+  [Model.GLM]: string,
+  [Model.GPT]: string,
+  [Model.DEEP_SEEK]: string
+} = {
   [Model.GEMINI]: '',
   [Model.GLM]: '',
   [Model.GPT]: '',
@@ -360,6 +367,7 @@ app.whenReady().then(() => {
     currentTranslationModel = setting.activeModel
     currentApiKeys = setting.apiKeys
     currentTargetLanguage = setting.targetLanguage
+    setAiClient(currentApiKeys)
     createNotificationWindow('设置已保存', NoticeType.SUCCESS)
   })
 
@@ -368,6 +376,7 @@ app.whenReady().then(() => {
     currentTranslationModel = setting.activeModel
     currentApiKeys = setting.apiKeys
     currentTargetLanguage = setting.targetLanguage
+    setAiClient(currentApiKeys)
   })
 
   /**

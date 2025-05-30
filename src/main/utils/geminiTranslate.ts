@@ -2,15 +2,21 @@ import { GoogleGenAI } from '@google/genai';
 import { getPrompt } from '../../utils/ai'
 import { TargetLanguage } from '../../type/model';
 
-const genAIclients = new Map<string, GoogleGenAI>();
+let genAIclients: null | GoogleGenAI = null
 
+/** 设置 Gemini AI 客户端 */
+export function setGeminiClient(apiKey: string): void {
+  genAIclients = new GoogleGenAI({ apiKey });
+}
+
+/** 获取 Gemini AI 客户端 */
 function getGenAIClient(apiKey: string): GoogleGenAI {
-  if (genAIclients.has(apiKey)) {
-    return genAIclients.get(apiKey)!;
+  if (genAIclients !== null) {
+    return genAIclients
   }
 
   const client = new GoogleGenAI({ apiKey });
-  genAIclients.set(apiKey, client);
+  genAIclients = client;
   return client;
 }
 

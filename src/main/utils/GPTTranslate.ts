@@ -3,17 +3,25 @@ import { TargetLanguage } from '../../type/model';
 import OpenAI from "openai";
 
 
-const openaiClients = new Map<string, OpenAI>();
+let openaiClients: null | OpenAI = null
+
+/** 设置 OpenAI 客户端 */
+export function setOpenaiClient(apiKey: string): void {
+  openaiClients = new OpenAI({
+    apiKey: apiKey
+  });
+}
+
 
 function getOpenAIClient(apiKey: string): OpenAI {
-  if (openaiClients.has(apiKey)) {
-    return openaiClients.get(apiKey)!;
+  if (openaiClients !== null) {
+    return openaiClients
   }
 
   const client = new OpenAI({
     apiKey: apiKey
   });
-  openaiClients.set(apiKey, client);
+  openaiClients = client;
   return client;
 }
 

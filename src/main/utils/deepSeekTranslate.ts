@@ -2,19 +2,26 @@ import { getPrompt } from '../../utils/ai'
 import { DeepSeekModel, TargetLanguage } from '../../type/model';
 import OpenAI from "openai";
 
-// Cache for OpenAI clients, keyed by apiKey
-const openaiClients = new Map<string, OpenAI>();
+let openaiClients: null | OpenAI = null
+
+/** 设置 DeepSeek 客户端 */
+export function setDeepSeekClient(apiKey: string): void {
+  openaiClients = new OpenAI({
+    baseURL: 'https://api.deepseek.com',
+    apiKey: apiKey
+  });
+}
 
 function getOpenAIClient(apiKey: string): OpenAI {
-  if (openaiClients.has(apiKey)) {
-    return openaiClients.get(apiKey)!;
+  if (openaiClients !== null) {
+    return openaiClients
   }
 
   const client = new OpenAI({
     baseURL: 'https://api.deepseek.com',
     apiKey: apiKey
   });
-  openaiClients.set(apiKey, client);
+  openaiClients = client;
   return client;
 }
 

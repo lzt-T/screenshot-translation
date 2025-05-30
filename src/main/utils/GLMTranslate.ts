@@ -2,15 +2,21 @@ import { ZhipuAI } from 'zhipuai-sdk-nodejs-v4'
 import { getPrompt } from '../../utils/ai'
 import { TargetLanguage } from '../../type/model'
 
-const zhipuClients = new Map<string, ZhipuAI>();
+let zhipuClients: null | ZhipuAI = null
 
+/** 设置智谱 AI (GLM) 客户端 */
+function setZhipuClient(apiKey: string): void {
+  zhipuClients = new ZhipuAI({ apiKey });
+}
+
+/** 获取智谱 AI (GLM) 客户端 */
 function getZhipuClient(apiKey: string): ZhipuAI {
-  if (zhipuClients.has(apiKey)) {
-    return zhipuClients.get(apiKey)!;
+  if (zhipuClients !== null) {
+    return zhipuClients
   }
 
   const client = new ZhipuAI({ apiKey });
-  zhipuClients.set(apiKey, client);
+  zhipuClients = client;
   return client;
 }
 /**
@@ -84,4 +90,4 @@ async function translateText(
 }
 
 // 导出函数
-export { translateText }
+export { translateText, setZhipuClient, getZhipuClient }
