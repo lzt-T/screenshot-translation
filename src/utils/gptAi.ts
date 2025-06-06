@@ -1,5 +1,5 @@
-import { getPrompt } from '../../utils/ai'
-import { TargetLanguage } from '../../type/model';
+import { getTranslatePrompt } from './ai'
+import { TargetLanguage } from '../type/model';
 import OpenAI from "openai";
 
 
@@ -25,6 +25,28 @@ function getOpenAIClient(apiKey: string): OpenAI {
   return client;
 }
 
+/** 
+ * @description 基本使用
+ * @param {string} modelName 模型名称
+ * @param {string} apiKey API密钥
+ * @param {string} contents 内容
+ * @returns {Promise<string>} 回答
+*/
+const gptChat = async (modelName: string, apiKey: string, contents: string) => {
+  try{
+    const client = getOpenAIClient(apiKey);
+    const response = await client.responses.create({
+      model: modelName,
+      input: contents,
+    });
+
+    const answer = response.output_text ? response.output_text.trim() : ''
+    return answer
+  }catch(error){
+    throw error
+  }
+}
+
 
 /**
  * 翻译文本内容
@@ -35,19 +57,13 @@ export async function translateText(modelName: string, text: string, apiKey: str
   try {
     console.log(`${modelName} translateText ：${text}`)
 
-    const contents = `${getPrompt(targetLanguage)}:\n\n${text}`
+    const contents = `${getTranslatePrompt(targetLanguage)}:\n\n${text}`
 
-    const client = getOpenAIClient(apiKey);
-    const response = await client.responses.create({
-      model: modelName,
-      input: contents,
-    });
-
-    const translation = response.output_text ? response.output_text.trim() : 'The translation API did not return the text'
+    const answer = await gptChat(modelName, apiKey, contents)
 
     return {
       success: true,
-      translation: translation,
+      translation: answer,
       msg: 'translateText success'
     }
   } catch (error) {
