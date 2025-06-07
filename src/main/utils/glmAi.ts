@@ -75,7 +75,7 @@ async function translateText(
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `${getEnglishChineseTranslationPrompt()}:\n\n${text}`
+    const contents = `"${text}"${getEnglishChineseTranslationPrompt()}`
     const answer = await glmChat(modelName, apiKey, contents)
     return {
       success: true,

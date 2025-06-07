@@ -68,7 +68,7 @@ export async function translateText(modelName: string, text: string, apiKey: str
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `${getEnglishChineseTranslationPrompt()}:\n\n${text}`
+    const contents = `"${text}"${getEnglishChineseTranslationPrompt()}`
     const answer = await geminiChat(modelName, apiKey, contents)
     return {
       success: true,

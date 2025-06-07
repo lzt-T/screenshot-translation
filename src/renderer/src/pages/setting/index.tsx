@@ -11,6 +11,8 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label' // Import shadcn Label
+import { Copy } from 'lucide-react'
+import { copyText } from '@src/utils/copy'
 
 const SettingPage: React.FC = () => {
   const { storeSetting, isInit, changeStoreSetting, saveStoreSetting } = useLocalForage()
@@ -113,13 +115,22 @@ const SettingPage: React.FC = () => {
           // API Key Input Group
           <div key={modelValue} className="grid w-full max-w-sm items-center gap-1.5">
             <Label htmlFor={`apiKeyInput-${modelValue}`}>{modelValue} API Key:</Label>
-            <Input
-              defaultValue={storeSetting.apiKeys[modelValue] || ''}
-              type="password"
-              id={`apiKeyInput-${modelValue}`}
-              onChange={(e) => handleApiKeyChange(modelValue, e)}
-              className="w-full"
-            />
+            <div className="flex w-full gap-2 items-center">
+              <Input
+                defaultValue={storeSetting.apiKeys[modelValue] || ''}
+                type="password"
+                id={`apiKeyInput-${modelValue}`}
+                onChange={(e) => handleApiKeyChange(modelValue, e)}
+                className="w-full"
+              />
+              <div 
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-muted/40 hover:bg-muted cursor-pointer transition-colors"
+                onClick={() => copyText(storeSetting.apiKeys[modelValue] || '')}
+                title="复制API Key"
+              >
+                <Copy size={16} />
+              </div>
+            </div>
           </div>
         ))}
       </div>

@@ -8,7 +8,9 @@ export const getTranslatePrompt = (targetLanguage: TargetLanguage) => {
 
 /** 获取英汉互译prompt */
 export const getEnglishChineseTranslationPrompt = () => {
-  return `将输入的文本进行翻译。如果是简体中文，则翻译为英语；如果是英语，则翻译为简体中文。只返回翻译结果，不要加任何解释。`
+  return `，这个如何翻译？
+  规则：
+  如果是简体中文，则翻译为英语；如果是英语，则翻译为简体中文，只返回翻译结果，不要加任何解释。`
 }
 
 

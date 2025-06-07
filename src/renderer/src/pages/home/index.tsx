@@ -4,11 +4,14 @@ import { Button } from '@renderer/components/ui/button'
 import { Textarea } from '@renderer/components/ui/textarea'
 import _ from 'lodash'
 import { toast } from 'sonner'
-import { Copy, ArrowRight, Loader2, Languages, Camera } from 'lucide-react'
+import { Copy, ArrowRight, Loader2, Languages, Camera, Volume2, VolumeX } from 'lucide-react'
 import '../../scroll.css' // 导入自定义滚动条样式
+import { speakText } from '@src/utils/speak';
+import { copyText } from '@src/utils/copy';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
   /** 翻译文本 */
   const translationText = useRef('')
   /** 上一次翻译文本 */
@@ -21,6 +24,11 @@ export default function Index() {
   /** 处理输入文本变化 */
   const handleInputTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     translationText.current = e.target.value
+
+    if (e.target.value.trim() === '') {
+      setTranslationResult('')
+      translateSuccess.current = false
+    }
   }
 
   /** 处理键盘事件 */
@@ -57,22 +65,32 @@ export default function Index() {
     window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, translationText.current)
   }
 
-  /** 复制翻译结果 */
-  const copyTranslationResult = () => {
-    if (!translationResult) {
-      toast.error('没有可复制的内容', { id: 'copy-empty' })
+  /** 朗读输入文本 */
+  const speakInputText = () => {
+    if (!translationText.current || isSpeaking) {
       return
     }
-    
-    navigator.clipboard.writeText(translationResult)
-      .then(() => {
-        toast.success('复制成功', { id: 'copy-success' })
-      })
-      .catch(() => {
-        toast.error('复制失败', { id: 'copy-fail' })
-      })
+    setIsSpeaking(true)
+    speakText(translationText.current, () => {
+      setIsSpeaking(false)
+    }, () => {
+      setIsSpeaking(false)
+    })
   }
 
+  /** 朗读翻译结果 */
+  const speakTranslationResult = () => {
+    if (!translationResult || isSpeaking) {
+      return
+    }
+    setIsSpeaking(true)
+    speakText(translationResult, () => {
+      setIsSpeaking(false)
+    }, () => {
+      setIsSpeaking(false)
+    })
+  }
+  
   useEffect(() => {
     // 移除可能存在的旧监听器
     window.electron.ipcRenderer.removeAllListeners(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS);
@@ -105,6 +123,8 @@ export default function Index() {
     return () => {
       window.electron.ipcRenderer.removeListener(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS, handleSuccess)
       window.electron.ipcRenderer.removeListener(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL, handleFail)
+      // 确保离开页面时停止所有语音
+      window.speechSynthesis.cancel()
     }
   }, [])
 
@@ -138,11 +158,34 @@ export default function Index() {
       </div>
       
       {/* 左右结构布局 */}
-      <div className="flex w-full gap-2 flex-1 items-center h-auto mt-1">
+      <div className="flex w-full gap-2 flex-1 items-center h-auto">
         {/* 左侧输入区域 */}
         <div className="flex-1">
+          <div className="flex justify-between items-center p-2 bg-muted/30 border border-b-0 rounded-t-md">
+            <div className="opacity-0">占位</div>
+            <div className="flex gap-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`h-7 w-7 ${!translationText.current ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={() => copyText(translationText.current)}
+                title="复制输入文本"
+              >
+                <Copy size={14} />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`h-7 w-7 ${isSpeaking ? 'bg-muted' : ''} ${!translationText.current ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={speakInputText}
+                title={isSpeaking ? "停止朗读" : "朗读输入文本"}
+              >
+                {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+              </Button>
+            </div>
+          </div>
           <Textarea 
-            className="h-full min-h-[400px] max-h-[400px] resize-none overflow-auto custom-scrollbar" 
+            className="h-full min-h-[360px] max-h-[360px] resize-none overflow-auto custom-scrollbar rounded-t-none" 
             onChange={handleInputTextChange} 
             onKeyDown={handleKeyDown} 
             placeholder="输入中文或英文，按回车进行互译" 
@@ -155,7 +198,11 @@ export default function Index() {
         
         {/* 中间图标：加载中显示旋转加载图标，否则显示箭头 */}
         <div className="flex items-center justify-center w-10">
-          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div 
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-primary/10 text-primary cursor-pointer hover:bg-primary/20 transition-colors"
+            title={isLoading ? "正在翻译" : "点击翻译"}
+            onClick={!isLoading ? onEnglishChineseTranslation : undefined}
+          >
             {isLoading ? (
               <Loader2 size={16} className="animate-spin" />
             ) : (
@@ -166,8 +213,31 @@ export default function Index() {
         
         {/* 右侧结果区域 */}
         <div className="flex-1 relative">
+          <div className="flex justify-between items-center p-2 bg-muted/30 border border-b-0 rounded-t-md">
+            <div className="opacity-0">占位</div>
+            <div className="flex gap-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`h-7 w-7 ${!translationResult ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={() => copyText(translationResult)}
+                title="复制翻译结果"
+              >
+                <Copy size={14} />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`h-7 w-7 ${isSpeaking ? 'bg-muted' : ''} ${!translationResult ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={speakTranslationResult}
+                title={isSpeaking ? "停止朗读" : "朗读翻译结果"}
+              >
+                {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+              </Button>
+            </div>
+          </div>
           <Textarea 
-            className="h-full min-h-[400px] max-h-[400px] resize-none overflow-auto pr-8 text-lg font-medium text-primary leading-relaxed custom-scrollbar" 
+            className="h-full min-h-[360px] max-h-[360px] resize-none overflow-auto text-lg font-medium text-primary leading-relaxed custom-scrollbar rounded-t-none" 
             value={translationResult}
             readOnly
             style={{
@@ -175,17 +245,6 @@ export default function Index() {
               scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent'
             }}
           />
-          {translationResult && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute top-2 right-2 opacity-80 hover:opacity-100 z-10 cursor-pointer" 
-              onClick={copyTranslationResult}
-              title="复制翻译结果"
-            >
-              <Copy size={16} />
-            </Button>
-          )}
         </div>
       </div>
     </div>
