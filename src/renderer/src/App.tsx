@@ -56,7 +56,7 @@ function App(): React.JSX.Element {
     // Use Tailwind classes for layout
     <div className="flex h-screen w-screen text-foreground bg-[#f9f9fa]">
       {/* Sidebar with Tailwind */}
-      <div className="w-52 border-r border-border bg-card p-4 flex flex-col">
+      <div className="w-52 min-w-52 flex-shrink-0 border-r border-border bg-card p-4 flex flex-col">
         {/* Sidebar Title with Tailwind */}
         <h1 className="mb-4 border-b border-primary pb-2 text-center text-lg font-semibold text-primary">
           截图翻译
@@ -96,7 +96,7 @@ function App(): React.JSX.Element {
         </nav>
       </div>
       {/* Content Area with Tailwind */}
-      <div className="flex-grow overflow-y-auto p-6">
+      <div className="flex-grow overflow-y-auto overflow-x-hidden p-6">
         <Outlet />
       </div>
     </div>

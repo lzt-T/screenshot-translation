@@ -10,8 +10,8 @@ import { NoticeType } from '../type/notice'
 import { getErrorMessage } from './utils/error'
 import { getModelType } from '../utils/ai'
 import { getConfig } from '../utils/config'
-import { setZhipuClient } from './utils/GLMTranslate'
 import { setAiClient } from './utils/ai'
+import { EnglishChineseTranslation } from './utils/EnglishChineseTranslation'
 
 const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT,
   RESULT_WINDOW_BAR_HEIGHT,
@@ -360,6 +360,17 @@ app.whenReady().then(() => {
       notificationWindow.close()
     }
     createNotificationWindow('复制成功', NoticeType.SUCCESS)
+  })
+
+  /** 英汉互译 */
+  ipcMain.on(SendEnum.ENGLISH_CHINESE_TRANSLATION, async (event, text) => {
+    try {
+      const apiKey = currentApiKeys[getModelType(currentTranslationModel)]
+      const translateResult = await EnglishChineseTranslation(currentTranslationModel, apiKey, text)
+      event.reply(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS, translateResult)
+    } catch (error) {
+      event.reply(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL, getErrorMessage(error))
+    }
   })
 
   /** 设置localForage */

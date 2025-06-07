@@ -1,5 +1,6 @@
-import { getTranslatePrompt } from './ai'
-import { TargetLanguage } from '../type/model';
+//在主线程中使用
+import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../utils/ai'
+import { TargetLanguage } from '../../type/model';
 import OpenAI from "openai";
 
 
@@ -68,6 +69,21 @@ export async function translateText(modelName: string, text: string, apiKey: str
     }
   } catch (error) {
     console.error(`${modelName} translateText fail:${error}`)
+    throw error
+  }
+}
+
+/**英汉互译 */
+export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
+  try {
+    const contents = `${getEnglishChineseTranslationPrompt()}:\n\n${text}`
+    const answer = await gptChat(modelName, apiKey, contents)
+    return {
+      success: true,
+      translation: answer,
+      msg: 'EnglishChineseTranslation success'
+    }
+  } catch (error) {
     throw error
   }
 }

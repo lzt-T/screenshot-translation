@@ -1,6 +1,7 @@
+//只能在主线程中使用
 import { ZhipuAI } from 'zhipuai-sdk-nodejs-v4'
-import { getTranslatePrompt } from './ai'
-import { TargetLanguage } from '../type/model'
+import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../utils/ai'
+import { TargetLanguage } from '../../type/model'
 
 let zhipuClients: null | ZhipuAI = null
 
@@ -71,5 +72,21 @@ async function translateText(
   }
 }
 
+/**英汉互译 */
+export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
+  try {
+    const contents = `${getEnglishChineseTranslationPrompt()}:\n\n${text}`
+    const answer = await glmChat(modelName, apiKey, contents)
+    return {
+      success: true,
+      translation: answer,
+      msg: 'EnglishChineseTranslation success'
+    };
+  } catch (error) {
+    throw error
+  }
+}
+
+
 // 导出函数
-export { translateText, setZhipuClient, getZhipuClient }
+export { translateText, setZhipuClient, getZhipuClient,glmChat }

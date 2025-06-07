@@ -1,6 +1,7 @@
+//在主线程中使用
 import { GoogleGenAI } from '@google/genai';
-import { getTranslatePrompt } from './ai'
-import { TargetLanguage } from '../type/model';
+import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../utils/ai'
+import { TargetLanguage } from '../../type/model';
 
 let genAIclients: null | GoogleGenAI = null
 
@@ -27,7 +28,7 @@ function getGenAIClient(apiKey: string): GoogleGenAI {
  * @param {string} contents 内容
  * @returns {Promise<string>} 回答
 */
-const geminiChat = async (modelName: string, apiKey: string, contents: string) => {
+export const geminiChat = async (modelName: string, apiKey: string, contents: string) => {
   try {
     const genAI = getGenAIClient(apiKey);
 
@@ -60,6 +61,21 @@ export async function translateText(modelName: string, text: string, apiKey: str
     }
   } catch (error) {
     console.error(`${modelName} translateText fail:${error}`)
+    throw error
+  }
+}
+
+/**英汉互译 */
+export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
+  try {
+    const contents = `${getEnglishChineseTranslationPrompt()}:\n\n${text}`
+    const answer = await geminiChat(modelName, apiKey, contents)
+    return {
+      success: true,
+      translation: answer,
+      msg: 'EnglishChineseTranslation success'
+    };
+  } catch (error) {
     throw error
   }
 }

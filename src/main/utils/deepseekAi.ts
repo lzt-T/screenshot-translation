@@ -1,5 +1,6 @@
-import { getTranslatePrompt } from './ai'
-import { DeepSeekModel, TargetLanguage } from '../type/model';
+//在主线程中调用
+import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../utils/ai'
+import { DeepSeekModel, TargetLanguage } from '../../type/model';
 import OpenAI from "openai";
 
 let openaiClients: null | OpenAI = null
@@ -31,19 +32,19 @@ function getOpenAIClient(apiKey: string): OpenAI {
  * @param {string} apiKey API密钥
  * @param {string} contents 内容
  * @returns {Promise<string>} 回答
-*/  
-const deepseekChat = async (modelName: string, apiKey: string, contents: string) => {
+*/
+export const deepseekChat = async (modelName: string, apiKey: string, contents: string) => {
   try {
     const modelApiNameMap: Record<DeepSeekModel, string> = {
       [DeepSeekModel.DEEP_SEEK_V3]: 'deepseek-chat'
     };
     const apiModelName = modelApiNameMap[modelName];
-    const openai = getOpenAIClient(apiKey); 
+    const openai = getOpenAIClient(apiKey);
     const completion = await openai.chat.completions.create({
       messages: [{ role: "system", content: contents }],
-      model: apiModelName, 
+      model: apiModelName,
     });
- 
+
     const answer = completion.choices?.[0]?.message?.content?.trim() || '';
     return answer
   } catch (error) {
@@ -74,3 +75,19 @@ export async function translateText(modelName: string, text: string, apiKey: str
     throw error;
   }
 }
+
+/**英汉互译 */
+export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
+  try {
+    const contents = `${getEnglishChineseTranslationPrompt()}:\n\n${text}`
+    const answer = await deepseekChat(modelName, apiKey, contents)
+    return {
+      success: true,
+      translation: answer,
+      msg: 'EnglishChineseTranslation success'
+    };
+  } catch (error) {
+    throw error
+  }
+}
+

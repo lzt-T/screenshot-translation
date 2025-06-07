@@ -1,8 +1,8 @@
 import { Model } from "../../type/model";
-import { setGeminiClient } from "../../utils/geminiAi";
-import { setZhipuClient } from "../../utils/glmAi";
-import { setOpenaiClient } from "../../utils/gptAi"; 
-import { setDeepSeekClient } from "../../utils/deepseekAi";
+import { setGeminiClient } from "./geminiAi";
+import { setZhipuClient } from "./glmAi";
+import { setOpenaiClient } from "./gptAi"; 
+import { setDeepSeekClient } from "./deepseekAi";
 
 /** 设置 AI 客户端 */
 export function setAiClient(apiKeys: {

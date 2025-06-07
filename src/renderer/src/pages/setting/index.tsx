@@ -65,7 +65,7 @@ const SettingPage: React.FC = () => {
 
       {/* 设置目标语言 */}
       <div className="space-y-2 w-full max-w-sm">
-        <Label htmlFor="targetLanguageSelect">设置目标语言:</Label>
+        <Label htmlFor="targetLanguageSelect">截取翻译目标语言:</Label>
         <Select defaultValue={storeSetting.targetLanguage} onValueChange={handleTargetLanguageChange}>
           <SelectTrigger className="w-full cursor-pointer">
             <SelectValue placeholder="选择目标语言" />
