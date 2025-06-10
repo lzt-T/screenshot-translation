@@ -58,7 +58,7 @@ export async function translateText(modelName: string, text: string, apiKey: str
   try {
     console.log(`${modelName} translateText ：${text}`)
 
-    const contents = `${getTranslatePrompt(targetLanguage)}:\n\n${text}`
+    const contents = `${getTranslatePrompt(text, targetLanguage)}`
 
     const answer = await gptChat(modelName, apiKey, contents)
 
@@ -76,7 +76,7 @@ export async function translateText(modelName: string, text: string, apiKey: str
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `"${text}"${getEnglishChineseTranslationPrompt()}`
+    const contents = `${getEnglishChineseTranslationPrompt(text)}`
     const answer = await gptChat(modelName, apiKey, contents)
     return {
       success: true,

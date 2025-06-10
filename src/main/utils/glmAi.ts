@@ -59,7 +59,7 @@ async function translateText(
 ): Promise<{ success: boolean; translation: string; msg?: string }> {
   try {
 
-    const contents = `${getTranslatePrompt(targetLanguage)}:\n\n${text}`
+    const contents = `${getTranslatePrompt(text, targetLanguage)}`
     const answer = await glmChat(modelName, apiKey, contents)
 
     return {
@@ -75,7 +75,7 @@ async function translateText(
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `"${text}"${getEnglishChineseTranslationPrompt()}`
+    const contents = `${getEnglishChineseTranslationPrompt(text)}`
     const answer = await glmChat(modelName, apiKey, contents)
     return {
       success: true,

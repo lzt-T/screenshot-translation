@@ -28,6 +28,7 @@ export default function useLocalForage() {
 
   /** 设置 */
   const changeStoreSetting = useCallback((setting: StoreSetting) => {
+    localForage.setItem('targetLanguage', setting.targetLanguage)
     localForage.setItem('activeModel', setting.activeModel)
     localForage.setItem('apiKeys', setting.apiKeys)
     setStoreSetting(setting)
@@ -52,6 +53,7 @@ export default function useLocalForage() {
     }
     const apiKeys = await localForage.getItem('apiKeys')
     const activeModel = await localForage.getItem('activeModel')
+    const targetLanguage = await localForage.getItem('targetLanguage')
 
     if (activeModel) {
       result.activeModel = activeModel as unknown as GeminiModel | GlmModel | GptModel
@@ -59,6 +61,10 @@ export default function useLocalForage() {
 
     if (apiKeys) {
       result.apiKeys = apiKeys as { [key in Model]: string }
+    }
+
+    if (targetLanguage) {
+      result.targetLanguage = targetLanguage as TargetLanguage
     }
 
     setStoreSetting(result)

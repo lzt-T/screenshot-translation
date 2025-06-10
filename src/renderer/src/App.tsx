@@ -1,48 +1,23 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import localForage from 'localforage'
-import { useCallback, useEffect } from 'react'
-import { Model } from '@src/type/model'
+import { useEffect } from 'react'
 import { SendEnum } from '@src/type/ipc-constants'
 import { cn } from '@renderer/lib/utils' // Import cn utility
 import { Button } from '@renderer/components/ui/button' // Import shadcn Button
-
+import useLocalForage from '@renderer/hooks/useLocalForage'
 
 function App(): React.JSX.Element {
   const navigate = useNavigate()
   const location = useLocation() // 获取 location 对象
-
+  const { isInit, storeSetting } = useLocalForage()
   const handleNavigate = (path: string) => {
     navigate(path)
   }
 
-  /** 初始化 */
-  const onInit = useCallback(async () => {
-    let result = {
-      activeModel: Model.GEMINI,
-      apiKeys: {
-        [Model.GEMINI]: '',
-        [Model.GLM]: '',
-        [Model.GPT]: '',
-        [Model.DEEP_SEEK]: ''
-      }
-    }
-    const apiKeys = await localForage.getItem('apiKeys')
-    const activeModel = await localForage.getItem('activeModel')
-
-    if (activeModel) {
-      result.activeModel = activeModel as Model
-    }
-
-    if (apiKeys) {
-      result.apiKeys = apiKeys as { [key in Model]: string }
-    }
-
-    window.electron.ipcRenderer.send(SendEnum.INIT_LOCAL_FORAGE, result)
-  }, [])
-
   useEffect(() => {
-    onInit()
-  }, [])
+    if (!isInit) {
+      window.electron.ipcRenderer.send(SendEnum.INIT_LOCAL_FORAGE, storeSetting)
+    }
+  }, [isInit])
 
   // Helper function to determine if a link is active
   const isLinkActive = (path: string): boolean => {

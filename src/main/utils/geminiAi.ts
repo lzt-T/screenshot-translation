@@ -52,7 +52,7 @@ export const geminiChat = async (modelName: string, apiKey: string, contents: st
  */
 export async function translateText(modelName: string, text: string, apiKey: string, targetLanguage: TargetLanguage) {
   try {
-    const contents = `${getTranslatePrompt(targetLanguage)}:\n\n${text}`
+    const contents = `${getTranslatePrompt(text, targetLanguage)}`
     const answer = await geminiChat(modelName, apiKey, contents)
     return {
       success: true,
@@ -68,7 +68,7 @@ export async function translateText(modelName: string, text: string, apiKey: str
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `"${text}"${getEnglishChineseTranslationPrompt()}`
+    const contents = `${getEnglishChineseTranslationPrompt(text)}`
     const answer = await geminiChat(modelName, apiKey, contents)
     return {
       success: true,

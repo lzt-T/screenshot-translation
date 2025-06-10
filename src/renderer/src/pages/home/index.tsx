@@ -99,7 +99,10 @@ export default function Index() {
     // 成功处理函数
     const handleSuccess = (event, result) => {
       setIsLoading(false)
-      setTranslationResult(result)
+      setTranslationResult(()=>{
+        //去除头尾的"
+        return result.replace(/"/g, '')
+      })
       translateSuccess.current = true
       toast.success('翻译成功', {
         id: 'translation-success'

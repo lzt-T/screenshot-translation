@@ -63,7 +63,7 @@ export const deepseekChat = async (modelName: string, apiKey: string, contents: 
  */
 export async function translateText(modelName: string, text: string, apiKey: string, targetLanguage: TargetLanguage) {
   try {
-    const contents = `${getTranslatePrompt(targetLanguage)}:\n\n${text}`
+    const contents = `${getTranslatePrompt(text, targetLanguage)}`
     const answer = await deepseekChat(modelName, apiKey, contents)
     return {
       success: true,
@@ -79,7 +79,7 @@ export async function translateText(modelName: string, text: string, apiKey: str
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `"${text}"${getEnglishChineseTranslationPrompt()}`
+    const contents = `${getEnglishChineseTranslationPrompt(text)}`
     const answer = await deepseekChat(modelName, apiKey, contents)
     return {
       success: true,
