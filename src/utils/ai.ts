@@ -11,10 +11,8 @@ export const getTranslatePrompt = (text: string, targetLanguage: TargetLanguage)
 
   return `
   背景：你是一个翻译专家，擅长将文本翻译为${config[targetLanguage]}\n
-  用户输入：${text}\n
-  输出：用户输入可能包含由 \"<translate_separator>\" 分隔的多个段落，你必须在翻译结果中完整且精确保留这些分隔符，不要省略或修改它们。\n
-  只返回翻译后的文本和分隔符。如果没有分隔符，则直接返回翻译后的文本。如果已经是${config[targetLanguage]}，则直接返回原文。\n
-  如果用户输入是空字符串，则返回空字符串。`
+  用户："${text}"\n
+  输出：用户需要翻译的文本由多个 | 分隔，你必须在翻译结果中完整且精确保留这些分隔符，不要省略或修改它们。只返回翻译后的文本和分隔符。`
 }
 
 /** 获取英汉互译prompt */

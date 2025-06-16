@@ -32,7 +32,7 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
 
     // 2. 合并所有有效文本块进行单次翻译
     console.log(`prepare to translate ${textBlocks.length} valid text blocks...`)
-    const separator = '\n<translate_separator>\n'
+    const separator = '|'
     const combinedText = textBlocks.map((block) => block.text.trim()).join(separator)
 
     let combinedTranslation = ''
@@ -55,9 +55,7 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
     combinedTranslation = translateResult.translation
 
     // 6. 尝试拆分翻译结果并映射回原块
-    let translatedSegments = combinedTranslation.split(
-      /(?:\n\s*|\s*)<translate_separator>(?:\s*\n|\s*)/
-    )
+    let translatedSegments = combinedTranslation.split(separator)
 
     // 去除空字符串
     translatedSegments = translatedSegments
@@ -67,16 +65,12 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
     console.log(`split into ${translatedSegments.length} translation segments.`)
 
     const finalBlocks: TranslateTextBlock[] = []
-    if (translatedSegments.length === textBlocks.length) {
-      console.log('translation segments number matches the original block number, start mapping...')
-      for (let i = 0; i < textBlocks.length; i++) {
-        finalBlocks.push({
-          ...textBlocks[i],
-          translation: translatedSegments[i].trim()
-        })
-      }
-    } else {
-      throw new Error('翻译结果段落数与原始块数不匹配')
+
+    for (let i = 0; i < Math.min(translatedSegments.length, textBlocks.length); i++) {
+      finalBlocks.push({
+        ...textBlocks[i],
+        translation: translatedSegments[i].trim()
+      })
     }
     return { success: true, textBlocks: finalBlocks, msg: 'analyze and translate success' }
   } catch (error: any) {
