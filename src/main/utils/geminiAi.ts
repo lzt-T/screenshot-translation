@@ -40,8 +40,14 @@ export const geminiChat = async (modelName: string, apiKey: string, contents: st
     const answer = response.text ? response.text.trim() : ''
 
     return answer
-  } catch (error) {
-    throw error
+  } catch (error: any) {
+    let errorMessage = ''
+    if (String(error.message).includes('fetch failed sending request')) {
+      errorMessage = 'Network error, please open the VPN'
+    } else {
+      errorMessage = JSON.parse(error.message)?.error?.message || error.message
+    }
+    throw new Error(errorMessage)
   }
 }
 
