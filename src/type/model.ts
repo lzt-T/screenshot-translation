@@ -38,3 +38,8 @@ export enum TargetLanguage {
   EN_US = "English"
 }
 
+/** 开机自启动设置 */
+export interface AutoLaunchSetting {
+  enabled: boolean;
+}
+

@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { SendEnum } from '@src/type/ipc-constants'
-import { Model, ModelName, GeminiModel, GlmModel, TargetLanguage, GptModel } from '@src/type/model'
+import { Model, ModelName, GeminiModel, GlmModel, TargetLanguage, GptModel, AutoLaunchSetting } from '@src/type/model'
 import localForage from 'localforage'
 
-interface StoreSetting {
+export interface StoreSetting {
   targetLanguage: TargetLanguage
   activeModel: ModelName
   apiKeys: {
     [key in Model]: string
   }
+  autoLaunch: AutoLaunchSetting
 }
 
 export default function useLocalForage() {
@@ -21,23 +21,14 @@ export default function useLocalForage() {
       [Model.GLM]: '',
       [Model.GPT]: '',
       [Model.DEEP_SEEK]: ''
+    },
+    autoLaunch: {
+      enabled: false
     }
   })
 
+  /** 是否初始化 */
   const [isInit, setIsInit] = useState(true)
-
-  /** 设置 */
-  const changeStoreSetting = useCallback((setting: StoreSetting) => {
-    localForage.setItem('targetLanguage', setting.targetLanguage)
-    localForage.setItem('activeModel', setting.activeModel)
-    localForage.setItem('apiKeys', setting.apiKeys)
-    setStoreSetting(setting)
-  }, [])
-
-  /** 保存*/
-  const saveStoreSetting = useCallback(() => {
-    window.electron.ipcRenderer.send(SendEnum.SET_LOCAL_FORAGE, storeSetting)
-  }, [storeSetting])
 
   /** 初始化 */
   const onInit = useCallback(async () => {
@@ -49,11 +40,15 @@ export default function useLocalForage() {
         [Model.GLM]: '',
         [Model.GPT]: '',
         [Model.DEEP_SEEK]: ''
+      },
+      autoLaunch: {
+        enabled: false
       }
     }
     const apiKeys = await localForage.getItem('apiKeys')
     const activeModel = await localForage.getItem('activeModel')
     const targetLanguage = await localForage.getItem('targetLanguage')
+    const autoLaunch = await localForage.getItem('autoLaunch')
 
     if (activeModel) {
       result.activeModel = activeModel as unknown as GeminiModel | GlmModel | GptModel
@@ -65,6 +60,10 @@ export default function useLocalForage() {
 
     if (targetLanguage) {
       result.targetLanguage = targetLanguage as TargetLanguage
+    }
+
+    if (autoLaunch) {
+      result.autoLaunch = autoLaunch as AutoLaunchSetting
     }
 
     setStoreSetting(result)
@@ -79,7 +78,5 @@ export default function useLocalForage() {
   return {
     isInit,
     storeSetting,
-    changeStoreSetting,
-    saveStoreSetting
   }
 }

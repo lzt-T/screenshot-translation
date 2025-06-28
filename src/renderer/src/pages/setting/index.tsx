@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Model, ModelName, GeminiModel, GlmModel, TargetLanguage, GptModel, DeepSeekModel } from '@src/type/model'
+import {
+  Model,
+  ModelName,
+  GeminiModel,
+  GlmModel,
+  TargetLanguage,
+  GptModel,
+  DeepSeekModel
+} from '@src/type/model'
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import {
   Select,
@@ -8,52 +16,54 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label' // Import shadcn Label
 import { Copy } from 'lucide-react'
 import { copyText } from '@src/utils/copy'
+import { Switch } from '@renderer/components/ui/switch'
+import useData from './useData'
 
 const SettingPage: React.FC = () => {
-  const { storeSetting, isInit, changeStoreSetting, saveStoreSetting } = useLocalForage()
+  const { data, changeData, dataIsInit } = useData()
 
   /** 设置模型名称 */
   const handleModelNameChange = useCallback(
     (value: ModelName) => {
-      changeStoreSetting({
-        ...storeSetting,
-        activeModel: value
-      })
+      changeData('activeModel', value)
     },
-    [storeSetting, changeStoreSetting]
+    [changeData]
   )
 
   /** 设置模型API Key */
   const handleApiKeyChange = useCallback(
     (model: Model, e: React.ChangeEvent<HTMLInputElement>) => {
-      changeStoreSetting({
-        ...storeSetting,
-        apiKeys: {
-          ...storeSetting.apiKeys,
-          [model]: e.target.value
-        }
+      changeData('apiKeys', {
+        ...data.apiKeys,
+        [model]: e.target.value
       })
     },
-    [storeSetting, changeStoreSetting]
+    [changeData, data]
   )
 
   /** 设置目标语言 */
   const handleTargetLanguageChange = useCallback(
     (value: TargetLanguage) => {
-      changeStoreSetting({
-        ...storeSetting,
-        targetLanguage: value
-      })
+      changeData('targetLanguage', value)
     },
-    [storeSetting, changeStoreSetting]
+    [changeData]
   )
 
-  if (isInit) {
+  /** 设置开机自启动 */
+  const handleAutoLaunchChange = useCallback(
+    (checked: boolean) => {
+      changeData('autoLaunch', {
+        enabled: checked
+      })
+    },
+    [changeData]
+  )
+
+  if (!dataIsInit) {
     return <div>初始化中...</div>
   }
 
@@ -61,33 +71,28 @@ const SettingPage: React.FC = () => {
     // Replace Container with div and Tailwind layout/spacing
     <div className="p-6 space-y-6">
       {/* Title */}
-      <h1 className="text-2xl font-semibold text-foreground">
-        设置
-      </h1>
+      <h1 className="text-2xl font-semibold text-foreground">设置</h1>
 
       {/* 设置目标语言 */}
       <div className="space-y-2 w-full max-w-sm">
         <Label htmlFor="targetLanguageSelect">截取翻译目标语言:</Label>
-        <Select defaultValue={storeSetting.targetLanguage} onValueChange={handleTargetLanguageChange}>
+        <Select defaultValue={data.targetLanguage} onValueChange={handleTargetLanguageChange}>
           <SelectTrigger className="w-full cursor-pointer">
             <SelectValue placeholder="选择目标语言" />
           </SelectTrigger>
           <SelectContent>
-            {Object.values(TargetLanguage).map(
-              (modelValue) => (
-                <SelectItem className='cursor-pointer' key={modelValue} value={modelValue}>
-                  {modelValue}
-                </SelectItem>
-              )
-            )}
+            {Object.values(TargetLanguage).map((modelValue) => (
+              <SelectItem className="cursor-pointer" key={modelValue} value={modelValue}>
+                {modelValue}
+              </SelectItem>
+            ))}
           </SelectContent>
-
         </Select>
       </div>
       {/* Model Selection Group */}
       <div className="space-y-2 w-full max-w-sm">
         <Label htmlFor="modelSelect">选择当前使用的翻译模型:</Label>
-        <Select defaultValue={storeSetting.activeModel} onValueChange={handleModelNameChange}>
+        <Select defaultValue={data.activeModel} onValueChange={handleModelNameChange}>
           <SelectTrigger className="w-full cursor-pointer">
             <SelectValue placeholder="选择模型" />
           </SelectTrigger>
@@ -97,15 +102,25 @@ const SettingPage: React.FC = () => {
               ...Object.values(GlmModel),
               ...Object.values(GptModel),
               ...Object.values(DeepSeekModel)
-            ].map(
-              (modelValue) => (
-                <SelectItem className='cursor-pointer' key={modelValue} value={modelValue}>
-                  {modelValue}
-                </SelectItem>
-              )
-            )}
+            ].map((modelValue) => (
+              <SelectItem className="cursor-pointer" key={modelValue} value={modelValue}>
+                {modelValue}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
+      </div>
+
+      {/* 开机自启动设置 */}
+      <div className="flex items-center justify-between w-full max-w-sm py-2 border-b border-gray-700">
+        <Label htmlFor="autoLaunch" className="text-base">
+          开机自启
+        </Label>
+        <Switch
+          id="autoLaunch"
+          checked={data.autoLaunch?.enabled || false}
+          onCheckedChange={handleAutoLaunchChange}
+        />
       </div>
 
       {/* API Key Section */}
@@ -117,15 +132,15 @@ const SettingPage: React.FC = () => {
             <Label htmlFor={`apiKeyInput-${modelValue}`}>{modelValue} API Key:</Label>
             <div className="flex w-full gap-2 items-center">
               <Input
-                defaultValue={storeSetting.apiKeys[modelValue] || ''}
+                defaultValue={data.apiKeys[modelValue] || ''}
                 type="password"
                 id={`apiKeyInput-${modelValue}`}
                 onChange={(e) => handleApiKeyChange(modelValue, e)}
                 className="w-full"
               />
-              <div 
+              <div
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-muted/40 hover:bg-muted cursor-pointer transition-colors"
-                onClick={() => copyText(storeSetting.apiKeys[modelValue] || '')}
+                onClick={() => copyText(data.apiKeys[modelValue] || '')}
                 title="复制API Key"
               >
                 <Copy size={16} />
@@ -134,8 +149,6 @@ const SettingPage: React.FC = () => {
           </div>
         ))}
       </div>
-
-      <Button className='cursor-pointer' onClick={saveStoreSetting}>保存</Button>
     </div>
   )
 }

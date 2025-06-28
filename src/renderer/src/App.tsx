@@ -71,7 +71,7 @@ function App(): React.JSX.Element {
         </nav>
       </div>
       {/* Content Area with Tailwind */}
-      <div className="flex-grow overflow-y-auto overflow-x-hidden p-6">
+      <div className="overflow-y-auto overflow-x-hidden p-6 flex-1 h-full">
         <Outlet />
       </div>
     </div>

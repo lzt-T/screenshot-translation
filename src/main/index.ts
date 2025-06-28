@@ -12,6 +12,7 @@ import { getModelType } from '../utils/ai'
 import { getConfig } from '../utils/config'
 import { setAiClient } from './utils/ai'
 import { EnglishChineseTranslation } from './utils/EnglishChineseTranslation'
+import AutoLaunch from 'auto-launch'
 
 const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT,
   RESULT_WINDOW_BAR_HEIGHT,
@@ -19,8 +20,6 @@ const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT,
   NOTIFICATION_BAR_WIDTH,
   NOTIFICATION_BAR_MARGIN
 } = getConfig()
-
-
 
 let mainWindow: BrowserWindow | null = null
 let screenshotWindow: BrowserWindow | null = null
@@ -45,6 +44,13 @@ let currentApiKeys: {
   [Model.GPT]: '',
   [Model.DEEP_SEEK]: ''
 }
+
+// 创建自启动实例
+const autoLauncher = new AutoLaunch({
+  name: 'screenshot-translation',
+  path: process.execPath,
+  isHidden: false
+});
 
 /**
  * 创建截图窗口
@@ -266,6 +272,38 @@ function createWindow(): void {
   }
 }
 
+/**
+ * 设置开机自启动
+ * @param enabled 是否启用
+ */
+function setAutoLaunch(enabled: boolean): void {
+  try {
+    if (enabled) {
+      autoLauncher.enable()
+        .then(() => {
+          return autoLauncher.isEnabled();
+        })
+        .then((isEnabled) => {
+          if (!isEnabled) {
+            createNotificationWindow('开机自启动设置可能未生效', NoticeType.WARNING);
+          }
+        })
+        .catch((err) => {
+          createNotificationWindow('启用开机自启动失败', NoticeType.ERROR);
+        });
+    } else {
+      autoLauncher.disable()
+        .then(() => {
+        })
+        .catch((err) => {
+          createNotificationWindow('禁用开机自启动失败', NoticeType.ERROR);
+        });
+    }
+  } catch (error) {
+    createNotificationWindow('设置开机自启动失败', NoticeType.ERROR);
+  }
+}
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
   app.on('browser-window-created', (_, window) => {
@@ -379,7 +417,6 @@ app.whenReady().then(() => {
     currentApiKeys = setting.apiKeys
     currentTargetLanguage = setting.targetLanguage
     setAiClient(currentApiKeys)
-    createNotificationWindow('设置已保存', NoticeType.SUCCESS)
   })
 
   /** 初始化localForage */
@@ -388,6 +425,11 @@ app.whenReady().then(() => {
     currentApiKeys = setting.apiKeys
     currentTargetLanguage = setting.targetLanguage
     setAiClient(currentApiKeys)
+  })
+
+  /** 单独设置开机自启动 */
+  ipcMain.on(SendEnum.SET_AUTO_LAUNCH, (event, enabled) => {
+    setAutoLaunch(enabled)
   })
 
   /**
