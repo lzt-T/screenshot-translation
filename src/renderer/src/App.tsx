@@ -4,6 +4,7 @@ import { SendEnum } from '@src/type/ipc-constants'
 import { cn } from '@renderer/lib/utils' // Import cn utility
 import { Button } from '@renderer/components/ui/button' // Import shadcn Button
 import useLocalForage from '@renderer/hooks/useLocalForage'
+import { Home, Settings } from 'lucide-react' // 导入图标
 
 function App(): React.JSX.Element {
   const navigate = useNavigate()
@@ -33,9 +34,12 @@ function App(): React.JSX.Element {
       {/* Sidebar with Tailwind */}
       <div className="w-52 min-w-52 flex-shrink-0 border-r border-border bg-card p-4 flex flex-col">
         {/* Sidebar Title with Tailwind */}
-        <h1 className="mb-4 border-b border-primary pb-2 text-center text-lg font-semibold text-primary">
-          截图翻译
+        <h1 className="mb-1 text-center text-lg font-semibold text-primary">
+          Bai_Ze
         </h1>
+        <p className="mb-4 border-b border-primary pb-2 text-center text-xs text-muted-foreground italic">
+          The Enlightened Beast
+        </p>
         {/* Navigation Links using shadcn Button */}
         <nav className="flex flex-col gap-2 ">
           <Button
@@ -46,9 +50,9 @@ function App(): React.JSX.Element {
             )}
             onClick={() => handleNavigate('/home')}
           >
-            首页
+            <Home size={18} className="mr-2" /> 首页
           </Button>
-          <Button
+          {/* <Button
             variant="ghost"
             className={cn(
               'w-full justify-start cursor-pointer',
@@ -57,7 +61,7 @@ function App(): React.JSX.Element {
             onClick={() => handleNavigate('/version')}
           >
             版本
-          </Button>
+          </Button> */}
           <Button
             variant="ghost"
             className={cn(
@@ -66,7 +70,7 @@ function App(): React.JSX.Element {
             )}
             onClick={() => handleNavigate('/setting')}
           >
-            设置
+            <Settings size={18} className="mr-2" /> 设置
           </Button>
         </nav>
       </div>

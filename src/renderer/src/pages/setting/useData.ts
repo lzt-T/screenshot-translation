@@ -44,6 +44,7 @@ export default function useData() {
 
   useEffect(() => {
     if (dataIsInit) {
+      console.log('data', data);
       window.electron.ipcRenderer.send(SendEnum.SET_LOCAL_FORAGE, data)
     }
   }, [data])
@@ -54,9 +55,9 @@ export default function useData() {
     if (!isInit) {
       const data = _.cloneDeep(storeSetting)
       setData(data)
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         setDataIsInit(true)
-      }, 300)
+      })
     }
   }, [isInit])
 

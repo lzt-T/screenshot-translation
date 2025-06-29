@@ -1,5 +1,5 @@
 appId: com.electron.app
-productName: screenshot-translation
+productName: Bai_Ze
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: screenshot-translation
+  executableName: Bai_Ze
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
