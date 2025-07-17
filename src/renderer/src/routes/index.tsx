@@ -5,7 +5,6 @@ import { Navigate } from 'react-router-dom'
 import { createHashRouter } from 'react-router-dom'
 import ScreenshotSelector from '@renderer/windows/screenshotSelector'
 import ResultOverlay from '@renderer/windows/resultOverlay'
-import Notification from '@renderer/windows/notification'
 import Setting from '@renderer/pages/setting'
 const router = createHashRouter([
   {
@@ -38,10 +37,6 @@ const router = createHashRouter([
     path: '/windows/resultOverlay',
     element: <ResultOverlay />
   },
-  {
-    path: '/windows/notification',
-    element: <Notification />
-  }
 ])
 
 export default router

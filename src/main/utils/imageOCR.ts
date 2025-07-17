@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { app } from 'electron' // 导入 app
-import { createWorker, PSM, OEM } from 'tesseract.js'
+import { createWorker, PSM } from 'tesseract.js'
 
 // 定义文本块的接口
 interface BoundingBox {
@@ -39,7 +39,17 @@ async function extractTextFromImage(imageDataUrl) {
       fs.writeFileSync(tempImage, imageBuffer)
     }
 
-    const worker = await createWorker('eng+chi_sim')
+    // 生产环境，使用资源路径
+    const langPath = app.isPackaged
+      ? process.resourcesPath
+      : path.resolve('./')
+      
+    // 创建 OCR 工作器
+    const worker = await createWorker('eng+chi_sim', 1, {
+      langPath,
+      gzip: false,
+    });
+
     await worker.setParameters({
       tessedit_pageseg_mode: PSM.SPARSE_TEXT
     })
@@ -67,10 +77,6 @@ async function extractTextFromImage(imageDataUrl) {
           // 遍历当前块中的所有段落
           for (const paragraph of block.paragraphs) {
             if (paragraph && paragraph.text && paragraph.bbox) {
-              console.log('Handle the paragraph:', {
-                text: paragraph.text.substring(0, 50) + '...',
-                bbox: paragraph.bbox
-              })
               textBlocks.push({
                 isSingleLine: true,
                 text: paragraph.text,

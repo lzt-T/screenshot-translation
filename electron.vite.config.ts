@@ -5,7 +5,16 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, 'src/main/index.ts')
+        },
+        external: ['electron']
+      },
+      assetsDir: '.'
+    }
   },
   preload: {
     plugins: [
@@ -31,10 +40,6 @@ export default defineConfig({
           resultOverlay: resolve(
             __dirname,
             'src/renderer/src/windows/resultOverlay/index.html'
-          ),
-          notification: resolve(
-            __dirname,
-            'src/renderer/src/windows/notification/index.html'
           )
         }
       }

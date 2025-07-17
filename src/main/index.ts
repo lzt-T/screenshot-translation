@@ -1,7 +1,6 @@
-import { app, shell, BrowserWindow, ipcMain, globalShortcut, screen } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, globalShortcut, screen, Notification } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
 import { SendEnum } from '../type/ipc-constants'
 import { captureArea } from './utils/captureArea'
 import { analyzeScreenshot, TranslateTextBlock } from './utils/imageAnalyzer'
@@ -12,20 +11,16 @@ import { getModelType } from '../utils/ai'
 import { getConfig } from '../utils/config'
 import { setAiClient } from './utils/ai'
 import { EnglishChineseTranslation } from './utils/EnglishChineseTranslation'
+import { showNotification } from './utils/notification'
 import AutoLaunch from 'auto-launch'
 
 const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT,
   RESULT_WINDOW_BAR_HEIGHT,
-  NOTIFICATION_BAR_HEIGHT,
-  NOTIFICATION_BAR_WIDTH,
-  NOTIFICATION_BAR_MARGIN
 } = getConfig()
 
 let mainWindow: BrowserWindow | null = null
 let screenshotWindow: BrowserWindow | null = null
 let resultWindow: BrowserWindow | null = null
-/** 通知窗口 */
-let notificationWindow: BrowserWindow | null = null
 let isScreenshotting = false
 let lastBounds = null
 /** 当前目标语言 */
@@ -71,6 +66,10 @@ if (!gotTheLock) {
     isHidden: false
   });
 
+  const iconPath = is.dev
+    ? join(__dirname, '../../resources/icon.png')
+    : join(process.resourcesPath, 'resources/icon.png')
+
   /**
    * 创建截图窗口
    */
@@ -91,7 +90,7 @@ if (!gotTheLock) {
       resizable: false,
       skipTaskbar: true,
       alwaysOnTop: true,
-      icon,
+      icon: iconPath,
       webPreferences: {
         contextIsolation: true,
         preload: join(__dirname, '../preload/index.js')
@@ -108,6 +107,8 @@ if (!gotTheLock) {
     screenshotWindow.on('closed', () => {
       if (isScreenshotting) {
         isScreenshotting = false
+        // 确保在窗口关闭后执行分析
+        handleScreenshotAnalysis()
       }
       screenshotWindow = null
     })
@@ -118,7 +119,7 @@ if (!gotTheLock) {
     const apiKey = currentApiKeys[getModelType(currentTranslationModel)]
 
     if (!apiKey) {
-      createNotificationWindow(
+      showNotification(
         `模型 ${currentTranslationModel} 的 API Key 未配置,请在设置中配置`,
         NoticeType.ERROR
       )
@@ -152,6 +153,30 @@ if (!gotTheLock) {
   }
 
   /**
+   * 截图后的分析处理
+   */
+  async function handleScreenshotAnalysis() {
+    if (!lastBounds) return
+
+    showNotification('翻译中...')
+
+    try {
+      const imageData = await captureArea(lastBounds)
+      const apiKey = currentApiKeys[getModelType(currentTranslationModel)]
+      const analysisResult = await analyzeScreenshot(imageData, currentTranslationModel, apiKey as string, currentTargetLanguage)
+
+      if (analysisResult && analysisResult.success) {
+        await createResultWindow(analysisResult, lastBounds)
+      } else if (analysisResult && !analysisResult.success) {
+        showNotification(`分析失败: ${analysisResult.msg || '未知错误'}`, NoticeType.ERROR)
+      }
+    } catch (error) {
+      const errorMessage = getErrorMessage(error)
+      showNotification(`分析失败: ${errorMessage}`, NoticeType.ERROR)
+    }
+  }
+
+  /**
    * 创建结果窗口
    */
   async function createResultWindow(resultData, boundsData) {
@@ -168,7 +193,7 @@ if (!gotTheLock) {
       skipTaskbar: true,
       focusable: true,
       show: false,
-      icon,
+      icon: iconPath,
       webPreferences: {
         contextIsolation: true,
         preload: join(__dirname, '../preload/index.js')
@@ -186,13 +211,6 @@ if (!gotTheLock) {
         resultWindow.show()
       }
 
-      if (notificationWindow && !notificationWindow.isDestroyed()) {
-        try {
-          notificationWindow.close()
-        } catch (e) {
-          console.warn('Error closing notification window during result window load:', e);
-        }
-      }
     })
 
     resultWindow.webContents.once('dom-ready', () => {
@@ -203,60 +221,9 @@ if (!gotTheLock) {
         })
       }
     })
-  }
 
-  /**
-   * 创建通知窗口
-   */
-  async function createNotificationWindow(message, type: NoticeType = NoticeType.INFO) {
-    if (notificationWindow && !notificationWindow.isDestroyed()) {
-      try {
-        notificationWindow.close()
-      } catch (e) { }
-    }
-
-    const primaryDisplay = screen.getPrimaryDisplay()
-    const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize
-    const width = NOTIFICATION_BAR_WIDTH
-
-    /** 计算初始高度 */
-    const height = NOTIFICATION_BAR_HEIGHT
-    const margin = NOTIFICATION_BAR_MARGIN
-    const newX = Math.round(screenWidth - width - margin)
-    const newY = Math.round(screenHeight - height - margin)
-
-    notificationWindow = new BrowserWindow({
-      width,
-      height,
-      x: newX,
-      y: newY,
-      frame: false,
-      transparent: true,
-      alwaysOnTop: true,
-      resizable: false,
-      movable: false,
-      show: false, // 初始隐藏
-      icon,
-      webPreferences: {
-        contextIsolation: true,
-        preload: join(__dirname, '../preload/index.js')
-      }
-    })
-
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      notificationWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/windows/notification`)
-    } else {
-      notificationWindow.loadFile(join(__dirname, '../renderer/src/windows/notification/index.html'))
-    }
-
-    notificationWindow.on('ready-to-show', () => {
-      if (notificationWindow && !notificationWindow.isDestroyed()) {
-        notificationWindow.show()
-        notificationWindow.webContents.send(SendEnum.DISPLAY_NOTIFICATION, {
-          message: message,
-          type: type
-        })
-      }
+    resultWindow.on('closed', () => {
+      resultWindow = null
     })
   }
 
@@ -270,7 +237,7 @@ if (!gotTheLock) {
       show: false,
       autoHideMenuBar: true,
       title: 'Bai_Ze',
-      icon,
+      icon: iconPath,
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
         sandbox: false
@@ -281,6 +248,10 @@ if (!gotTheLock) {
       if (mainWindow) {
         mainWindow.show()
       }
+    })
+
+    mainWindow.on('closed', () => {
+      mainWindow = null
     })
 
     mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -308,27 +279,27 @@ if (!gotTheLock) {
           })
           .then((isEnabled) => {
             if (!isEnabled) {
-              createNotificationWindow('开机自启动设置可能未生效', NoticeType.WARNING);
+              showNotification('开机自启动设置可能未生效', NoticeType.WARNING);
             }
           })
-          .catch((err) => {
-            createNotificationWindow('启用开机自启动失败', NoticeType.ERROR);
+          .catch((_err) => {
+            showNotification('启用开机自启动失败', NoticeType.ERROR);
           });
       } else {
         autoLauncher.disable()
           .then(() => {
           })
-          .catch((err) => {
-            createNotificationWindow('禁用开机自启动失败', NoticeType.ERROR);
+          .catch((_err) => {
+            showNotification('禁用开机自启动失败', NoticeType.ERROR);
           });
       }
     } catch (error) {
-      createNotificationWindow('设置开机自启动失败', NoticeType.ERROR);
+      showNotification('设置开机自启动失败', NoticeType.ERROR);
     }
   }
 
   app.whenReady().then(() => {
-    electronApp.setAppUserModelId('com.electron')
+    electronApp.setAppUserModelId('com.electron.app')
     app.on('browser-window-created', (_, window) => {
       optimizer.watchWindowShortcuts(window)
     })
@@ -341,7 +312,6 @@ if (!gotTheLock) {
 
     // 截图区域选择完成监听器
     ipcMain.on(SendEnum.SCREENSHOT_SELECTED, async (event, bounds) => {
-      console.log('SCREENSHOT_SELECTED: received bounds', bounds)
       if (!isScreenshotting) {
         return
       }
@@ -350,47 +320,9 @@ if (!gotTheLock) {
 
       // 立即关闭选择窗口
       if (screenshotWindow && !screenshotWindow.isDestroyed()) {
-        console.log('SCREENSHOT_SELECTED: close the selection window.')
         try {
           screenshotWindow.close()
         } catch (e) { }
-      }
-
-      // 显示加载窗口
-      createNotificationWindow('翻译中...')
-
-      // 开始后台处理
-      let analysisResult: {
-        success: boolean
-        msg?: string
-        textBlocks: TranslateTextBlock[]
-      } = {
-        success: false,
-        textBlocks: [],
-        msg: ''
-      }
-      try {
-        const imageData = await captureArea(lastBounds)
-
-        const apiKey = currentApiKeys[getModelType(currentTranslationModel)]
-
-        analysisResult = await analyzeScreenshot(imageData, currentTranslationModel, apiKey as string, currentTargetLanguage)
-
-        // 检查分析结果是否成功
-        if (analysisResult && analysisResult.success) {
-          // 仅在成功时创建和显示结果窗口
-          await createResultWindow(analysisResult, lastBounds)
-        }
-      } catch (error) {
-        if (notificationWindow && !notificationWindow.isDestroyed()) {
-          notificationWindow.close()
-        }
-        const errorMessage = getErrorMessage(error)
-        setTimeout(() => {
-          console.log(errorMessage, '[Error Log]')
-          createNotificationWindow(`分析失败: ${errorMessage}`, NoticeType.ERROR)
-        }, 500)
-      } finally {
       }
     })
 
@@ -410,17 +342,11 @@ if (!gotTheLock) {
 
     /** 关闭通知 */
     ipcMain.on(SendEnum.CLOSE_NOTIFICATION, () => {
-      if (notificationWindow) {
-        notificationWindow.close()
-      }
     })
 
     /** 复制文本成功 */
     ipcMain.on(SendEnum.COPY_TEXT_SUCCESS, () => {
-      if (notificationWindow && !notificationWindow.isDestroyed()) {
-        notificationWindow.close()
-      }
-      createNotificationWindow('复制成功', NoticeType.SUCCESS)
+      showNotification('复制成功', NoticeType.SUCCESS)
     })
 
     /** 英汉互译 */
@@ -463,7 +389,7 @@ if (!gotTheLock) {
     })
 
     if (!shortcut) {
-      createNotificationWindow('截图快捷键冲突', NoticeType.ERROR)
+      showNotification('截图快捷键冲突', NoticeType.ERROR)
     }
 
     app.on('activate', function () {
