@@ -158,7 +158,7 @@ if (!gotTheLock) {
   async function handleScreenshotAnalysis() {
     if (!lastBounds) return
 
-    showNotification('翻译中...')
+    showNotification('翻译中...', NoticeType.INFO, true)
 
     try {
       const imageData = await captureArea(lastBounds)
@@ -173,6 +173,8 @@ if (!gotTheLock) {
     } catch (error) {
       const errorMessage = getErrorMessage(error)
       showNotification(`分析失败: ${errorMessage}`, NoticeType.ERROR)
+    } finally {
+      lastBounds = null
     }
   }
 
@@ -346,7 +348,7 @@ if (!gotTheLock) {
 
     /** 复制文本成功 */
     ipcMain.on(SendEnum.COPY_TEXT_SUCCESS, () => {
-      showNotification('复制成功', NoticeType.SUCCESS)
+      showNotification('复制成功', NoticeType.SUCCESS, true)
     })
 
     /** 英汉互译 */

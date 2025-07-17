@@ -5,7 +5,14 @@ import { is } from '@electron-toolkit/utils'
 
 let currentNotification: Notification | null = null
 
-export function showNotification(message: string, type: NoticeType = NoticeType.INFO): void {
+export function showNotification(
+  /** 消息 */
+  message: string,
+  /** 类型 */
+  type: NoticeType = NoticeType.INFO,
+  /** 是否静音 */
+  silent: boolean = false
+): void {
   if (currentNotification) {
     currentNotification.close()
   }
@@ -33,7 +40,8 @@ export function showNotification(message: string, type: NoticeType = NoticeType.
   currentNotification = new Notification({
     title,
     body: message,
-    icon
+    icon,
+    silent
   })
 
   currentNotification.on('close', () => {
