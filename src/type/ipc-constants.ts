@@ -23,5 +23,7 @@ export enum SendEnum {
   /** 英汉互译失败 */
   ENGLISH_CHINESE_TRANSLATION_FAIL = 'ENGLISH_CHINESE_TRANSLATION_FAIL',
   /** 设置开机自启动 */
-  SET_AUTO_LAUNCH = 'SET_AUTO_LAUNCH'
-} 
+  SET_AUTO_LAUNCH = 'SET_AUTO_LAUNCH',
+  /** 交换内容 */
+  SWAP_CONTENT = 'SWAP_CONTENT'
+}

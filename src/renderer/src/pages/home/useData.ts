@@ -118,25 +118,13 @@ export default function useData() {
     )
   }
 
-  /** 处理全局键盘事件 */
-  const handleGlobalKeyDown = useCallback((event: KeyboardEvent) => {
-    // 如果按下的是 Ctrl+R 或 Command+R
-    if ((event.ctrlKey || event.metaKey) && (event.key === 'r' || event.key === 'R')) {
-      // 阻止默认行为（浏览器刷新）
-      event.preventDefault()
-      swapContent()
+  useEffect(() => {
+    window.electron.ipcRenderer.removeAllListeners(SendEnum.SWAP_CONTENT)
+    window.electron.ipcRenderer.on(SendEnum.SWAP_CONTENT, swapContent)
+    return () => {
+      window.electron.ipcRenderer.removeAllListeners(SendEnum.SWAP_CONTENT)
     }
   }, [swapContent])
-
-  useEffect(() => {
-    // 在添加新的监听器之前，先移除可能存在的旧监听器
-    window.removeEventListener('keydown', handleGlobalKeyDown)
-    window.addEventListener('keydown', handleGlobalKeyDown)
-    
-    return () => {
-      window.removeEventListener('keydown', handleGlobalKeyDown)
-    }
-  }, [handleGlobalKeyDown])
 
   useEffect(() => {
     // 移除可能存在的旧监听器
@@ -172,13 +160,11 @@ export default function useData() {
 
     // 清理函数，组件卸载时移除监听器
     return () => {
-      window.electron.ipcRenderer.removeListener(
-        SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS,
-        handleSuccess
+      window.electron.ipcRenderer.removeAllListeners(
+        SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS
       )
-      window.electron.ipcRenderer.removeListener(
-        SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL,
-        handleFail
+      window.electron.ipcRenderer.removeAllListeners(
+        SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL
       )
       // 确保离开页面时停止所有语音
       window.speechSynthesis.cancel()

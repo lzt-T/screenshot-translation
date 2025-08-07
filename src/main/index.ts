@@ -386,12 +386,22 @@ if (!gotTheLock) {
     /**
      * 注册快捷键
      */
-    let shortcut = globalShortcut.register('F2', () => {
+    let shortcutF2 = globalShortcut.register('F2', () => {
       initiateScreenshotSequence()
     })
 
-    if (!shortcut) {
+    if (!shortcutF2) {
       showNotification('截图快捷键冲突', NoticeType.ERROR)
+    }
+
+    /* 注册快捷键ctrl+r */
+    let shortcutCtrlR = globalShortcut.register('ctrl+r', () => {
+      if (mainWindow) {
+        mainWindow.webContents.send(SendEnum.SWAP_CONTENT, null)
+      }
+    })
+    if (!shortcutCtrlR) {
+      showNotification('ctrl+r快捷键冲突', NoticeType.ERROR)
     }
 
     app.on('activate', function () {
