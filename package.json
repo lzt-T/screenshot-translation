@@ -1,6 +1,6 @@
 {
   "name": "Bai_Ze",
-  "version": "1.0.0",
+  "version": "1.0.8",
   "description": "Bai_Ze",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -24,7 +24,9 @@
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
     "@google/genai": "^1.7.0",
+    "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.4",
+    "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-select": "^2.2.2",
     "@radix-ui/react-slot": "^1.2.0",
     "@radix-ui/react-switch": "^1.2.5",

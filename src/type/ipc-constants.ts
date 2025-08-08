@@ -25,5 +25,17 @@ export enum SendEnum {
   /** 设置开机自启动 */
   SET_AUTO_LAUNCH = 'SET_AUTO_LAUNCH',
   /** 交换内容 */
-  SWAP_CONTENT = 'SWAP_CONTENT'
+  SWAP_CONTENT = 'SWAP_CONTENT',
+  /** 检查更新 */
+  CHECK_UPDATE = 'CHECK_UPDATE',
+  /* 检查完成 */
+  CHECK_UPDATE_COMPLETE = 'CHECK_UPDATE_COMPLETE',
+  /** 获取应用版本 */
+  GET_APP_VERSION = 'GET_APP_VERSION',
+  /** 检查更新结果 */
+  CHECK_UPDATE_RESULT = 'CHECK_UPDATE_RESULT',
+  /** 下载更新 */
+  DOWNLOAD_UPDATE = 'DOWNLOAD_UPDATE',
+  /** 下载进度 */
+  DOWNLOAD_PROGRESS = 'DOWNLOAD_PROGRESS'
 }

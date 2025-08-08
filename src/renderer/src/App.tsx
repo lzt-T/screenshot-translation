@@ -4,7 +4,8 @@ import { SendEnum } from '@src/type/ipc-constants'
 import { cn } from '@renderer/lib/utils' // Import cn utility
 import { Button } from '@renderer/components/ui/button' // Import shadcn Button
 import useLocalForage from '@renderer/hooks/useLocalForage'
-import { Home, Settings } from 'lucide-react' // 导入图标
+import { Home, Settings, Package } from 'lucide-react' // 导入图标
+import UpdateDialog from './components/UpdateDialog'
 
 function App(): React.JSX.Element {
   const navigate = useNavigate()
@@ -28,15 +29,20 @@ function App(): React.JSX.Element {
     return location.pathname === path
   }
 
+  useEffect(() => {
+    window.electron.ipcRenderer.send(SendEnum.CHECK_UPDATE)
+    return () => {
+      window.electron.ipcRenderer.removeAllListeners(SendEnum.CHECK_UPDATE_RESULT)
+    }
+  }, [])
+
   return (
     // Use Tailwind classes for layout
     <div className="flex h-screen w-screen text-foreground bg-[#f9f9fa]">
       {/* Sidebar with Tailwind */}
       <div className="w-52 min-w-52 flex-shrink-0 border-r border-border bg-card p-4 flex flex-col">
         {/* Sidebar Title with Tailwind */}
-        <h1 className="mb-1 text-center text-lg font-semibold text-primary">
-          Bai_Ze
-        </h1>
+        <h1 className="mb-1 text-center text-lg font-semibold text-primary">Bai_Ze</h1>
         <p className="mb-4 border-b border-primary pb-2 text-center text-xs text-muted-foreground italic">
           The Enlightened Beast
         </p>
@@ -52,16 +58,6 @@ function App(): React.JSX.Element {
           >
             <Home size={18} className="mr-2" /> 首页
           </Button>
-          {/* <Button
-            variant="ghost"
-            className={cn(
-              'w-full justify-start cursor-pointer',
-              isLinkActive('/version') && 'bg-accent text-accent-foreground'
-            )}
-            onClick={() => handleNavigate('/version')}
-          >
-            版本
-          </Button> */}
           <Button
             variant="ghost"
             className={cn(
@@ -72,12 +68,23 @@ function App(): React.JSX.Element {
           >
             <Settings size={18} className="mr-2" /> 设置
           </Button>
+          <Button
+            variant="ghost"
+            className={cn(
+              'w-full justify-start cursor-pointer',
+              isLinkActive('/version') && 'bg-accent text-accent-foreground'
+            )}
+            onClick={() => handleNavigate('/version')}
+          >
+            <Package size={18} className="mr-2" /> 版本
+          </Button>
         </nav>
       </div>
       {/* Content Area with Tailwind */}
       <div className="overflow-y-auto overflow-x-hidden p-6 flex-1 h-full">
         <Outlet />
       </div>
+      <UpdateDialog />
     </div>
   )
 }
