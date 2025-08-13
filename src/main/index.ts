@@ -13,7 +13,7 @@ import { setAiClient } from './utils/ai'
 import { EnglishChineseTranslation } from './utils/EnglishChineseTranslation'
 import { showNotification } from './utils/notification'
 import AutoLaunch from 'auto-launch'
-import './update'
+import { registerAutoUpdate } from './update'
 
 const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT,
   RESULT_WINDOW_BAR_HEIGHT,
@@ -267,6 +267,8 @@ if (!gotTheLock) {
     } else {
       mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
+
+    registerAutoUpdate(mainWindow)
   }
 
   /**

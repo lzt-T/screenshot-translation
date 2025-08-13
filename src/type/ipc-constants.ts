@@ -37,5 +37,7 @@ export enum SendEnum {
   /** 下载更新 */
   DOWNLOAD_UPDATE = 'DOWNLOAD_UPDATE',
   /** 下载进度 */
-  DOWNLOAD_PROGRESS = 'DOWNLOAD_PROGRESS'
+  DOWNLOAD_PROGRESS = 'DOWNLOAD_PROGRESS',
+  /** 下载失败 */
+  DOWNLOAD_FAIL = 'DOWNLOAD_FAIL'
 }
