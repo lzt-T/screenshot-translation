@@ -49,6 +49,6 @@ appImage:
 npmRebuild: false
 publish:
   provider: generic
-  url: http://www.hewkq.top/auto-updates
+  url: https://www.xjoker.top/auto-updates
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
