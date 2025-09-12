@@ -1,7 +1,7 @@
 //只能在主线程中使用
 import { ZhipuAI } from 'zhipuai-sdk-nodejs-v4'
 import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../utils/ai'
-import { TargetLanguage } from '../../type/model'
+import { GlmModel, TargetLanguage } from '../../type/model'
 
 let zhipuClients: null | ZhipuAI = null
 
@@ -33,7 +33,7 @@ const glmChat = async (modelName: string, apiKey: string, contents: string) => {
     const ai = getZhipuClient(apiKey);
 
     const result = await ai.createCompletions({
-      model: modelName,
+      model: modelName === GlmModel.GLM_4_FLASH_250414_FREE ? 'glm-4-flash-250414' : modelName,
       messages: [{ role: 'user', content: contents }],
       stream: false
     })
@@ -89,4 +89,4 @@ export const EnglishChineseTranslation = async (modelName: string, apiKey: strin
 
 
 // 导出函数
-export { translateText, setZhipuClient, getZhipuClient,glmChat }
+export { translateText, setZhipuClient, getZhipuClient, glmChat }

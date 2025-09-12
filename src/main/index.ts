@@ -4,7 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { SendEnum } from '../type/ipc-constants'
 import { captureArea } from './utils/captureArea'
 import { analyzeScreenshot, TranslateTextBlock } from './utils/imageAnalyzer'
-import { Model, GeminiModel, TargetLanguage } from '../type/model'
+import { Model, GeminiModel, TargetLanguage, GlmModel } from '../type/model'
 import { NoticeType } from '../type/notice'
 import { getErrorMessage } from './utils/error'
 import { getModelType } from '../utils/ai'
@@ -14,6 +14,7 @@ import { EnglishChineseTranslation } from './utils/EnglishChineseTranslation'
 import { showNotification } from './utils/notification'
 import AutoLaunch from 'auto-launch'
 import { registerAutoUpdate } from './update'
+import dotenv from 'dotenv'
 
 const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT,
   RESULT_WINDOW_BAR_HEIGHT,
@@ -27,7 +28,7 @@ let lastBounds = null
 /** 当前目标语言 */
 let currentTargetLanguage = TargetLanguage.ZH_CN
 /** 当前翻译模型 */
-let currentTranslationModel = GeminiModel.GEMINI_2_0_FLASH
+let currentTranslationModel = GlmModel.GLM_4_FLASH_250414_FREE
 /** 当前API Key */
 let currentApiKeys: {
   [Model.GEMINI]: string,
@@ -117,7 +118,9 @@ if (!gotTheLock) {
 
   // 截图启动逻辑
   function initiateScreenshotSequence() {
-    const apiKey = currentApiKeys[getModelType(currentTranslationModel)]
+    const apiKey = currentTranslationModel === GlmModel.GLM_4_FLASH_250414_FREE
+      ? dotenv.config().parsed?.GLM_4_FLASH_250414_FREE_API_KEY
+      : currentApiKeys[getModelType(currentTranslationModel)]
 
     if (!apiKey) {
       showNotification(
@@ -163,7 +166,9 @@ if (!gotTheLock) {
 
     try {
       const imageData = await captureArea(lastBounds)
-      const apiKey = currentApiKeys[getModelType(currentTranslationModel)]
+      const apiKey = currentTranslationModel === GlmModel.GLM_4_FLASH_250414_FREE
+        ? dotenv.config().parsed?.GLM_4_FLASH_250414_FREE_API_KEY
+        : currentApiKeys[getModelType(currentTranslationModel)]
       const analysisResult = await analyzeScreenshot(imageData, currentTranslationModel, apiKey as string, currentTargetLanguage)
 
       if (analysisResult && analysisResult.success) {
@@ -357,8 +362,10 @@ if (!gotTheLock) {
     /** 英汉互译 */
     ipcMain.on(SendEnum.ENGLISH_CHINESE_TRANSLATION, async (event, text) => {
       try {
-        const apiKey = currentApiKeys[getModelType(currentTranslationModel)]
-        const translateResult = await EnglishChineseTranslation(currentTranslationModel, apiKey, text)
+        const apiKey = currentTranslationModel === GlmModel.GLM_4_FLASH_250414_FREE
+          ? dotenv.config().parsed?.GLM_4_FLASH_250414_FREE_API_KEY
+          : currentApiKeys[getModelType(currentTranslationModel)]
+        const translateResult = await EnglishChineseTranslation(currentTranslationModel, apiKey as string, text)
         event.reply(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS, translateResult)
       } catch (error) {
         event.reply(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL, getErrorMessage(error))

@@ -1,7 +1,7 @@
 import useLocalForage, { StoreSetting } from "@renderer/hooks/useLocalForage"
 import { useCallback, useEffect, useState } from "react"
 import _ from 'lodash'
-import { GeminiModel, Model, TargetLanguage } from "@src/type/model"
+import { GlmModel, Model, TargetLanguage } from "@src/type/model"
 import { SendEnum } from "@src/type/ipc-constants"
 import localForage from 'localforage'
 
@@ -15,7 +15,7 @@ export default function useData() {
   /** 数据 */
   const [data, setData] = useState<StoreSetting>({
     targetLanguage: TargetLanguage.ZH_CN,
-    activeModel: GeminiModel.GEMINI_2_0_FLASH,
+    activeModel: GlmModel.GLM_4_FLASH_250414_FREE,
     apiKeys: {
       [Model.GEMINI]: '',
       [Model.GLM]: '',

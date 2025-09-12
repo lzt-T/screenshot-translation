@@ -8,7 +8,6 @@ import {
   GptModel,
   DeepSeekModel
 } from '@src/type/model'
-import useLocalForage from '@renderer/hooks/useLocalForage'
 import {
   Select,
   SelectContent,
@@ -17,7 +16,6 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { Input } from '@renderer/components/ui/input'
-import { Label } from '@renderer/components/ui/label' // Import shadcn Label
 import { Copy } from 'lucide-react'
 import { copyText } from '@src/utils/copy'
 import { Switch } from '@renderer/components/ui/switch'

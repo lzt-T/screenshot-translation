@@ -14,6 +14,8 @@ export enum GeminiModel {
 /** Glm模型 */
 export enum GlmModel {
   GLM_4_FLASH_250414 = 'glm-4-flash-250414',
+  /* 内部免费glm模型 */
+  GLM_4_FLASH_250414_FREE = 'glm-4-flash-250414-free',
 }
 
 /** GPT模型 */

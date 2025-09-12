@@ -15,7 +15,7 @@ export default function useLocalForage() {
   /** 设置 */
   const [storeSetting, setStoreSetting] = useState<StoreSetting>({
     targetLanguage: TargetLanguage.ZH_CN,
-    activeModel: GeminiModel.GEMINI_2_0_FLASH,
+    activeModel: GlmModel.GLM_4_FLASH_250414_FREE,
     apiKeys: {
       [Model.GEMINI]: '',
       [Model.GLM]: '',
@@ -34,7 +34,7 @@ export default function useLocalForage() {
   const onInit = useCallback(async () => {
     let result: StoreSetting = {
       targetLanguage: TargetLanguage.ZH_CN,
-      activeModel: GeminiModel.GEMINI_2_0_FLASH,
+      activeModel: GlmModel.GLM_4_FLASH_250414_FREE,
       apiKeys: {
         [Model.GEMINI]: '',
         [Model.GLM]: '',
