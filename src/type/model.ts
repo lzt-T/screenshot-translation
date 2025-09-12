@@ -8,8 +8,6 @@ export enum Model {
 
 /** Gemini模型 */
 export enum GeminiModel {
-  GEMINI_2_0_FLASH = 'gemini-2.0-flash',
-  GEMINI_2_0_FLASH_LITE = 'gemini-2.0-flash-lite',
   GEMINI_2_5_FLASH = 'gemini-2.5-flash',
 }
 

@@ -21,7 +21,7 @@ function getZhipuClient(apiKey: string): ZhipuAI {
   return client;
 }
 
-/** 
+/**
  * @description 基本使用
  * @param {string} modelName 模型名称
  * @param {string} apiKey API密钥

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { SendEnum } from '@src/type/ipc-constants'
 import { toast } from 'sonner'
 import { speakText } from '@src/utils/speak'
+import { parseJson } from '@src/utils/ai'
 
 export default function useData() {
   const [isLoading, setIsLoading] = useState(false)
@@ -135,8 +136,33 @@ export default function useData() {
     const handleSuccess = (event, result) => {
       setIsLoading(false)
       setTranslationResult(() => {
-        //去除头尾的"
-        return result.replace(/"/g, '')
+        let resultData = ''
+        const keyConfig = {
+          'zh': '简体中文',
+          'en': '英语',
+        }
+        let data = parseJson(result)
+        // 解析失败
+        if (data === null) {
+          return result.replace(/"/g, '')
+        }
+        let keys = Object.keys(data)
+        keys.length > 1 && keys.forEach(key => {
+          if (!!data[key] && data[key] !== 'null') {
+            resultData += `${keyConfig[key] || key} : ${data[key]}\n`
+          }
+        })
+
+        if (keys.length === 1) {
+          // 当翻译为中文或者英文时，直接返回翻译结果
+          if (Object.keys(keyConfig).includes(keys[0])) {
+            resultData = `${data[keys[0]]}`
+          } else {
+            // 词性只存在一个
+            resultData = `${keys[0]} : ${data[keys[0]]}`
+          }
+        }
+        return resultData
       })
       translateSuccess.current = true
       toast.success('翻译成功', {
