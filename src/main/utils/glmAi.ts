@@ -4,6 +4,7 @@ import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../ut
 import { GlmModel, TargetLanguage } from '../../type/model'
 
 let zhipuClients: null | ZhipuAI = null
+let zhipuClientsFree: null | ZhipuAI = null
 
 /** 设置智谱 AI (GLM) 客户端 */
 function setZhipuClient(apiKey: string): void {
@@ -21,6 +22,17 @@ function getZhipuClient(apiKey: string): ZhipuAI {
   return client;
 }
 
+/* 获取智谱 AI (GLM) 免费客户端 */
+function getZhipuClientFree(apiKey: string): ZhipuAI {
+  if (zhipuClientsFree !== null) {
+    return zhipuClientsFree
+  }
+
+  const client = new ZhipuAI({ apiKey });
+  zhipuClientsFree = client;
+  return client;
+}
+
 /**
  * @description 基本使用
  * @param {string} modelName 模型名称
@@ -30,7 +42,7 @@ function getZhipuClient(apiKey: string): ZhipuAI {
 */
 const glmChat = async (modelName: string, apiKey: string, contents: string) => {
   try {
-    const ai = getZhipuClient(apiKey);
+    const ai = modelName === GlmModel.GLM_4_FLASH_250414_FREE ? getZhipuClientFree(apiKey) : getZhipuClient(apiKey);
 
     const result = await ai.createCompletions({
       model: modelName === GlmModel.GLM_4_FLASH_250414_FREE ? 'glm-4-flash-250414' : modelName,

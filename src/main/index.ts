@@ -14,7 +14,6 @@ import { EnglishChineseTranslation } from './utils/EnglishChineseTranslation'
 import { showNotification } from './utils/notification'
 import AutoLaunch from 'auto-launch'
 import { registerAutoUpdate } from './update'
-import dotenv from 'dotenv'
 
 const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT,
   RESULT_WINDOW_BAR_HEIGHT,
@@ -119,7 +118,7 @@ if (!gotTheLock) {
   // 截图启动逻辑
   function initiateScreenshotSequence() {
     const apiKey = currentTranslationModel === GlmModel.GLM_4_FLASH_250414_FREE
-      ? dotenv.config().parsed?.GML_FREE_API_KEY
+      ? import.meta.env.MAIN_VITE_GML_FREE_API_KEY
       : currentApiKeys[getModelType(currentTranslationModel)]
 
     if (!apiKey) {
@@ -167,7 +166,7 @@ if (!gotTheLock) {
     try {
       const imageData = await captureArea(lastBounds)
       const apiKey = currentTranslationModel === GlmModel.GLM_4_FLASH_250414_FREE
-        ? dotenv.config().parsed?.GML_FREE_API_KEY
+        ? import.meta.env.MAIN_VITE_GML_FREE_API_KEY
         : currentApiKeys[getModelType(currentTranslationModel)]
       const analysisResult = await analyzeScreenshot(imageData, currentTranslationModel, apiKey as string, currentTargetLanguage)
 
@@ -363,8 +362,14 @@ if (!gotTheLock) {
     ipcMain.on(SendEnum.ENGLISH_CHINESE_TRANSLATION, async (event, text) => {
       try {
         const apiKey = currentTranslationModel === GlmModel.GLM_4_FLASH_250414_FREE
-          ? dotenv.config().parsed?.GML_FREE_API_KEY
+          ? import.meta.env.MAIN_VITE_GML_FREE_API_KEY
           : currentApiKeys[getModelType(currentTranslationModel)]
+
+        if(!apiKey) {
+          showNotification(`模型 ${currentTranslationModel} 的 API Key 未配置,请在设置中配置`, NoticeType.ERROR)
+          return
+        }
+
         const translateResult = await EnglishChineseTranslation(currentTranslationModel, apiKey as string, text)
         event.reply(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS, translateResult)
       } catch (error) {
