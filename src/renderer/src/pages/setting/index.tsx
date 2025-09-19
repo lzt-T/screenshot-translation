@@ -20,6 +20,7 @@ import { Copy } from 'lucide-react'
 import { copyText } from '@src/utils/copy'
 import { Switch } from '@renderer/components/ui/switch'
 import useData from './useData'
+import { Badge } from '@renderer/components/ui/badge'
 
 const SettingPage: React.FC = () => {
   const { data, changeData, dataIsInit } = useData()
@@ -107,6 +108,11 @@ const SettingPage: React.FC = () => {
                 ].map((modelValue) => (
                   <SelectItem className="cursor-pointer" key={modelValue} value={modelValue}>
                     {modelValue}
+                    {modelValue === GlmModel.GLM_4_FLASH_250414_FREE && (
+                      <Badge className="text-xs border-green-500 text-green-500" variant="outline">
+                        免费
+                      </Badge>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
