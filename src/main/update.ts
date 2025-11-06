@@ -28,6 +28,7 @@ export const registerAutoUpdate = (mainWindow: BrowserWindow) => {
   /* 发现更新 */
   autoUpdater.on('update-available', (info) => {
     console.log('find update version', info)
+    autoUpdater.downloadUpdate()
   })
   /* 没有更新 */
   autoUpdater.on('update-not-available', (info) => {
@@ -41,8 +42,7 @@ export const registerAutoUpdate = (mainWindow: BrowserWindow) => {
   /* 更新下载完成 */
   autoUpdater.on('update-downloaded', () => {
     console.log('update downloaded')
-    showNotification('更新下载完成，请等待重启', NoticeType.SUCCESS)
-    autoUpdater.quitAndInstall()
+    mainWindow.webContents.send(SendEnum.UPDATE_DOWNLOAD_COMPLETE)
   })
   /* 更新失败 */
   autoUpdater.on('error', (errorMessage) => {
@@ -65,8 +65,8 @@ export const registerAutoUpdate = (mainWindow: BrowserWindow) => {
     })
   })
 
-  /* 下载更新 */
-  ipcMain.on(SendEnum.DOWNLOAD_UPDATE, (event) => {
-    autoUpdater.downloadUpdate()
+  /* 重启更新 */
+  ipcMain.on(SendEnum.RESTART_UPDATE_AND_INSTALL, (event) => {
+    autoUpdater.quitAndInstall()
   })
 }

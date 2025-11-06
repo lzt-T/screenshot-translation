@@ -41,13 +41,12 @@ function App(): React.JSX.Element {
     <div className="flex h-screen w-screen text-foreground bg-[#f9f9fa]">
       {/* Sidebar with Tailwind */}
       <div className="w-52 min-w-52 flex-shrink-0 border-r border-border bg-card p-4 flex flex-col">
-        {/* Sidebar Title with Tailwind */}
         <h1 className="mb-1 text-center text-lg font-semibold text-primary">Bai_Ze</h1>
         <p className="mb-4 border-b border-primary pb-2 text-center text-xs text-muted-foreground italic">
           The Enlightened Beast
         </p>
         {/* Navigation Links using shadcn Button */}
-        <nav className="flex flex-col gap-2 ">
+        <nav className="flex flex-col gap-2 flex-1 ">
           <Button
             variant="ghost"
             className={cn(
@@ -79,12 +78,14 @@ function App(): React.JSX.Element {
             <Package size={18} className="mr-2" /> 版本
           </Button>
         </nav>
+
+        <div>   <UpdateDialog /></div>
       </div>
       {/* Content Area with Tailwind */}
       <div className="overflow-y-auto overflow-x-hidden p-6 flex-1 h-full">
         <Outlet />
       </div>
-      <UpdateDialog />
+      {/* <UpdateDialog /> */}
     </div>
   )
 }
