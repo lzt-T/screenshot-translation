@@ -1,5 +1,5 @@
-import { Model, GlmModel, GeminiModel, GptModel, DeepSeekModel } from '../type/model'
-import { TargetLanguage } from '../type/model'
+import { Model, GlmModel, GeminiModel, GptModel, DeepSeekModel, BuiltInFreeModel } from '../type/model'
+import { TargetLanguage, ModelName } from '../type/model'
 
 /** 获取翻译prompt */
 export const getTranslatePrompt = (text: string, targetLanguage: TargetLanguage) => {
@@ -241,8 +241,12 @@ export const getEnglishChineseTranslationPrompt = (text: string) => {
 }
 
 
-/** 获取模型类型 */
-export const getModelType = (modelName: GlmModel | GeminiModel | GptModel | DeepSeekModel): Model => {
+/**
+ * @description 获取模型名称对应的模型类型
+ * @param {ModelName} modelName 模型名称
+ * @returns {Model} 模型类型
+ */
+export const getModelType = (modelName: ModelName): Model => {
   if (Object.values(GlmModel).includes(modelName as unknown as GlmModel)) {
     return Model.GLM
   }
@@ -258,6 +262,13 @@ export const getModelType = (modelName: GlmModel | GeminiModel | GptModel | Deep
   if (Object.values(DeepSeekModel).includes(modelName as unknown as DeepSeekModel)) {
     return Model.DEEP_SEEK
   }
+
+  if (Object.values(BuiltInFreeModel).includes(modelName as unknown as BuiltInFreeModel)) {
+    if (modelName === BuiltInFreeModel.GLM_4_FLASH_250414_FREE) {
+      return Model.GLM
+    }
+  }
+
   return Model.GEMINI
 }
 

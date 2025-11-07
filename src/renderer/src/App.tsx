@@ -79,13 +79,14 @@ function App(): React.JSX.Element {
           </Button>
         </nav>
 
-        <div>   <UpdateDialog /></div>
+        <div>
+          <UpdateDialog />
+        </div>
       </div>
       {/* Content Area with Tailwind */}
       <div className="overflow-y-auto overflow-x-hidden p-6 flex-1 h-full">
         <Outlet />
       </div>
-      {/* <UpdateDialog /> */}
     </div>
   )
 }

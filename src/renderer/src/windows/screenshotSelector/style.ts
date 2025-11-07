@@ -22,7 +22,7 @@ export const OverlayPiece = styled.div.attrs<RectProps>((props) => ({
   }
 }))<RectProps>`
   position: fixed;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.5);
   pointer-events: none;
   z-index: 9999;
 `
@@ -41,11 +41,21 @@ export const SelectionBox = styled.div.attrs<RectProps>((props) => ({
   }
 }))<RectProps>`
   position: absolute;
-  border: 1px solid #00ff00;
-  background: rgba(255, 255, 255, 0.1);
+  border: 2px dashed #677CFF; // 蓝色虚线边框
+  background: rgba(59, 130, 246, 0.05); // 轻微的蓝色背景
   pointer-events: none;
   box-sizing: border-box;
   z-index: 10000;
+  animation: pulse 1.5s infinite alternate; // 添加脉冲动画
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+    100% {
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    }
+  }
 `
 
 // 尺寸信息提示框

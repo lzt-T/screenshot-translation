@@ -1,7 +1,7 @@
 //只能在主线程中使用
 import { ZhipuAI } from 'zhipuai-sdk-nodejs-v4'
-import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../utils/ai'
-import { GlmModel, TargetLanguage } from '../../type/model'
+import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../../utils/ai'
+import { BuiltInFreeModel, TargetLanguage } from '../../../type/model'
 
 let zhipuClients: null | ZhipuAI = null
 let zhipuClientsFree: null | ZhipuAI = null
@@ -42,10 +42,10 @@ function getZhipuClientFree(apiKey: string): ZhipuAI {
 */
 const glmChat = async (modelName: string, apiKey: string, contents: string) => {
   try {
-    const ai = modelName === GlmModel.GLM_4_FLASH_250414_FREE ? getZhipuClientFree(apiKey) : getZhipuClient(apiKey);
+    const ai = modelName === BuiltInFreeModel.GLM_4_FLASH_250414_FREE ? getZhipuClientFree(apiKey) : getZhipuClient(apiKey);
 
     const result = await ai.createCompletions({
-      model: modelName === GlmModel.GLM_4_FLASH_250414_FREE ? 'glm-4-flash-250414' : modelName,
+      model: modelName === BuiltInFreeModel.GLM_4_FLASH_250414_FREE ? 'glm-4-flash-250414' : modelName,
       messages: [{ role: 'user', content: contents }],
       stream: false
     })

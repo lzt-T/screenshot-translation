@@ -1,11 +1,7 @@
 import { TextBlock } from './imageOCR'
-import { translateText as translateTextGemini } from './geminiAi'
-import { translateText as translateTextGLM } from './glmAi'
-import { translateText as translateTextGPT } from './gptAi'
-import { translateText as translateTextDeepSeek } from './deepseekAi'
 import { extractTextFromImage } from './imageOCR'
-import { Model, ModelName, TargetLanguage } from '../../type/model'
-import { getModelType } from '../../utils/ai'
+import { TargetLanguage } from '../../type/model'
+import { aiManage } from './aiManage'
 
 export interface TranslateTextBlock extends TextBlock {
   translation: string
@@ -14,10 +10,10 @@ export interface TranslateTextBlock extends TextBlock {
 /**
  * 分析截图，提取文字并翻译
  * @param {string} imageDataUrl 图像的base64数据URL
- * @param {ModelName} modelName 选择的翻译模型名称
+ * @param {TargetLanguage} targetLanguage 目标语言
  * @returns {Promise<{success: boolean, textBlocks: TranslateTextBlock[], msg?: string}>} 分析和翻译结果，包含文本位置信息
  */
-export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiKey: string, targetLanguage: TargetLanguage) {
+export async function analyzeScreenshot(imageDataUrl: string, targetLanguage: TargetLanguage) {
   try {
     // 1. 提取文字和位置
     const { success, textBlocks, msg } = await extractTextFromImage(imageDataUrl)
@@ -27,7 +23,7 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
     }
 
     if (!textBlocks || textBlocks.length === 0) {
-      return { success: false, textBlocks: [], msg: msg }
+      return { success: false, textBlocks: [], msg: "没有提取到文字" }
     }
 
     // 2. 合并所有有效文本块进行单次翻译
@@ -36,16 +32,7 @@ export async function analyzeScreenshot(imageDataUrl, modelName: ModelName, apiK
     const combinedText = textBlocks.map((block) => block.text.trim()).join(separator)
 
     let combinedTranslation = ''
-
-    const translateConfig = {
-      [Model.GLM]: translateTextGLM,
-      [Model.GEMINI]: translateTextGemini,
-      [Model.GPT]: translateTextGPT,
-      [Model.DEEP_SEEK]: translateTextDeepSeek
-    }
-
-    const translateFunction = translateConfig[getModelType(modelName)]
-    const translateResult = await translateFunction(modelName, combinedText, apiKey, targetLanguage)
+    const translateResult = await aiManage.translateText(combinedText, targetLanguage)
     console.log(`translate result: ${translateResult.translation}`)
 
     if (!translateResult.success) {

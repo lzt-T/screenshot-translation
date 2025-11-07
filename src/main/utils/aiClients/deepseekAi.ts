@@ -1,6 +1,6 @@
 //在主线程中调用
-import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../utils/ai'
-import { DeepSeekModel, TargetLanguage } from '../../type/model';
+import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../../utils/ai'
+import { DeepSeekModel, TargetLanguage } from '../../../type/model';
 import OpenAI from "openai";
 
 let openaiClients: null | OpenAI = null
@@ -26,7 +26,7 @@ function getOpenAIClient(apiKey: string): OpenAI {
   return client;
 }
 
-/** 
+/**
  * @description 基本使用
  * @param {string} modelName 模型名称
  * @param {string} apiKey API密钥

@@ -1,12 +1,18 @@
-import { app, ipcMain, BrowserWindow } from 'electron'
+/**
+ * @fileoverview 注册自动更新
+ */
+import { app, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import path from 'path'
-import { SendEnum } from '../type/ipc-constants'
-import { UpdateProgress } from '../type/update'
-import { showNotification } from './utils/notification'
-import { NoticeType } from '../type/notice'
+import { SendEnum } from '../../type/ipc-constants'
+import { showNotification } from './notification'
+import { NoticeType } from '../../type/notice'
+import { mainWindow } from '../windowClasses/mainWindow'
 
-export const registerAutoUpdate = (mainWindow: BrowserWindow) => {
+/**
+ * @description 注册自动更新
+ */
+export const registerAutoUpdate = () => {
   /* 开发环境 */
   if (!app.isPackaged) {
     Object.defineProperty(app, 'isPackaged', {
@@ -37,18 +43,18 @@ export const registerAutoUpdate = (mainWindow: BrowserWindow) => {
   /* 更新下载进度 */
   autoUpdater.on('download-progress', (progressInfo) => {
     console.log('update progress', progressInfo)
-    mainWindow.webContents.send(SendEnum.DOWNLOAD_PROGRESS, progressInfo)
+    mainWindow.window?.webContents.send(SendEnum.DOWNLOAD_PROGRESS, progressInfo)
   })
   /* 更新下载完成 */
   autoUpdater.on('update-downloaded', () => {
     console.log('update downloaded')
-    mainWindow.webContents.send(SendEnum.UPDATE_DOWNLOAD_COMPLETE)
+    mainWindow.window?.webContents.send(SendEnum.UPDATE_DOWNLOAD_COMPLETE)
   })
   /* 更新失败 */
   autoUpdater.on('error', (errorMessage) => {
     console.log('update error', errorMessage.message)
     showNotification(errorMessage.message, NoticeType.ERROR)
-    mainWindow.webContents.send(SendEnum.DOWNLOAD_FAIL)
+    mainWindow.window?.webContents.send(SendEnum.DOWNLOAD_FAIL)
   })
 
 

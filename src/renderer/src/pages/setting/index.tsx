@@ -6,7 +6,8 @@ import {
   GlmModel,
   TargetLanguage,
   GptModel,
-  DeepSeekModel
+  DeepSeekModel,
+  BuiltInFreeModel
 } from '@src/type/model'
 import {
   Select,
@@ -104,11 +105,12 @@ const SettingPage: React.FC = () => {
                   ...Object.values(GeminiModel),
                   ...Object.values(GlmModel),
                   ...Object.values(GptModel),
-                  ...Object.values(DeepSeekModel)
+                  ...Object.values(DeepSeekModel),
+                  ...Object.values(BuiltInFreeModel)
                 ].map((modelValue) => (
                   <SelectItem className="cursor-pointer" key={modelValue} value={modelValue}>
                     {modelValue}
-                    {modelValue === GlmModel.GLM_4_FLASH_250414_FREE && (
+                    {[BuiltInFreeModel.GLM_4_FLASH_250414_FREE].includes(modelValue as BuiltInFreeModel) && (
                       <Badge className="text-xs border-green-500 text-green-500" variant="outline">
                         免费
                       </Badge>
@@ -135,30 +137,36 @@ const SettingPage: React.FC = () => {
         {/* API Key Section - 每个模型一行 */}
         <div className="mt-8 space-y-4">
           <h2 className="text-xl font-[550] mb-4 text-gray-600">配置模型 API Keys</h2>
-          {Object.values(Model).map((modelValue) => (
-            <div
-              key={modelValue}
-              className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 py-4 pl-5"
-            >
-              <div className="text-base font-medium">{modelValue} API Key</div>
-              <div className="w-64 flex gap-2 items-center">
-                <Input
-                  defaultValue={data.apiKeys[modelValue] || ''}
-                  type="password"
-                  id={`apiKeyInput-${modelValue}`}
-                  onChange={(e) => handleApiKeyChange(modelValue, e)}
-                  className="w-full"
-                />
-                <div
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/40 hover:bg-muted cursor-pointer transition-colors"
-                  onClick={() => copyText(data.apiKeys[modelValue] || '')}
-                  title="复制API Key"
-                >
-                  <Copy size={14} />
+          {Object.values(Model).map((modelValue) => {
+
+            if (modelValue === Model.BUILT_IN_FREE) {
+              return null
+            }
+            return (
+              <div
+                key={modelValue}
+                className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 py-4 pl-5"
+              >
+                <div className="text-base font-medium">{modelValue} API Key</div>
+                <div className="w-64 flex gap-2 items-center">
+                  <Input
+                    defaultValue={data.apiKeys[modelValue] || ''}
+                    type="password"
+                    id={`apiKeyInput-${modelValue}`}
+                    onChange={(e) => handleApiKeyChange(modelValue, e)}
+                    className="w-full"
+                  />
+                  <div
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/40 hover:bg-muted cursor-pointer transition-colors"
+                    onClick={() => copyText(data.apiKeys[modelValue] || '')}
+                    title="复制API Key"
+                  >
+                    <Copy size={14} />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

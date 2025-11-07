@@ -1,7 +1,7 @@
 //在主线程中使用
 import { GoogleGenAI } from '@google/genai';
-import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../utils/ai'
-import { TargetLanguage } from '../../type/model';
+import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../../utils/ai'
+import { TargetLanguage } from '../../../type/model';
 
 let genAIclients: null | GoogleGenAI = null
 
