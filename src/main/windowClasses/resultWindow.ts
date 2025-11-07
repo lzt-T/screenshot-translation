@@ -23,8 +23,8 @@ export class ResultWindow {
       width: Math.max(Math.round(screenshotWindow.lastBounds?.width || 0), MIN_RESULT_WINDOW_WIDTH),
       height: Math.max(Math.round(screenshotWindow.lastBounds?.height || 0 + RESULT_WINDOW_BAR_HEIGHT), MIN_RESULT_WINDOW_HEIGHT),
       frame: false,
-      transparent: true,
-      // alwaysOnTop: true,
+      backgroundColor: '#00000000',
+      alwaysOnTop: true,
       resizable: false,
       movable: true,
       webPreferences: {

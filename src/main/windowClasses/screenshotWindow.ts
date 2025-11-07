@@ -18,7 +18,7 @@ export class ScreenshotWindow {
 
   public createWindow(): void {
 
-    if(this.window && !this.window.isDestroyed()) {
+    if (this.window && !this.window.isDestroyed()) {
       this.window.focus()
       return
     }
