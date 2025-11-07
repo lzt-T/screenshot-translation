@@ -1,4 +1,5 @@
-import { desktopCapturer,screen } from 'electron';
+import { desktopCapturer, screen } from 'electron';
+import { screenshotWindow } from '../windowClasses/screenshotWindow';
 
 /**
  * 获取屏幕截图
@@ -7,19 +8,31 @@ import { desktopCapturer,screen } from 'electron';
  */
 export async function captureArea(bounds) {
   try {
-    const display = screen.getPrimaryDisplay();
+    const display = screenshotWindow.currentDisplay;
+    if (!display) {
+      throw new Error('No display found');
+    }
+
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
       thumbnailSize: {
         width: display.size.width * display.scaleFactor,
         height: display.size.height * display.scaleFactor
       }
-    });
+    })
+
+    let findInd = 0;
+    for (let i = 0; i < sources.length; i++) {
+      if (sources[i].display_id === display?.id.toString()) {
+        findInd = i;
+        break;
+      }
+    }
 
     if (!sources || sources.length === 0) {
       throw new Error('No screen source found');
     }
-    const source = sources[0];
+    const source = sources[findInd];
     const thumbnail = source.thumbnail; // NativeImage
 
     // 计算缩放比例 (缩略图像素 / 屏幕逻辑像素)

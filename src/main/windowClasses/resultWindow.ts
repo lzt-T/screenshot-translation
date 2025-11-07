@@ -17,9 +17,10 @@ export class ResultWindow {
   constructor() { }
 
   public createWindow(): void {
+    const display = screenshotWindow.currentDisplay;
     this.window = new BrowserWindow({
-      x: Math.round(screenshotWindow.lastBounds?.x || 0),
-      y: Math.round(screenshotWindow.lastBounds?.y || 0),
+      x: Math.round(screenshotWindow!.lastBounds!.x + (display?.bounds.x || 0)),
+      y: Math.round(screenshotWindow!.lastBounds!.y + (display?.bounds.y || 0)),
       width: Math.max(Math.round(screenshotWindow.lastBounds?.width || 0), MIN_RESULT_WINDOW_WIDTH),
       height: Math.max(Math.round(screenshotWindow.lastBounds?.height || 0 + RESULT_WINDOW_BAR_HEIGHT), MIN_RESULT_WINDOW_HEIGHT),
       frame: false,

@@ -35,4 +35,9 @@ export const registerScreenshotIpcEvents = () => {
       resultWindow.closeWindow()
     }
   })
+
+  /** 停止监听鼠标位置变化 */
+  ipcMain.on(SendEnum.START_SCREENSHOT, () => {
+    screenshotWindow.stopListenMousePositionChange()
+  })
 }

@@ -29,6 +29,7 @@ const ScreenshotSelector: React.FC = () => {
 
   // 鼠标按下，开始绘制
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    window.electron.ipcRenderer.send(SendEnum.START_SCREENSHOT)
     const clientX = e.clientX;
     const clientY = e.clientY;
     console.log('[ScreenshotSelector] Mouse down at:', { clientX, clientY });
@@ -82,7 +83,7 @@ const ScreenshotSelector: React.FC = () => {
           setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
       }
       console.log('取消截图');
-      
+
       window.electron.ipcRenderer.send(SendEnum.SCREENSHOT_CANCEL)
     }
   }, [isDrawing]);
@@ -137,7 +138,7 @@ const ScreenshotSelector: React.FC = () => {
   return (
     // 容器捕获初始 mousedown
     <FullScreenContainer ref={containerRef} onMouseDown={handleMouseDown}>
-      {renderOverlay()} 
+      {renderOverlay()}
       {isDrawing && selectionRect.width > 0 && selectionRect.height > 0 && (
         <>
           <SelectionBox $rect={selectionRect} />
@@ -150,4 +151,4 @@ const ScreenshotSelector: React.FC = () => {
   );
 };
 
-export default ScreenshotSelector; 
+export default ScreenshotSelector;
