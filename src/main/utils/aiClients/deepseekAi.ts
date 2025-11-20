@@ -1,5 +1,5 @@
 //在主线程中调用
-import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../../utils/ai'
+import { getTranslatePrompt, getTranslateResponsePrompt } from '../../../utils/ai'
 import { DeepSeekModel, TargetLanguage } from '../../../type/model';
 import OpenAI from "openai";
 
@@ -79,7 +79,7 @@ export async function translateText(modelName: string, text: string, apiKey: str
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `${getEnglishChineseTranslationPrompt(text)}`
+    const contents = `${getTranslateResponsePrompt(text)}`
     const answer = await deepseekChat(modelName, apiKey, contents)
     return {
       success: true,

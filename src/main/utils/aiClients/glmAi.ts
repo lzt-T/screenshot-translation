@@ -1,6 +1,6 @@
 //只能在主线程中使用
 import { ZhipuAI } from 'zhipuai-sdk-nodejs-v4'
-import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../../utils/ai'
+import { getTranslatePrompt, getTranslateResponsePrompt } from '../../../utils/ai'
 import { BuiltInFreeModel, TargetLanguage } from '../../../type/model'
 
 let zhipuClients: null | ZhipuAI = null
@@ -87,7 +87,7 @@ async function translateText(
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `${getEnglishChineseTranslationPrompt(text)}`
+    const contents = `${getTranslateResponsePrompt(text)}`
     const answer = await glmChat(modelName, apiKey, contents)
     return {
       success: true,

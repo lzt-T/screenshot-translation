@@ -1,5 +1,5 @@
 //在主线程中使用
-import { getEnglishChineseTranslationPrompt, getTranslatePrompt } from '../../../utils/ai'
+import { getTranslatePrompt, getTranslateResponsePrompt } from '../../../utils/ai'
 import { TargetLanguage } from '../../../type/model';
 import OpenAI from "openai";
 
@@ -34,7 +34,7 @@ function getOpenAIClient(apiKey: string): OpenAI {
  * @returns {Promise<string>} 回答
 */
 const gptChat = async (modelName: string, apiKey: string, contents: string) => {
-  try{
+  try {
     const client = getOpenAIClient(apiKey);
     const response = await client.responses.create({
       model: modelName,
@@ -43,7 +43,7 @@ const gptChat = async (modelName: string, apiKey: string, contents: string) => {
 
     const answer = response.output_text ? response.output_text.trim() : ''
     return answer
-  }catch(error){
+  } catch (error) {
     throw error
   }
 }
@@ -76,7 +76,7 @@ export async function translateText(modelName: string, text: string, apiKey: str
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `${getEnglishChineseTranslationPrompt(text)}`
+    const contents = `${getTranslateResponsePrompt(text)}`
     const answer = await gptChat(modelName, apiKey, contents)
     return {
       success: true,

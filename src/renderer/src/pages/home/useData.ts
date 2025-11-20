@@ -3,6 +3,8 @@ import { SendEnum } from '@src/type/ipc-constants'
 import { toast } from 'sonner'
 import { speakText } from '@src/utils/speak'
 import { parseJson } from '@src/utils/ai'
+import { TranslateResponse } from '@src/type/base'
+import { getLanguageType } from '@src/utils/ai'
 
 export default function useData() {
   const [isLoading, setIsLoading] = useState(false)
@@ -14,14 +16,14 @@ export default function useData() {
   /** 翻译是否成功 */
   const translateSuccess = useRef(false)
   /** 翻译结果 */
-  const [translationResult, setTranslationResult] = useState('')
+  const [translationResult, setTranslationResult] = useState<TranslateResponse | null>(null)
 
   /** 处理输入文本变化 */
   const handleInputTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     translationText.current = e.target.value
 
     if (e.target.value.trim() === '') {
-      setTranslationResult('')
+      setTranslationResult(null)
       translateSuccess.current = false
     }
   }
@@ -60,31 +62,6 @@ export default function useData() {
     window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, translationText.current)
   }
 
-  /** 交换输入文本和翻译结果 */
-  const swapContent = useCallback(() => {
-    if (!translationResult) {
-      toast.error('没有可交换的内容')
-      return
-    }
-
-    // 保存当前翻译结果
-    const currentResult = translationResult
-
-    // 将当前输入设置为翻译结果
-    setTranslationResult(translationText.current)
-
-    // 将当前翻译结果设置为输入文本
-    translationText.current = currentResult
-
-    // 更新输入框的值
-    const textareaElement = document.querySelector('textarea') as HTMLTextAreaElement
-    if (textareaElement) {
-      textareaElement.value = currentResult
-    }
-
-    toast.success('内容已互换')
-  }, [translationResult, translationText])
-
   /** 朗读输入文本 */
   const speakInputText = () => {
     if (!translationText.current || isSpeaking) {
@@ -102,31 +79,6 @@ export default function useData() {
     )
   }
 
-  /** 朗读翻译结果 */
-  const speakTranslationResult = () => {
-    if (!translationResult || isSpeaking) {
-      return
-    }
-    setIsSpeaking(true)
-    speakText(
-      translationResult,
-      () => {
-        setIsSpeaking(false)
-      },
-      () => {
-        setIsSpeaking(false)
-      }
-    )
-  }
-
-  useEffect(() => {
-    window.electron.ipcRenderer.removeAllListeners(SendEnum.SWAP_CONTENT)
-    window.electron.ipcRenderer.on(SendEnum.SWAP_CONTENT, swapContent)
-    return () => {
-      window.electron.ipcRenderer.removeAllListeners(SendEnum.SWAP_CONTENT)
-    }
-  }, [swapContent])
-
   useEffect(() => {
     // 移除可能存在的旧监听器
     window.electron.ipcRenderer.removeAllListeners(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS)
@@ -135,33 +87,21 @@ export default function useData() {
     // 成功处理函数
     const handleSuccess = (event, result) => {
       setIsLoading(false)
+
       setTranslationResult(() => {
-        let resultData = ''
-        const keyConfig = {
-          'zh': '简体中文',
-          'en': '英语',
-        }
-        let data = parseJson(result)
+        let resultData: TranslateResponse | null = null
+        resultData = parseJson(result) as unknown as TranslateResponse
         // 解析失败
-        if (data === null) {
+        if (resultData === null) {
           return result.replace(/"/g, '')
         }
-        let keys = Object.keys(data)
-        keys.length > 1 && keys.forEach(key => {
-          if (!!data[key] && data[key] !== 'null') {
-            resultData += `${keyConfig[key] || key} : ${data[key]}\n`
-          }
-        })
+        const languageType = getLanguageType(translationText.current)
 
-        if (keys.length === 1) {
-          // 当翻译为中文或者英文时，直接返回翻译结果
-          if (Object.keys(keyConfig).includes(keys[0])) {
-            resultData = `${data[keys[0]]}`
-          } else {
-            // 词性只存在一个
-            resultData = `${keys[0]} : ${data[keys[0]]}`
-          }
-        }
+        console.log(languageType, 'languageType');
+
+
+        resultData.sourceLanguage = languageType
+
         return resultData
       })
       translateSuccess.current = true
@@ -206,9 +146,7 @@ export default function useData() {
     handleKeyDown,
     onScreenshot,
     onEnglishChineseTranslation,
-    swapContent,
     speakInputText,
-    speakTranslationResult
   }
 }
 
