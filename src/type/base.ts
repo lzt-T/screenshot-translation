@@ -1,5 +1,4 @@
-import { TargetLanguage } from "./model"
-
+/* 文本类型 */
 export enum TextType {
   /* 单词 */
   WORD = 'word',
@@ -16,6 +15,17 @@ export enum Language {
   ZH_AND_EN = 'zh-and-en',
 }
 
+export interface ExampleSentence {
+  /* 词性 */
+  partOfSpeech: string | null;
+  /* 这个词性对应的单词翻译 */
+  wordTranslation: string | null;
+  /* 例句中文 */
+  zh: string | null;
+  /* 例句英文 */
+  en: string | null
+}
+
 export interface TranslateResponse {
   /* 入口类型 */
   textType: TextType;
@@ -25,19 +35,12 @@ export interface TranslateResponse {
   targetLanguage: Language;
   /* 源文本 */
   sourceWords: string;
-  /* 通用翻译结果 */
+  /* 只有句子才有翻译结果 */
   translation: {
-    /* 词性  如果是单词，则词性为单词的词性 */
-    partOfSpeech: string | null
     zh: string | null;
     en: string | null;
   }[]
 
   /* 只有单词才有例句 */
-  exampleSentences: {
-    /* 词性 */
-    partOfSpeech: string | null
-    zh: string | null
-    en: string | null
-  }[] | null
+  exampleSentences: ExampleSentence[] | null
 }

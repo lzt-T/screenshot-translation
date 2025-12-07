@@ -35,13 +35,6 @@ export enum BuiltInFreeModel {
 /** 模型类型 */
 export type ModelName = GeminiModel | GlmModel | GptModel | DeepSeekModel | BuiltInFreeModel
 
-
-/** 目标语言 */
-export enum TargetLanguage {
-  ZH_CN = "简体中文",
-  EN_US = "English"
-}
-
 /** 开机自启动设置 */
 export interface AutoLaunchSetting {
   enabled: boolean;

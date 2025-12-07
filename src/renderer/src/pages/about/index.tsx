@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { SendEnum } from '../../../../type/ipc-constants'
 import { Button } from '@renderer/components/ui/button'
 import { toast } from 'sonner'
+import { cn } from '../../lib/utils'
+import img from '@renderer/assets/github.svg'
 
 export default function Index() {
   /* 应用版本 */
@@ -36,17 +38,35 @@ export default function Index() {
 
   return (
     <div className="p-6">
-      <h1 className="mb-4 text-2xl font-semibold text-foreground">版本信息</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-foreground">关于</h1>
       <div className="flex justify-between items-center">
         <p className="text-base text-muted-foreground">
-          应用版本: <span className="text-foreground">{appVersion}</span>
+          当前版本: <span className="text-foreground">{appVersion}</span>
         </p>
         <Button
           onClick={onCheckUpdate}
           disabled={isUpdating}
-          className={`${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+          className={cn('w-[120px]', isUpdating ? 'cursor-not-allowed' : 'cursor-pointer')}
         >
           {isUpdating ? '检查中...' : '检查更新'}
+        </Button>
+      </div>
+
+      <div className="flex justify-between items-center mt-4">
+        <div className="flex items-center gap-1 text-base text-muted-foreground">
+          <img src={img} className="w-6 h-6" alt="" />
+          地址
+        </div>
+        <Button
+          className="w-[120px] cursor-pointer"
+          onClick={() => {
+            window.electron.ipcRenderer.send(
+              SendEnum.OPEN_EXTERNAL_URL,
+              'https://github.com/lzt-T/screenshot-translation'
+            )
+          }}
+        >
+          前往
         </Button>
       </div>
     </div>

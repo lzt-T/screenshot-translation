@@ -1,7 +1,9 @@
 //只能在主线程中使用
 import { ZhipuAI } from 'zhipuai-sdk-nodejs-v4'
-import { getTranslatePrompt, getTranslateResponsePrompt } from '../../../utils/ai'
-import { BuiltInFreeModel, TargetLanguage } from '../../../type/model'
+import { getTranslatePrompt } from '../../../utils/ai'
+import { BuiltInFreeModel } from '../../../type/model'
+import { Language } from '../../../type/base'
+import { promptManage } from '../../../utils/promptManage'
 
 let zhipuClients: null | ZhipuAI = null
 let zhipuClientsFree: null | ZhipuAI = null
@@ -67,7 +69,7 @@ async function translateText(
   modelName: string,
   text: string,
   apiKey: string,
-  targetLanguage: TargetLanguage
+  targetLanguage: Language
 ): Promise<{ success: boolean; translation: string; msg?: string }> {
   try {
 
@@ -87,7 +89,7 @@ async function translateText(
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `${getTranslateResponsePrompt(text)}`
+    const contents = `${promptManage.getTranslatePrompt(text)}`
     const answer = await glmChat(modelName, apiKey, contents)
     return {
       success: true,

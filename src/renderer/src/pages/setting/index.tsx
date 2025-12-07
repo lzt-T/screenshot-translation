@@ -4,7 +4,6 @@ import {
   ModelName,
   GeminiModel,
   GlmModel,
-  TargetLanguage,
   GptModel,
   DeepSeekModel,
   BuiltInFreeModel
@@ -22,6 +21,8 @@ import { copyText } from '@src/utils/copy'
 import { Switch } from '@renderer/components/ui/switch'
 import useData from './useData'
 import { Badge } from '@renderer/components/ui/badge'
+import { Language } from '@src/type/base'
+import { getLanguageText } from '@src/utils/ai'
 
 const SettingPage: React.FC = () => {
   const { data, changeData, dataIsInit } = useData()
@@ -47,7 +48,7 @@ const SettingPage: React.FC = () => {
 
   /** 设置目标语言 */
   const handleTargetLanguageChange = useCallback(
-    (value: TargetLanguage) => {
+    (value: Language) => {
       changeData('targetLanguage', value)
     },
     [changeData]
@@ -76,15 +77,15 @@ const SettingPage: React.FC = () => {
         {/* 语言设置 - 左右结构 */}
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 py-4">
           <div className="text-base font-medium">截取翻译目标语言</div>
-          <div className="w-64">
+          <div className="w-70">
             <Select defaultValue={data.targetLanguage} onValueChange={handleTargetLanguageChange}>
               <SelectTrigger className="w-full cursor-pointer">
                 <SelectValue placeholder="选择目标语言" />
               </SelectTrigger>
               <SelectContent>
-                {Object.values(TargetLanguage).map((modelValue) => (
+                {Object.values([Language.ZH, Language.EN]).map((modelValue) => (
                   <SelectItem className="cursor-pointer" key={modelValue} value={modelValue}>
-                    {modelValue}
+                    {getLanguageText(modelValue)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -95,7 +96,7 @@ const SettingPage: React.FC = () => {
         {/* 模型选择 - 左右结构 */}
         <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 py-4">
           <div className="text-base font-medium">选择当前使用的翻译模型</div>
-          <div className="w-64">
+          <div className="w-70">
             <Select defaultValue={data.activeModel} onValueChange={handleModelNameChange}>
               <SelectTrigger className="w-full cursor-pointer">
                 <SelectValue placeholder="选择模型" />
@@ -148,7 +149,7 @@ const SettingPage: React.FC = () => {
                 className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 py-4 pl-5"
               >
                 <div className="text-base font-medium">{modelValue} API Key</div>
-                <div className="w-64 flex gap-2 items-center">
+                <div className="w-70 flex gap-2 items-center">
                   <Input
                     defaultValue={data.apiKeys[modelValue] || ''}
                     type="password"

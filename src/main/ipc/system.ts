@@ -1,4 +1,4 @@
-import { ipcMain } from "electron"
+import { ipcMain, shell } from "electron"
 import { SendEnum } from "../../type/ipc-constants"
 import { showNotification } from "../utils/notification"
 import { NoticeType } from "../../type/notice"
@@ -31,6 +31,11 @@ export const registerSystemIpcEvents = () => {
   /** 单独设置开机自启动 */
   ipcMain.on(SendEnum.SET_AUTO_LAUNCH, (event, enabled) => {
     setAutoLaunch(enabled)
+  })
+
+  /** 打开外部链接 */
+  ipcMain.on(SendEnum.OPEN_EXTERNAL_URL, (event, url) => {
+    shell.openExternal(url)
   })
 }
 

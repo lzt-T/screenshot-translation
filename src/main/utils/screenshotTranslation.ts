@@ -7,21 +7,21 @@ import { resultWindow } from "../windowClasses/resultWindow"
 import { captureArea } from "./captureArea"
 import { analyzeScreenshot } from "./imageAnalyzer"
 import { getErrorMessage } from "./error"
-import { TargetLanguage } from "../../type/model"
+import { Language } from "../../type/base"
 
 
 class ScreenshotTranslationManager {
 
   /* 当前目标语言 */
-  public targetLanguage: TargetLanguage = TargetLanguage.ZH_CN
+  public targetLanguage: Language = Language.ZH
 
   constructor() { }
 
   /**
    * @description 设置当前目标语言
-   * @param {TargetLanguage} targetLanguage 目标语言
+   * @param {Language} targetLanguage 目标语言
    */
-  public setTargetLanguage(targetLanguage: TargetLanguage) {
+  public setTargetLanguage(targetLanguage: Language) {
     this.targetLanguage = targetLanguage
   }
 

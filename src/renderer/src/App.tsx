@@ -73,9 +73,9 @@ function App(): React.JSX.Element {
               'w-full justify-start cursor-pointer',
               isLinkActive('/version') && 'bg-accent text-accent-foreground'
             )}
-            onClick={() => handleNavigate('/version')}
+            onClick={() => handleNavigate('/about')}
           >
-            <Package size={18} className="mr-2" /> 版本
+            <Package size={18} className="mr-2" /> 关于
           </Button>
         </nav>
 

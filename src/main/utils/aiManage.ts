@@ -10,11 +10,11 @@ import { EnglishChineseTranslation as translateTextGeminiEnglishChineseTranslati
 import { EnglishChineseTranslation as translateTextGPTEnglishChineseTranslation } from "./aiClients/gptAi";
 import { EnglishChineseTranslation as translateTextDeepSeekEnglishChineseTranslation } from "./aiClients/deepseekAi";
 import { getModelType } from "../../utils/ai";
-import { TargetLanguage } from "../../type/model";
 import { setGeminiClient } from "./aiClients/geminiAi";
 import { setZhipuClient } from "./aiClients/glmAi";
 import { setOpenaiClient } from "./aiClients/gptAi";
 import { setDeepSeekClient } from "./aiClients/deepseekAi";
+import { Language } from '../../type/base'
 
 class AiManage {
 
@@ -105,10 +105,10 @@ class AiManage {
   /**
    * @description 文字翻译
    * @param {string} text 需要翻译的文本
-   * @param {TargetLanguage} targetLanguage 目标语言
+   * @param {Language} targetLanguage 目标语言
    * @returns {Promise<{success: boolean, translation: string, msg?: string}>} 翻译结果
    */
-  public async translateText(text: string, targetLanguage: TargetLanguage) {
+  public async translateText(text: string, targetLanguage: Language) {
     const translateConfig = {
       [Model.GLM]: translateTextGLM,
       [Model.GEMINI]: translateTextGemini,

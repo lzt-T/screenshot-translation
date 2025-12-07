@@ -1,13 +1,13 @@
-import { Language } from '../type/base'
+import { Language, TextType } from '../type/base'
 import { Model, GlmModel, GeminiModel, GptModel, DeepSeekModel, BuiltInFreeModel } from '../type/model'
-import { TargetLanguage, ModelName } from '../type/model'
+import { ModelName } from '../type/model'
 
 /** 获取翻译prompt */
-export const getTranslatePrompt = (text: string, targetLanguage: TargetLanguage) => {
+export const getTranslatePrompt = (text: string, targetLanguage: Language) => {
 
   const config = {
-    [TargetLanguage.ZH_CN]: '简体中文',
-    [TargetLanguage.EN_US]: '英语'
+    [Language.ZH]: '简体中文',
+    [Language.EN]: '英语'
   }
 
   return `
@@ -16,7 +16,11 @@ export const getTranslatePrompt = (text: string, targetLanguage: TargetLanguage)
   输出：用户需要翻译的文本由多个 | 分隔，你必须在翻译结果中完整且精确保留这些分隔符，不要省略或修改它们。只返回翻译后的文本和分隔符。`
 }
 
-/* 获取语言类型 */
+/**
+ * @description 获取语言类型
+ * @param {string} text 文本
+ * @returns {Language} 语言类型
+ */
 export const getLanguageType = (text: string) => {
   const isEnglish = /[a-zA-Z]/.test(text)
   const isChinese = /[\u4e00-\u9fa5]/.test(text)
@@ -30,6 +34,47 @@ export const getLanguageType = (text: string) => {
   return Language.ZH
 }
 
+/**
+ * @description 获取目标语言
+ * @param {string} text 文本
+ * @returns {Language} 目标语言
+ */
+export const getTargetLanguage = (text: string) => {
+  const language = getLanguageType(text)
+
+  const config = {
+    [Language.ZH]: Language.EN,
+    [Language.EN]: Language.ZH,
+    [Language.ZH_AND_EN]: Language.ZH_AND_EN,
+  }
+  return config[language]
+}
+
+/**
+ * @description 获取文本类型
+ * @param {string} text 文本
+ * @returns {TextType} 文本类型
+ */
+export const getTextType = (text: string) => {
+  const language = getLanguageType(text)
+  const config = {
+    [Language.ZH_AND_EN]: () => {
+      return TextType.SENTENCE
+    },
+    [Language.ZH]: () => {
+      return TextType.SENTENCE
+    },
+    [Language.EN]: () => {
+      // 是否是单词，是否有空格
+      let isSpace = /\s/.test(text)
+      if (!isSpace) {
+        return TextType.WORD
+      }
+      return TextType.SENTENCE
+    },
+  }
+  return config[language]()
+}
 
 
 /**
@@ -211,4 +256,20 @@ export const getTranslateResponsePrompt = (text: string) => {
 作为中英文翻译专家，你必须遵守上述Rules，按照Workflows执行任务，并按照JSON格式输出。
 please translate the following content: ${text}
 `
+}
+
+
+/**
+ * @description 获取语言文本
+ * @param {Language} language 语言
+ * @returns {string} 语言文本
+ */
+export const getLanguageText = (language: Language) => {
+  if (language === Language.ZH) {
+    return '简体中文'
+  } ``
+  if (language === Language.EN) {
+    return '英语'
+  }
+  return '中英文混合'
 }

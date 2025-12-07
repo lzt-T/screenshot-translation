@@ -57,9 +57,9 @@ export default function useData() {
       return
     }
 
-    lastTranslationText.current = translationText.current
+    lastTranslationText.current = translationText.current.trim()
     setIsLoading(true)
-    window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, translationText.current)
+    window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, translationText.current.trim())
   }
 
   /** 朗读输入文本 */
@@ -88,22 +88,9 @@ export default function useData() {
     const handleSuccess = (event, result) => {
       setIsLoading(false)
 
-      setTranslationResult(() => {
-        let resultData: TranslateResponse | null = null
-        resultData = parseJson(result) as unknown as TranslateResponse
-        // 解析失败
-        if (resultData === null) {
-          return result.replace(/"/g, '')
-        }
-        const languageType = getLanguageType(translationText.current)
+      console.log(result, 'result');
 
-        console.log(languageType, 'languageType');
-
-
-        resultData.sourceLanguage = languageType
-
-        return resultData
-      })
+      setTranslationResult(result)
       translateSuccess.current = true
       toast.success('翻译成功', {
         id: 'translation-success'

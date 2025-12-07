@@ -16,7 +16,7 @@ export default function ResultView({ result }: ResultViewProps) {
 
   /* 是否是单词 */
   const isWord = useMemo(() => {
-    return String(result.textType).toUpperCase() === String(TextType.WORD).toUpperCase()
+    return result.textType === TextType.WORD
   }, [result])
 
   useEffect(() => {
@@ -26,51 +26,43 @@ export default function ResultView({ result }: ResultViewProps) {
   return (
     <div className="w-full flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-6">
       {/* 翻译结果卡片 */}
-      <div className="bg-card text-card-foreground rounded-xl border shadow-sm overflow-hidden transition-all hover:shadow-md">
-        <div className="p-1">
-          {result.translation?.map((item, index) => (
-            <div
-              key={index}
-              className={cn(
-                'group flex flex-col p-3 rounded-lg transition-colors hover:bg-muted/50',
-                index !== (result.translation?.length || 0) - 1 && 'border-b border-border/50'
-              )}
-            >
-              <div className="flex items-start gap-3">
-                {/* 词性标签 */}
-                {item.partOfSpeech && (
-                  <Badge
-                    variant="secondary"
-                    className="mt-1 shrink-0 font-normal text-xs px-2 py-0.5 bg-primary/10 text-primary hover:bg-primary/20 border-0"
-                  >
-                    {item.partOfSpeech}
-                  </Badge>
+      {!isWord && (
+        <div className="bg-card text-card-foreground rounded-xl border shadow-sm overflow-hidden transition-all hover:shadow-md">
+          <div className="p-1">
+            {result.translation?.map((item, index) => (
+              <div
+                key={index}
+                className={cn(
+                  'group flex flex-col p-3 rounded-lg transition-colors hover:bg-muted/50',
+                  index !== (result.translation?.length || 0) - 1 && 'border-b border-border/50'
                 )}
-
-                {/* 翻译内容 */}
-                <div className="flex-1 min-w-0">
-                  {result.sourceLanguage === Language.ZH_AND_EN ? (
-                    <div className="flex flex-col gap-1">
+              >
+                <div className="flex items-start gap-3">
+                  {/* 翻译内容 */}
+                  <div className="flex-1 min-w-0">
+                    {result.sourceLanguage === Language.ZH_AND_EN ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="text-base tracking-tight text-foreground break-words">
+                          {item.en}
+                        </div>
+                        <div className="text-sm text-muted-foreground break-words">{item.zh}</div>
+                      </div>
+                    ) : result.sourceLanguage === Language.ZH ? (
                       <div className="text-base tracking-tight text-foreground break-words">
                         {item.en}
                       </div>
-                      <div className="text-sm text-muted-foreground break-words">{item.zh}</div>
-                    </div>
-                  ) : result.sourceLanguage === Language.ZH ? (
-                    <div className="text-base tracking-tight text-foreground break-words">
-                      {item.en}
-                    </div>
-                  ) : (
-                    <div className="text-base tracking-tight text-foreground break-words">
-                      {item.zh}
-                    </div>
-                  )}
+                    ) : (
+                      <div className="text-base tracking-tight text-foreground break-words">
+                        {item.zh}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 例句卡片 */}
       {isWord && result.exampleSentences && result.exampleSentences.length > 0 && (
@@ -88,7 +80,7 @@ export default function ResultView({ result }: ResultViewProps) {
                 <div className="flex flex-col gap-2">
                   {item.partOfSpeech && (
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {item.partOfSpeech}
+                      {item.partOfSpeech}: {item.wordTranslation}
                     </span>
                   )}
                   <div className="space-y-1">

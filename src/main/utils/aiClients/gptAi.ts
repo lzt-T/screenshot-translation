@@ -1,7 +1,8 @@
 //在主线程中使用
-import { getTranslatePrompt, getTranslateResponsePrompt } from '../../../utils/ai'
-import { TargetLanguage } from '../../../type/model';
+import { getTranslatePrompt } from '../../../utils/ai'
 import OpenAI from "openai";
+import { Language } from '../../../type/base'
+import { promptManage } from '../../../utils/promptManage'
 
 
 let openaiClients: null | OpenAI = null
@@ -52,9 +53,10 @@ const gptChat = async (modelName: string, apiKey: string, contents: string) => {
 /**
  * 翻译文本内容
  * @param {string} text 需要翻译的文本
+ * @param {Language} targetLanguage 目标语言
  * @returns {Promise<{success: boolean, translation: string, error?: string}>} 翻译结果
  */
-export async function translateText(modelName: string, text: string, apiKey: string, targetLanguage: TargetLanguage) {
+export async function translateText(modelName: string, text: string, apiKey: string, targetLanguage: Language) {
   try {
     console.log(`${modelName} translateText ：${text}`)
 
@@ -76,7 +78,7 @@ export async function translateText(modelName: string, text: string, apiKey: str
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `${getTranslateResponsePrompt(text)}`
+    const contents = `${promptManage.getTranslatePrompt(text)}`
     const answer = await gptChat(modelName, apiKey, contents)
     return {
       success: true,

@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Model, ModelName, GeminiModel, GlmModel, TargetLanguage, GptModel, AutoLaunchSetting, BuiltInFreeModel } from '@src/type/model'
+import { Model, ModelName, GeminiModel, GlmModel, GptModel, AutoLaunchSetting, BuiltInFreeModel } from '@src/type/model'
+import { Language } from '@src/type/base'
 import localForage from 'localforage'
 
 export interface StoreSetting {
-  targetLanguage: TargetLanguage
+  targetLanguage: Language
   activeModel: ModelName
   apiKeys: {
     [key in Model]: string
@@ -14,7 +15,7 @@ export interface StoreSetting {
 export default function useLocalForage() {
   /** 设置 */
   const [storeSetting, setStoreSetting] = useState<StoreSetting>({
-    targetLanguage: TargetLanguage.ZH_CN,
+    targetLanguage: Language.ZH,
     activeModel: BuiltInFreeModel.GLM_4_FLASH_250414_FREE,
     apiKeys: {
       [Model.GEMINI]: '',
@@ -34,7 +35,7 @@ export default function useLocalForage() {
   /** 初始化 */
   const onInit = useCallback(async () => {
     let result: StoreSetting = {
-      targetLanguage: TargetLanguage.ZH_CN,
+      targetLanguage: Language.ZH,
       activeModel: BuiltInFreeModel.GLM_4_FLASH_250414_FREE,
       apiKeys: {
         [Model.GEMINI]: '',
@@ -61,7 +62,7 @@ export default function useLocalForage() {
     }
 
     if (targetLanguage) {
-      result.targetLanguage = targetLanguage as TargetLanguage
+      result.targetLanguage = targetLanguage as Language
     }
 
     if (autoLaunch) {

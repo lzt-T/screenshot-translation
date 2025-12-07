@@ -1,6 +1,6 @@
 import { TextBlock } from './imageOCR'
 import { extractTextFromImage } from './imageOCR'
-import { TargetLanguage } from '../../type/model'
+import { Language } from '../../type/base'
 import { aiManage } from './aiManage'
 
 export interface TranslateTextBlock extends TextBlock {
@@ -10,10 +10,10 @@ export interface TranslateTextBlock extends TextBlock {
 /**
  * 分析截图，提取文字并翻译
  * @param {string} imageDataUrl 图像的base64数据URL
- * @param {TargetLanguage} targetLanguage 目标语言
+ * @param {Language} targetLanguage 目标语言
  * @returns {Promise<{success: boolean, textBlocks: TranslateTextBlock[], msg?: string}>} 分析和翻译结果，包含文本位置信息
  */
-export async function analyzeScreenshot(imageDataUrl: string, targetLanguage: TargetLanguage) {
+export async function analyzeScreenshot(imageDataUrl: string, targetLanguage: Language) {
   try {
     // 1. 提取文字和位置
     const { success, textBlocks, msg } = await extractTextFromImage(imageDataUrl)

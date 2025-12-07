@@ -1,5 +1,5 @@
 import Home from '../pages/home/index'
-import Version from '../pages/version/index'
+import About from '../pages/about/index'
 import App from '../App'
 import { Navigate } from 'react-router-dom'
 import { createHashRouter } from 'react-router-dom'
@@ -13,15 +13,15 @@ const router = createHashRouter([
     children: [
       {
         path: '/',
-        element: <Navigate to='/home' />
+        element: <Navigate to="/home" />
       },
       {
         path: 'home',
         element: <Home />
       },
       {
-        path: 'version',
-        element: <Version />
+        path: 'about',
+        element: <About />
       },
       {
         path: 'setting',
@@ -36,7 +36,7 @@ const router = createHashRouter([
   {
     path: '/windows/resultOverlay',
     element: <ResultOverlay />
-  },
+  }
 ])
 
 export default router

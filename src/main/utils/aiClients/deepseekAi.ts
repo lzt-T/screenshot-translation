@@ -1,7 +1,9 @@
 //在主线程中调用
-import { getTranslatePrompt, getTranslateResponsePrompt } from '../../../utils/ai'
-import { DeepSeekModel, TargetLanguage } from '../../../type/model';
+import { getTranslatePrompt } from '../../../utils/ai'
+import { DeepSeekModel } from '../../../type/model';
 import OpenAI from "openai";
+import { Language } from '../../../type/base'
+import { promptManage } from '../../../utils/promptManage'
 
 let openaiClients: null | OpenAI = null
 
@@ -58,10 +60,10 @@ export const deepseekChat = async (modelName: string, apiKey: string, contents: 
  * @param {DeepSeekModel} modelName DeepSeek 模型名称
  * @param {string} text 需要翻译的文本
  * @param {string} apiKey API 密钥
- * @param {TargetLanguage} targetLanguage 目标语言
+ * @param {Language} targetLanguage 目标语言
  * @returns {Promise<{success: boolean, translation: string, error?: string}>} 翻译结果
  */
-export async function translateText(modelName: string, text: string, apiKey: string, targetLanguage: TargetLanguage) {
+export async function translateText(modelName: string, text: string, apiKey: string, targetLanguage: Language) {
   try {
     const contents = `${getTranslatePrompt(text, targetLanguage)}`
     const answer = await deepseekChat(modelName, apiKey, contents)
@@ -79,7 +81,7 @@ export async function translateText(modelName: string, text: string, apiKey: str
 /**英汉互译 */
 export const EnglishChineseTranslation = async (modelName: string, apiKey: string, text: string) => {
   try {
-    const contents = `${getTranslateResponsePrompt(text)}`
+    const contents = `${promptManage.getTranslatePrompt(text)}`
     const answer = await deepseekChat(modelName, apiKey, contents)
     return {
       success: true,
