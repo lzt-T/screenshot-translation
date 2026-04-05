@@ -64,8 +64,8 @@ class PromptManage {
 ## Examples
 
 **示例 1: 处理中英夹杂输入**
-*输入*: "这个App的User Interface设计得很nice。"
-*输出*: \`\`\`json
+输入: "这个App的User Interface设计得很nice。"
+输出: \`\`\`json
 {
   "translation": [
   {

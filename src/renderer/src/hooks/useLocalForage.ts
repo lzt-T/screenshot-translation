@@ -1,64 +1,63 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import { Model, ModelName, GeminiModel, GlmModel, GptModel, AutoLaunchSetting, BuiltInFreeModel } from '@src/type/model'
+import { useCallback, useEffect, useState } from 'react'
+import { AutoLaunchSetting, TranslationModelProfile } from '@src/type/model'
 import { Language } from '@src/type/base'
 import localForage from 'localforage'
+import { createDefaultModelProfiles, DEFAULT_ACTIVE_MODEL_ID } from '@src/utils/modelProfiles'
 
 export interface StoreSetting {
   targetLanguage: Language
-  activeModel: ModelName
-  apiKeys: {
-    [key in Model]: string
-  }
+  activeModelId: string
+  models: TranslationModelProfile[]
   autoLaunch: AutoLaunchSetting
 }
 
+/**
+ * 本地存储设置 Hook
+ * @returns {{isInit: boolean, storeSetting: StoreSetting}} 设置状态与设置内容
+ */
 export default function useLocalForage() {
-  /** 设置 */
-  const [storeSetting, setStoreSetting] = useState<StoreSetting>({
+  // 默认设置
+  const defaultSetting: StoreSetting = {
     targetLanguage: Language.ZH,
-    activeModel: BuiltInFreeModel.GLM_4_FLASH_250414_FREE,
-    apiKeys: {
-      [Model.GEMINI]: '',
-      [Model.GLM]: '',
-      [Model.GPT]: '',
-      [Model.DEEP_SEEK]: '',
-      [Model.BUILT_IN_FREE]: ''
-    },
+    activeModelId: DEFAULT_ACTIVE_MODEL_ID,
+    models: createDefaultModelProfiles(),
     autoLaunch: {
       enabled: false
     }
+  }
+
+  // 设置数据
+  const [storeSetting, setStoreSetting] = useState<StoreSetting>({
+    ...defaultSetting
   })
 
-  /** 是否初始化 */
+  // 是否初始化
   const [isInit, setIsInit] = useState(true)
 
-  /** 初始化 */
+  /**
+   * 初始化本地设置
+   * @returns {Promise<void>} 异步初始化结果
+   */
   const onInit = useCallback(async () => {
-    let result: StoreSetting = {
-      targetLanguage: Language.ZH,
-      activeModel: BuiltInFreeModel.GLM_4_FLASH_250414_FREE,
-      apiKeys: {
-        [Model.GEMINI]: '',
-        [Model.GLM]: '',
-        [Model.GPT]: '',
-        [Model.DEEP_SEEK]: '',
-        [Model.BUILT_IN_FREE]: ''
-      },
-      autoLaunch: {
-        enabled: false
-      }
+    // 初始化结果
+    const result: StoreSetting = {
+      ...defaultSetting
     }
-    const apiKeys = await localForage.getItem('apiKeys')
-    const activeModel = await localForage.getItem('activeModel')
+    // 本地模型配置
+    const models = await localForage.getItem('models')
+    // 本地激活模型 ID
+    const activeModelId = await localForage.getItem('activeModelId')
+    // 本地目标语言
     const targetLanguage = await localForage.getItem('targetLanguage')
+    // 本地开机自启动配置
     const autoLaunch = await localForage.getItem('autoLaunch')
 
-    if (activeModel) {
-      result.activeModel = activeModel as unknown as GeminiModel | GlmModel | GptModel | BuiltInFreeModel
+    if (activeModelId) {
+      result.activeModelId = activeModelId as string
     }
 
-    if (apiKeys) {
-      result.apiKeys = apiKeys as { [key in Model]: string }
+    if (models) {
+      result.models = models as TranslationModelProfile[]
     }
 
     if (targetLanguage) {
@@ -76,10 +75,10 @@ export default function useLocalForage() {
 
   useEffect(() => {
     onInit()
-  }, [])
+  }, [onInit])
 
   return {
     isInit,
-    storeSetting,
+    storeSetting
   }
 }

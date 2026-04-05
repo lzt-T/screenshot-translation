@@ -1,6 +1,4 @@
 import { Language, TextType } from '../type/base'
-import { Model, GlmModel, GeminiModel, GptModel, DeepSeekModel, BuiltInFreeModel } from '../type/model'
-import { ModelName } from '../type/model'
 
 /** 获取翻译prompt */
 export const getTranslatePrompt = (text: string, targetLanguage: Language) => {
@@ -76,37 +74,6 @@ export const getTextType = (text: string) => {
   return config[language]()
 }
 
-
-/**
- * @description 获取模型名称对应的模型类型
- * @param {ModelName} modelName 模型名称
- * @returns {Model} 模型类型
- */
-export const getModelType = (modelName: ModelName): Model => {
-  if (Object.values(GlmModel).includes(modelName as unknown as GlmModel)) {
-    return Model.GLM
-  }
-
-  if (Object.values(GeminiModel).includes(modelName as unknown as GeminiModel)) {
-    return Model.GEMINI
-  }
-
-  if (Object.values(GptModel).includes(modelName as unknown as GptModel)) {
-    return Model.GPT
-  }
-
-  if (Object.values(DeepSeekModel).includes(modelName as unknown as DeepSeekModel)) {
-    return Model.DEEP_SEEK
-  }
-
-  if (Object.values(BuiltInFreeModel).includes(modelName as unknown as BuiltInFreeModel)) {
-    if (modelName === BuiltInFreeModel.GLM_4_FLASH_250414_FREE) {
-      return Model.GLM
-    }
-  }
-
-  return Model.GEMINI
-}
 
 /* 解析json */
 export const parseJson = (text: string): unknown | null => {

@@ -29,11 +29,14 @@ class ScreenshotTranslationManager {
    * @description 开始截图
    */
   public startScreenshot() {
+    // 当前模型 API Key
     const apiKey = aiManage.getApiKey()
+    // 当前模型显示名称
+    const currentModelText = aiManage.getCurrentModelDisplayText()
 
     if (!apiKey) {
       showNotification(
-        `模型 ${aiManage.currentTranslationModelName} 的 API Key 未配置,请在设置中配置`,
+        `模型 ${currentModelText} 的 API Key 未配置,请在设置中配置`,
         NoticeType.ERROR
       )
       return
@@ -96,5 +99,4 @@ class ScreenshotTranslationManager {
 
 
 export const screenshotTranslationManager = new ScreenshotTranslationManager()
-
 

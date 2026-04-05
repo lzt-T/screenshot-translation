@@ -6,6 +6,10 @@ import { aiManage } from "../utils/aiManage"
 import { screenshotTranslationManager } from "../utils/screenshotTranslation"
 import { setAutoLaunch } from "../utils/system"
 
+/**
+ * 注册系统相关 IPC 事件
+ * @returns {void} 无返回值
+ */
 export const registerSystemIpcEvents = () => {
   /** 复制文本成功 */
   ipcMain.on(SendEnum.COPY_TEXT_SUCCESS, () => {
@@ -14,16 +18,14 @@ export const registerSystemIpcEvents = () => {
 
   /** 设置localForage */
   ipcMain.on(SendEnum.SET_LOCAL_FORAGE, (event, setting) => {
-    aiManage.setCurrentTranslationModelName(setting.activeModel)
-    aiManage.setCurrentApiKeys(setting.apiKeys)
+    aiManage.setModelSettings(setting.activeModelId, setting.models)
     screenshotTranslationManager.setTargetLanguage(setting.targetLanguage)
     aiManage.initAiClient()
   })
 
   /** 初始化localForage */
   ipcMain.on(SendEnum.INIT_LOCAL_FORAGE, (event, setting) => {
-    aiManage.setCurrentTranslationModelName(setting.activeModel)
-    aiManage.setCurrentApiKeys(setting.apiKeys)
+    aiManage.setModelSettings(setting.activeModelId, setting.models)
     screenshotTranslationManager.setTargetLanguage(setting.targetLanguage)
     aiManage.initAiClient()
   })
@@ -38,5 +40,4 @@ export const registerSystemIpcEvents = () => {
     shell.openExternal(url)
   })
 }
-
 

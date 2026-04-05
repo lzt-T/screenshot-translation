@@ -1,42 +1,24 @@
-/** 模型类型 */
-export enum Model {
-  GEMINI = 'gemini',
-  GLM = 'glm',
-  GPT = 'gpt',
-  DEEP_SEEK = 'deepseek',
-  /* 内置免费模型 */
-  BUILT_IN_FREE = 'built-in-free',
-}
+/** 内置免费模型名称 */
+export const BUILTIN_FREE_MODEL = 'glm-4-flash-250414'
 
-/** Gemini模型 */
-export enum GeminiModel {
-  GEMINI_2_5_FLASH = 'gemini-2.5-flash',
+/** 用户可配置的翻译模型信息 */
+export interface TranslationModelProfile {
+  /* 模型配置主键 */
+  id: string
+  /* OpenAI 兼容网关地址 */
+  baseUrl?: string
+  /* 实际模型名 */
+  model: string
+  /* 模型 API Key */
+  apiKey: string
+  /* 是否内置免费模型 */
+  isBuiltInFree?: boolean
+  /* UI 显示名称 */
+  displayName?: string
 }
-
-/** Glm模型 */
-export enum GlmModel {
-  GLM_4_FLASH_250414 = 'glm-4-flash-250414',
-}
-
-/** GPT模型 */
-export enum GptModel {
-  GPT_4_1 = 'gpt-4.1',
-}
-
-export enum DeepSeekModel {
-  DEEP_SEEK_V3='DeepSeek-V3'
-}
-
-/** 内置免费模型 */
-export enum BuiltInFreeModel {
-  GLM_4_FLASH_250414_FREE = 'glm-4-flash-250414-free',
-}
-
-/** 模型类型 */
-export type ModelName = GeminiModel | GlmModel | GptModel | DeepSeekModel | BuiltInFreeModel
 
 /** 开机自启动设置 */
 export interface AutoLaunchSetting {
-  enabled: boolean;
+  /* 是否开启开机自启动 */
+  enabled: boolean
 }
-
