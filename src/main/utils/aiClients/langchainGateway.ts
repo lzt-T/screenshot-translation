@@ -5,11 +5,11 @@ import { TranslationModelProfile } from '../../../type/model'
 /** 统一 LLM 调用结果 */
 export interface LlmInvokeResult {
   /* 调用是否成功 */
-  success: boolean;
+  success: boolean
   /* 输出文本 */
-  text: string;
+  text: string
   /* 结果提示 */
-  msg?: string;
+  msg?: string
 }
 
 /**

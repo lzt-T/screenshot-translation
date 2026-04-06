@@ -8,7 +8,12 @@ import { createDefaultModelProfiles, DEFAULT_ACTIVE_MODEL_ID } from '@src/utils/
 
 /**
  * 设置页数据 Hook
- * @returns {{data: StoreSetting, changeData: Function, dataIsInit: boolean}} 设置页状态
+ * @returns {{
+ * data: StoreSetting,
+ * changeData: Function,
+ * resetModelSettings: Function,
+ * dataIsInit: boolean
+ * }} 设置页状态
  */
 export default function useData() {
   // 本地存储设置
@@ -47,6 +52,17 @@ export default function useData() {
   }, [])
 
   /**
+   * 重置模型相关配置
+   * @returns {void} 无返回值
+   */
+  const resetModelSettings = useCallback(() => {
+    // 默认模型配置列表
+    const defaultModels = createDefaultModelProfiles()
+    changeData('models', defaultModels)
+    changeData('activeModelId', DEFAULT_ACTIVE_MODEL_ID)
+  }, [changeData])
+
+  /**
    * 数据变更后同步到主进程
    * @returns {void} 无返回值
    */
@@ -77,6 +93,7 @@ export default function useData() {
   return {
     data,
     changeData,
+    resetModelSettings,
     dataIsInit
   }
 }

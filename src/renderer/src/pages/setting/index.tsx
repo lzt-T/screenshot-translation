@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import { TranslationModelProfile } from '@src/type/model'
 import {
   Select,
@@ -7,15 +7,16 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { Input } from '@renderer/components/ui/input'
-import { Copy, Plus, Trash2 } from 'lucide-react'
-import { copyText } from '@src/utils/copy'
+import { Plus, RotateCcw } from 'lucide-react'
 import { Switch } from '@renderer/components/ui/switch'
 import useData from './useData'
-import { Badge } from '@renderer/components/ui/badge'
 import { Language } from '@src/type/base'
 import { getLanguageText } from '@src/utils/ai'
 import { v4 as uuidV4 } from 'uuid'
+import { Button } from '@renderer/components/ui/button'
+import DeleteModelConfirmDialog from './components/DeleteModelConfirmDialog'
+import ModelConfigCard from './components/ModelConfigCard'
+import { ModelFieldKey } from './components/ModelConfigCard/useData'
 
 /**
  * 设置页
@@ -23,7 +24,10 @@ import { v4 as uuidV4 } from 'uuid'
  */
 const SettingPage: React.FC = () => {
   // 设置页数据
-  const { data, changeData, dataIsInit } = useData()
+  const { data, changeData, resetModelSettings, dataIsInit } = useData()
+
+  // 待删除模型
+  const [pendingRemoveModel, setPendingRemoveModel] = useState<TranslationModelProfile | null>(null)
 
   /**
    * 设置模型 ID
@@ -40,16 +44,11 @@ const SettingPage: React.FC = () => {
   /**
    * 更新模型单字段
    * @param {string} modelId 模型 ID
-   * @param {'displayName' | 'baseUrl' | 'model' | 'apiKey'} key 字段名
+   * @param {ModelFieldKey} key 字段名
    * @param {string} value 字段值
    * @returns {void} 无返回值
    */
-  const updateModelField = useCallback(
-    (
-      modelId: string,
-      key: 'displayName' | 'baseUrl' | 'model' | 'apiKey',
-      value: string
-    ) => {
+  const updateModelField = useCallback((modelId: string, key: ModelFieldKey, value: string) => {
       // 更新后的模型配置列表
       const nextModels = data.models.map((item) => {
         if (item.id !== modelId) {
@@ -61,9 +60,7 @@ const SettingPage: React.FC = () => {
         } as TranslationModelProfile
       })
       changeData('models', nextModels)
-    },
-    [changeData, data.models]
-  )
+    }, [changeData, data.models])
 
   /**
    * 设置目标语言
@@ -134,6 +131,43 @@ const SettingPage: React.FC = () => {
     [changeData, data.activeModelId, data.models]
   )
 
+  /**
+   * 打开删除确认弹窗
+   * @param {TranslationModelProfile} model 模型配置
+   * @returns {void} 无返回值
+   */
+  const openRemoveConfirm = useCallback((model: TranslationModelProfile) => {
+    setPendingRemoveModel(model)
+  }, [])
+
+  /**
+   * 关闭删除确认弹窗
+   * @returns {void} 无返回值
+   */
+  const closeRemoveConfirm = useCallback(() => {
+    setPendingRemoveModel(null)
+  }, [])
+
+  /**
+   * 确认删除自定义模型
+   * @returns {void} 无返回值
+   */
+  const confirmRemoveCustomModel = useCallback(() => {
+    if (!pendingRemoveModel) {
+      return
+    }
+    removeCustomModel(pendingRemoveModel.id)
+    setPendingRemoveModel(null)
+  }, [pendingRemoveModel, removeCustomModel])
+
+  /**
+   * 重置模型配置
+   * @returns {void} 无返回值
+   */
+  const handleResetModelSettings = useCallback(() => {
+    resetModelSettings()
+  }, [resetModelSettings])
+
   if (!dataIsInit) {
     return null
   }
@@ -197,105 +231,38 @@ const SettingPage: React.FC = () => {
         <div className="mt-8 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-[550] text-gray-600">模型配置</h2>
-            <button
-              className="flex items-center gap-1 px-3 py-2 rounded-md border text-sm cursor-pointer hover:bg-muted"
-              onClick={addCustomModel}
-              type="button"
-            >
-              <Plus size={14} />
-              新增自定义模型
-            </button>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleResetModelSettings} type="button" variant="outline">
+                <RotateCcw size={14} />
+                重置配置
+              </Button>
+              <Button onClick={addCustomModel} type="button" variant="outline">
+                <Plus size={14} />
+                新增自定义模型
+              </Button>
+            </div>
           </div>
+          <div className="text-sm text-muted-foreground">提示：Gemini 模型可以不填写 Base URL。</div>
 
           {data.models.map((modelItem) => {
-            // 是否是内置模型
-            const isBuiltIn = Boolean(modelItem.isBuiltInFree)
-            // 是否可删除
-            const canDelete = !isBuiltIn
-            // 模型标题
-            const modelTitle = modelItem.displayName || modelItem.model || modelItem.id
             return (
-              <div
+              <ModelConfigCard
                 key={modelItem.id}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="font-medium text-base flex items-center gap-2">
-                    {modelTitle}
-                    {isBuiltIn && (
-                      <Badge className="text-xs border-green-500 text-green-500" variant="outline">
-                        免费
-                      </Badge>
-                    )}
-                  </div>
-                  {canDelete && (
-                    <button
-                      className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/40 hover:bg-muted cursor-pointer transition-colors"
-                      onClick={() => removeCustomModel(modelItem.id)}
-                      title="删除模型"
-                      type="button"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground">显示名称</div>
-                    <Input
-                      value={modelItem.displayName || ''}
-                      onChange={(e) => updateModelField(modelItem.id, 'displayName', e.target.value)}
-                      disabled={isBuiltIn}
-                      placeholder="模型显示名"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground">模型名</div>
-                    <Input
-                      value={modelItem.model}
-                      onChange={(e) => updateModelField(modelItem.id, 'model', e.target.value)}
-                      placeholder="输入模型名，如 gpt-4.1"
-                      disabled={isBuiltIn}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">Base URL</div>
-                  <Input
-                    value={modelItem.baseUrl || ''}
-                    onChange={(e) => updateModelField(modelItem.id, 'baseUrl', e.target.value)}
-                    placeholder="输入 Base URL，如 https://api.openai.com/v1"
-                    disabled={isBuiltIn}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">API Key</div>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      value={isBuiltIn ? '内置免费模型无需填写' : modelItem.apiKey}
-                      type="password"
-                      onChange={(e) => updateModelField(modelItem.id, 'apiKey', e.target.value)}
-                      className="w-full"
-                      disabled={isBuiltIn}
-                    />
-                    <div
-                      className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/40 hover:bg-muted cursor-pointer transition-colors"
-                      onClick={() => copyText(modelItem.apiKey || '')}
-                      title="复制API Key"
-                    >
-                      <Copy size={14} />
-                    </div>
-                  </div>
-                </div>
-              </div>
+                model={modelItem}
+                onChangeField={updateModelField}
+                onRequestDelete={openRemoveConfirm}
+              />
             )
           })}
         </div>
       </div>
+
+      <DeleteModelConfirmDialog
+        open={Boolean(pendingRemoveModel)}
+        modelName={pendingRemoveModel?.displayName || pendingRemoveModel?.model}
+        onCancel={closeRemoveConfirm}
+        onConfirm={confirmRemoveCustomModel}
+      />
     </div>
   )
 }
