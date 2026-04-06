@@ -42,6 +42,18 @@ const CJK_CHAR_REGEX = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/
 const LATIN_ALNUM_REGEX = /[A-Za-z0-9]/
 // 文本日志最大长度
 const TEXT_LOG_MAX_LENGTH = 120
+// 合并判定：水平容错（像素）
+const OCR_MERGE_HORIZONTAL_TOLERANCE = 2
+// 合并判定：垂直容错（像素）
+const OCR_MERGE_VERTICAL_TOLERANCE = 2
+// 合并判定：正向垂直间距系数（基于行高）
+const OCR_MERGE_POSITIVE_VERTICAL_GAP_FACTOR = 1
+// 合并判定：最小高度比例（next/current）
+const OCR_MERGE_MIN_HEIGHT_RATIO = 0.65
+// 合并判定：最大高度比例（next/current）
+const OCR_MERGE_MAX_HEIGHT_RATIO = 1.6
+// 合并判定：水平间距系数（基于当前块高度）
+const OCR_MERGE_MAX_HORIZONTAL_GAP_FACTOR = 1
 
 // OCR 日志阶段
 type OcrLogStage = 'raw-blocks' | 'merged-blocks'
@@ -327,17 +339,6 @@ async function extractTextFromImage(imageDataUrl: string) {
 
 /** 是否可以合并文本块 */
 function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
-  // 水平容错值（像素）
-  const HORIZONTAL_TOLERANCE = 2
-  // 垂直容错值（像素）
-  const VERTICAL_TOLERANCE = 2
-  // 正向垂直间距系数（基于行高）
-  const POSITIVE_VERTICAL_GAP_FACTOR = 1
-  // 最小高度比例（next/current）
-  const MIN_HEIGHT_RATIO = 0.65
-  // 最大高度比例（next/current）
-  const MAX_HEIGHT_RATIO = 1.6
-
   // 垂直方向间隙
   const verticalGap =
     nextBlock.boundingBox.y - (currentBlock.boundingBox.y + currentBlock.boundingBox.height)
@@ -349,7 +350,8 @@ function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
 
   // 水平重叠判断（考虑容错）
   const overlapsHorizontally =
-    currentLeft < nextRight + HORIZONTAL_TOLERANCE && nextLeft < currentRight + HORIZONTAL_TOLERANCE
+    currentLeft < nextRight + OCR_MERGE_HORIZONTAL_TOLERANCE &&
+    nextLeft < currentRight + OCR_MERGE_HORIZONTAL_TOLERANCE
 
   // 当前聚合块的平均行高估算
   const currentSourceCount = Math.max(currentBlock.mergeDebug?.sourceCount || 1, 1)
@@ -365,11 +367,14 @@ function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
   // 高度比例（next/current）
   const heightRatio = nextBlockHeight / currentLineHeight
   // 高度是否在可合并区间
-  const heightComparable = heightRatio >= MIN_HEIGHT_RATIO && heightRatio <= MAX_HEIGHT_RATIO
+  const heightComparable =
+    heightRatio >= OCR_MERGE_MIN_HEIGHT_RATIO &&
+    heightRatio <= OCR_MERGE_MAX_HEIGHT_RATIO
   // 正向垂直间距上限（仅正 gap 生效）
   const positiveGapLimit =
-    Math.max(nextBlockHeight, estimatedCurrentLineHeight) * POSITIVE_VERTICAL_GAP_FACTOR +
-    VERTICAL_TOLERANCE
+    Math.max(nextBlockHeight, estimatedCurrentLineHeight) *
+      OCR_MERGE_POSITIVE_VERTICAL_GAP_FACTOR +
+    OCR_MERGE_VERTICAL_TOLERANCE
 
   // 垂直邻近判定：
   // 1) gap <= 0：视为重叠/贴合，水平重叠即可合并
@@ -383,7 +388,6 @@ function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
   const horizontalGap =
     nextBlock.boundingBox.x - (currentBlock.boundingBox.x + currentBlock.boundingBox.width)
 
-  const MAX_HORIZONTAL_GAP_FACTOR = 1
   const currentTop = currentBlock.boundingBox.y
   const currentBottom = currentBlock.boundingBox.y + currentBlock.boundingBox.height
   const nextTop = nextBlock.boundingBox.y
@@ -391,13 +395,14 @@ function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
 
   // 垂直重叠判断（考虑容错）
   const overlapsVertically =
-    currentTop < nextBottom + VERTICAL_TOLERANCE && nextTop < currentBottom + VERTICAL_TOLERANCE
+    currentTop < nextBottom + OCR_MERGE_VERTICAL_TOLERANCE &&
+    nextTop < currentBottom + OCR_MERGE_VERTICAL_TOLERANCE
 
   // 水平邻近判定
   const horizontalCanMerge =
     heightComparable &&
-    horizontalGap >= -HORIZONTAL_TOLERANCE &&
-    horizontalGap < currentBlock.boundingBox.height * MAX_HORIZONTAL_GAP_FACTOR &&
+    horizontalGap >= -OCR_MERGE_HORIZONTAL_TOLERANCE &&
+    horizontalGap < currentBlock.boundingBox.height * OCR_MERGE_MAX_HORIZONTAL_GAP_FACTOR &&
     overlapsVertically
 
   if (!verticalCanMerge && !horizontalCanMerge) {
