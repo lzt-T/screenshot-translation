@@ -1,5 +1,11 @@
 import { Language, TextType } from '../type/base'
 
+/** 截图块翻译输入项 */
+export interface ScreenshotTranslationPromptItem {
+  id: string
+  text: string
+}
+
 /** 获取翻译prompt */
 export const getTranslatePrompt = (text: string, targetLanguage: Language) => {
 
@@ -12,6 +18,35 @@ export const getTranslatePrompt = (text: string, targetLanguage: Language) => {
   背景：你是一个翻译专家，擅长将文本翻译为${config[targetLanguage]}\n
   用户："${text}"\n
   输出：用户需要翻译的文本由多个 | 分隔，你必须在翻译结果中完整且精确保留这些分隔符，不要省略或修改它们。只返回翻译后的文本和分隔符。`
+}
+
+/** 获取截图块结构化翻译 prompt */
+export const getScreenshotBlocksTranslatePrompt = (
+  items: ScreenshotTranslationPromptItem[],
+  targetLanguage: Language
+) => {
+  // 目标语言文案
+  const languageTextMap = {
+    [Language.ZH]: '简体中文',
+    [Language.EN]: '英语'
+  }
+
+  // 输入 JSON 文本
+  const inputJsonText = JSON.stringify({ items }, null, 2)
+
+  return `
+你是专业翻译引擎。请将输入 JSON 中每个 items[].text 翻译为${languageTextMap[targetLanguage]}。
+
+强约束：
+1. 必须严格保留每个 id，不得新增、删除、修改 id。
+2. 输出必须是 JSON 对象，顶层仅包含 "items" 字段。
+3. 输出结构必须是：{"items":[{"id":"...","translation":"..."}]}。
+4. 不要输出 markdown、解释、注释、代码块。
+5. 如果某项无法翻译，translation 返回原文 text。
+
+输入如下：
+${inputJsonText}
+`
 }
 
 /**

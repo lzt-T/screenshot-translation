@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { CopyButton, FooterContainer, OverlayContainer, TranslatedTextOverlay } from './style'
 import { SendEnum } from '@src/type/ipc-constants'
 
@@ -10,11 +10,13 @@ interface BoundingBox {
 }
 
 interface TextBlock {
+  id: string
   text: string // 原文在某些情况下可能丢失
   translation: string
   /** 是否是单行 */
   isSingleLine: boolean
   boundingBox: BoundingBox
+  warning?: string
 }
 
 interface ResultData {
@@ -105,10 +107,10 @@ const ResultOverlay = () => {
 
   return (
     <OverlayContainer>
-      {blocksToRender.map((block, index) =>
+      {blocksToRender.map((block) =>
         block.boundingBox ? (
           <TranslatedTextOverlay
-            key={index}
+            key={block.id}
             style={{
               left: `${block.boundingBox.x}px`,
               top: `${block.boundingBox.y}px`,

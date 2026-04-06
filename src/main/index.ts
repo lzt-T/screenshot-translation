@@ -3,6 +3,7 @@ import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { registerAutoUpdate } from './utils/update'
 import { mainWindow } from './windowClasses/mainWindow'
 import { init } from './utils/init'
+import { terminateOcrWorker } from './utils/imageOCR'
 
 // 检查是否是第一个实例
 const gotTheLock = app.requestSingleInstanceLock()
@@ -52,3 +53,7 @@ app.on('window-all-closed', () => {
   }
 })
 
+app.on('before-quit', () => {
+  // 退出前释放 OCR Worker
+  void terminateOcrWorker()
+})

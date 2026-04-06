@@ -1,5 +1,9 @@
 import { Language } from '../../type/base'
-import { getTranslatePrompt } from '../../utils/ai'
+import {
+  getTranslatePrompt,
+  getScreenshotBlocksTranslatePrompt,
+  ScreenshotTranslationPromptItem
+} from '../../utils/ai'
 import { promptManage } from '../../utils/promptManage'
 import { TranslationModelProfile } from '../../type/model'
 import { createDefaultModelProfiles, DEFAULT_ACTIVE_MODEL_ID } from '../../utils/modelProfiles'
@@ -144,6 +148,48 @@ class AiManage {
 
     // 翻译提示词
     const prompt = `${getTranslatePrompt(text, targetLanguage)}`
+    // 模型调用结果
+    const invokeResult = await langchainGateway.invoke(runtimeProfile, prompt)
+
+    return {
+      success: invokeResult.success,
+      translation: invokeResult.text,
+      msg: invokeResult.msg
+    }
+  }
+
+  /**
+   * 截图文本块批量翻译
+   * @param {ScreenshotTranslationPromptItem[]} items 截图文本块
+   * @param {Language} targetLanguage 目标语言
+   * @returns {Promise<TranslationResult>} 翻译结果
+   */
+  public async translateScreenshotBlocks(
+    items: ScreenshotTranslationPromptItem[],
+    targetLanguage: Language
+  ): Promise<TranslationResult> {
+    // 运行时模型配置
+    const runtimeProfile = this.getRuntimeModelProfile()
+    if (!runtimeProfile) {
+      return {
+        success: false,
+        translation: '',
+        msg: '未找到可用模型配置'
+      }
+    }
+
+    // 当前模型 API Key
+    const apiKey = runtimeProfile.apiKey
+    if (!apiKey) {
+      return {
+        success: false,
+        translation: '',
+        msg: `${runtimeProfile.model} 模型的 API Key 未配置`
+      }
+    }
+
+    // 截图翻译提示词
+    const prompt = `${getScreenshotBlocksTranslatePrompt(items, targetLanguage)}`
     // 模型调用结果
     const invokeResult = await langchainGateway.invoke(runtimeProfile, prompt)
 

@@ -7,6 +7,7 @@ import { screenshotTranslationManager } from './screenshotTranslation'
 import { registerSystemIpcEvents } from '../ipc/system'
 import { registerScreenshotIpcEvents } from '../ipc/screenshot'
 import { registerTranslationIpcEvents } from '../ipc/translation'
+import { initializeOcrWorker } from './imageOCR'
 
 export const init = () => {
   /**
@@ -32,4 +33,11 @@ export const init = () => {
   registerSystemIpcEvents()
   registerScreenshotIpcEvents()
   registerTranslationIpcEvents()
+
+  // 预热 OCR Worker，降低首次截图耗时
+  void initializeOcrWorker().catch((error) => {
+    // OCR 初始化错误文本
+    const errorText = error instanceof Error ? error.message : String(error)
+    showNotification(errorText, NoticeType.WARNING)
+  })
 }
