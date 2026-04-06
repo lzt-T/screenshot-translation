@@ -9,6 +9,7 @@ import {
 } from '@renderer/components/ui/select'
 import { Plus, RotateCcw } from 'lucide-react'
 import { Switch } from '@renderer/components/ui/switch'
+import { toast } from 'sonner'
 import useData from './useData'
 import { Language } from '@src/type/base'
 import { getLanguageText } from '@src/utils/ai'
@@ -48,7 +49,8 @@ const SettingPage: React.FC = () => {
    * @param {string} value 字段值
    * @returns {void} 无返回值
    */
-  const updateModelField = useCallback((modelId: string, key: ModelFieldKey, value: string) => {
+  const updateModelField = useCallback(
+    (modelId: string, key: ModelFieldKey, value: string) => {
       // 更新后的模型配置列表
       const nextModels = data.models.map((item) => {
         if (item.id !== modelId) {
@@ -60,7 +62,9 @@ const SettingPage: React.FC = () => {
         } as TranslationModelProfile
       })
       changeData('models', nextModels)
-    }, [changeData, data.models])
+    },
+    [changeData, data.models]
+  )
 
   /**
    * 设置目标语言
@@ -107,6 +111,7 @@ const SettingPage: React.FC = () => {
     const nextModels = [...data.models, newModel]
     changeData('models', nextModels)
     changeData('activeModelId', newModel.id)
+    toast.success('新增模型成功')
   }, [changeData, data.models])
 
   /**
@@ -158,6 +163,7 @@ const SettingPage: React.FC = () => {
     }
     removeCustomModel(pendingRemoveModel.id)
     setPendingRemoveModel(null)
+    toast.success('删除模型成功')
   }, [pendingRemoveModel, removeCustomModel])
 
   /**
@@ -166,6 +172,7 @@ const SettingPage: React.FC = () => {
    */
   const handleResetModelSettings = useCallback(() => {
     resetModelSettings()
+    toast.success('重置成功')
   }, [resetModelSettings])
 
   if (!dataIsInit) {
@@ -232,17 +239,29 @@ const SettingPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-[550] text-gray-600">模型配置</h2>
             <div className="flex items-center gap-2">
-              <Button onClick={handleResetModelSettings} type="button" variant="outline">
+              <Button
+                className="cursor-pointer"
+                onClick={handleResetModelSettings}
+                type="button"
+                variant="outline"
+              >
                 <RotateCcw size={14} />
                 重置配置
               </Button>
-              <Button onClick={addCustomModel} type="button" variant="outline">
+              <Button
+                className="cursor-pointer"
+                onClick={addCustomModel}
+                type="button"
+                variant="outline"
+              >
                 <Plus size={14} />
                 新增自定义模型
               </Button>
             </div>
           </div>
-          <div className="text-sm text-muted-foreground">提示：Gemini 模型可以不填写 Base URL。</div>
+          <div className="text-sm text-muted-foreground">
+            提示：Gemini 模型可以不填写 Base URL。
+          </div>
 
           {data.models.map((modelItem) => {
             return (

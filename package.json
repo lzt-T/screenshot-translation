@@ -1,6 +1,6 @@
 {
   "name": "Bai_Ze",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Bai_Ze",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -23,6 +23,7 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
+    "@langchain/core": "^1.1.39",
     "@langchain/google-genai": "^2.1.26",
     "@langchain/openai": "^1.4.2",
     "@radix-ui/react-dialog": "^1.1.14",

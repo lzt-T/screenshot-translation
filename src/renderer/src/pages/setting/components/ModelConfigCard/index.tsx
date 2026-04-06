@@ -100,13 +100,15 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({ model, onChangeField,
             className="w-full"
             disabled={isBuiltIn}
           />
-          <div
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/40 hover:bg-muted cursor-pointer transition-colors"
-            onClick={handleCopyApiKey}
-            title="复制API Key"
-          >
-            <Copy size={14} />
-          </div>
+          {!isBuiltIn && (
+            <div
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/40 hover:bg-muted cursor-pointer transition-colors"
+              onClick={handleCopyApiKey}
+              title="复制API Key"
+            >
+              <Copy size={14} />
+            </div>
+          )}
         </div>
       </div>
     </div>
