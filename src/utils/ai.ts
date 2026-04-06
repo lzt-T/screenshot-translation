@@ -17,7 +17,11 @@ export const getTranslatePrompt = (text: string, targetLanguage: Language) => {
   return `
   背景：你是一个翻译专家，擅长将文本翻译为${config[targetLanguage]}\n
   用户："${text}"\n
-  输出：用户需要翻译的文本由多个 | 分隔，你必须在翻译结果中完整且精确保留这些分隔符，不要省略或修改它们。只返回翻译后的文本和分隔符。`
+  输出要求：
+  1. 用户需要翻译的文本由多个 | 分隔，你必须在翻译结果中完整且精确保留这些分隔符，不要省略或修改它们。
+  2. 只输出一个 JSON 对象，结构为 {"translation":"..."}。
+  3. 不要输出 markdown，不要输出 \`\`\` 或 \`\`\`json，不要输出注释、标题或任何额外解释。
+  4. 你的最终输出必须是可直接被 JSON.parse 解析的 JSON 字符串。`
 }
 
 /** 获取截图块结构化翻译 prompt */
@@ -41,8 +45,9 @@ export const getScreenshotBlocksTranslatePrompt = (
 1. 必须严格保留每个 id，不得新增、删除、修改 id。
 2. 输出必须是 JSON 对象，顶层仅包含 "items" 字段。
 3. 输出结构必须是：{"items":[{"id":"...","translation":"..."}]}。
-4. 不要输出 markdown、解释、注释、代码块。
-5. 如果某项无法翻译，translation 返回原文 text。
+4. 只输出一个 JSON 对象字面量，顶层仅允许 "items" 字段。
+5. 禁止输出 markdown、解释、注释、代码块；禁止输出 \`\`\` 或 \`\`\`json。
+6. 如果某项无法翻译，translation 返回原文 text。
 
 输入如下：
 ${inputJsonText}
@@ -176,7 +181,7 @@ export const getTranslateResponsePrompt = (text: string) => {
    - format: json
    - structure: 符合TranslateResponse接口定义的JSON结构。
    - style: 专业、准确、简洁。
-   - special_requirements: 确保JSON格式的正确性，所有字段必须符合接口定义，null值必须使用null表示。
+   - special_requirements: 确保JSON格式的正确性，所有字段必须符合接口定义，null值必须使用null表示；禁止markdown代码块包装（如\`\`\`json）。
 2. 格式规范：
    - indentation: 使用2个空格进行缩进。
    - sections: 使用JSON对象的分层结构来组织数据。
@@ -255,7 +260,7 @@ export const getTranslateResponsePrompt = (text: string) => {
           }
 
 ## Initialization
-作为中英文翻译专家，你必须遵守上述Rules，按照Workflows执行任务，并按照JSON格式输出。
+作为中英文翻译专家，你必须遵守上述Rules，按照Workflows执行任务，并按照JSON格式输出。你只能输出一个JSON对象，不得输出markdown、代码块、解释文字、注释或标题，禁止输出\`\`\`json。
 please translate the following content: ${text}
 `
 }

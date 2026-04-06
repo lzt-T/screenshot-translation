@@ -8,15 +8,21 @@ import { promptManage } from '../../utils/promptManage'
 import { TranslationModelProfile } from '../../type/model'
 import { createDefaultModelProfiles, DEFAULT_ACTIVE_MODEL_ID } from '../../utils/modelProfiles'
 import { langchainGateway } from './aiClients/langchainGateway'
+import {
+  englishChineseTranslationSchema,
+  screenshotTranslationSchema,
+  textTranslationSchema
+} from './aiClients/translationSchemas'
+import { log } from 'node:console'
 
 /** 翻译结果类型 */
 type TranslationResult = {
   /* 调用是否成功 */
-  success: boolean;
+  success: boolean
   /* 翻译结果文本 */
-  translation: string;
+  translation: string
   /* 结果提示 */
-  msg?: string;
+  msg?: string
 }
 
 /**
@@ -35,6 +41,29 @@ class AiManage {
   constructor() {}
 
   /**
+   * 是否是结构化输出校验失败
+   * @param {unknown} error 错误对象
+   * @returns {boolean} 是否是结构化校验失败
+   */
+  private isStructuredOutputValidationError(error: unknown): boolean {
+    // 错误消息
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return errorMessage.includes('parseError=true')
+  }
+
+  /**
+   * 构建结构化失败结果
+   * @returns {TranslationResult} 翻译失败结果
+   */
+  private createStructuredFailResult(): TranslationResult {
+    return {
+      success: false,
+      translation: '',
+      msg: '模型输出不符合 JSON 结构要求'
+    }
+  }
+
+  /**
    * 设置模型配置
    * @param {string} activeModelId 当前激活模型 ID
    * @param {TranslationModelProfile[]} models 模型配置列表
@@ -46,8 +75,8 @@ class AiManage {
     this.currentModels = hasValidModels ? models : createDefaultModelProfiles()
 
     // 当前可用的激活模型
-    const activeProfile = this.currentModels.find((item) => item.id === activeModelId)
-      || this.currentModels[0]
+    const activeProfile =
+      this.currentModels.find((item) => item.id === activeModelId) || this.currentModels[0]
     this.currentActiveModelId = activeProfile?.id || DEFAULT_ACTIVE_MODEL_ID
     this.currentTranslationModelName = activeProfile?.model || 'unknown-model'
   }
@@ -58,8 +87,9 @@ class AiManage {
    */
   private getCurrentModelProfile(): TranslationModelProfile | null {
     // 匹配当前激活模型
-    const activeProfile = this.currentModels.find((item) => item.id === this.currentActiveModelId)
-      || this.currentModels[0]
+    const activeProfile =
+      this.currentModels.find((item) => item.id === this.currentActiveModelId) ||
+      this.currentModels[0]
     return activeProfile || null
   }
 
@@ -146,15 +176,28 @@ class AiManage {
       }
     }
 
-    // 翻译提示词
-    const prompt = `${getTranslatePrompt(text, targetLanguage)}`
-    // 模型调用结果
-    const invokeResult = await langchainGateway.invoke(runtimeProfile, prompt)
+    try {
+      // 翻译提示词
+      const prompt = `${getTranslatePrompt(text, targetLanguage)}`
+      // 模型调用结果
+      const invokeResult = await langchainGateway.invokeStructured(
+        runtimeProfile,
+        prompt,
+        textTranslationSchema
+      )
 
-    return {
-      success: invokeResult.success,
-      translation: invokeResult.text,
-      msg: invokeResult.msg
+      console.log(invokeResult, 'invokeResult')
+
+      return {
+        success: invokeResult.success,
+        translation: invokeResult.data.translation,
+        msg: invokeResult.msg
+      }
+    } catch (error) {
+      if (this.isStructuredOutputValidationError(error)) {
+        return this.createStructuredFailResult()
+      }
+      throw error
     }
   }
 
@@ -188,15 +231,36 @@ class AiManage {
       }
     }
 
-    // 截图翻译提示词
-    const prompt = `${getScreenshotBlocksTranslatePrompt(items, targetLanguage)}`
-    // 模型调用结果
-    const invokeResult = await langchainGateway.invoke(runtimeProfile, prompt)
+    try {
+      // 截图翻译提示词
+      const prompt = `${getScreenshotBlocksTranslatePrompt(items, targetLanguage)}`
+      // 模型调用结果
+      const invokeResult = await langchainGateway.invokeStructured(
+        runtimeProfile,
+        prompt,
+        screenshotTranslationSchema
+      )
 
-    return {
-      success: invokeResult.success,
-      translation: invokeResult.text,
-      msg: invokeResult.msg
+      // 返回项映射
+      const responseItemMap = new Map(
+        invokeResult.data.items.map((item) => [item.id, item.translation])
+      )
+      // 回填后的结果
+      const normalizedItems = items.map((item) => ({
+        id: item.id,
+        translation: responseItemMap.get(item.id) || item.text
+      }))
+
+      return {
+        success: invokeResult.success,
+        translation: JSON.stringify({ items: normalizedItems }),
+        msg: invokeResult.msg
+      }
+    } catch (error) {
+      if (this.isStructuredOutputValidationError(error)) {
+        return this.createStructuredFailResult()
+      }
+      throw error
     }
   }
 
@@ -226,14 +290,29 @@ class AiManage {
       }
     }
 
-    // 英汉互译提示词
-    const prompt = `${promptManage.getTranslatePrompt(text)}`
-    // 模型调用结果
-    const invokeResult = await langchainGateway.invoke(runtimeProfile, prompt)
-    return {
-      success: invokeResult.success,
-      translation: invokeResult.text,
-      msg: invokeResult.msg
+    try {
+      // 英汉互译提示词
+      const prompt = `${promptManage.getTranslatePrompt(text)}`
+      // 模型调用结果
+      const invokeResult = await langchainGateway.invokeStructured(
+        runtimeProfile,
+        prompt,
+        englishChineseTranslationSchema
+      )
+
+      console.log(invokeResult, 'invokeResult')
+
+      return {
+        success: invokeResult.success,
+        translation: JSON.stringify(invokeResult.data),
+        msg: invokeResult.msg
+      }
+    } catch (error) {
+      console.error(error, 'error')
+      if (this.isStructuredOutputValidationError(error)) {
+        return this.createStructuredFailResult()
+      }
+      throw error
     }
   }
 }

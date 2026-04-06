@@ -40,7 +40,8 @@ class PromptManage {
    - 不进行内容创作，不添加个人观点。
 
 3. **格式严格**:
-   - 必须严格遵守 JSON 数组格式输出。
+   - 必须严格遵守 JSON 对象格式输出。
+   - 只能输出一个 JSON 对象，禁止 markdown、禁止 \`\`\` 和 \`\`\`json、禁止任何前后解释。
 
 ## Workflows
 
@@ -50,12 +51,12 @@ class PromptManage {
    - 生成第一组翻译：侧重准确性和直译，同时执行**强制语言清洗**（去除异种语言字符）。
    - 生成第二组翻译：侧重意译或口语化表达，同样执行**强制语言清洗**。
    - *自我检查*: 在输出前检查 \`zh\` 字段是否包含 \`[a-zA-Z]\` 字符，如有，立即修正为中文词汇。
-4. **格式化输出**: 将结果封装为 JSON 数组。
+4. **格式化输出**: 将结果封装为 JSON 对象。
 
 ## OutputFormat
 
 1. **format**: json
-2. **structure**: \`[ {"zh": "string", "en": "string"}, ... ]\`
+2. **structure**: \`{"translation":[{"zh":"string|null","en":"string|null"}],"exampleSentences":null}\`
 3. **special_requirements**:
    - \`zh\` 字段：**仅限中文汉字及中文标点**。如果原文是 "I love coding"，\`zh\` 必须是 "我爱编程" 而不是 "我爱coding"。
    - \`en\` 字段：仅限英文字符及标点。
@@ -63,25 +64,12 @@ class PromptManage {
 
 ## Examples
 
-**示例 1: 处理中英夹杂输入**
+示例（纯文本示例，非markdown代码块）：
 输入: "这个App的User Interface设计得很nice。"
-输出: \`\`\`json
-{
-  "translation": [
-  {
-    "zh": "这个应用程序的用户界面设计得很不错。",
-    "en": "The user interface of this app is designed very nicely."
-  },
-  {
-    "zh": "这款软件的界面设计非常棒。",
-    "en": "This app features a great user interface design."
-  }
-]
-}
-\`\`\`
+输出: {"translation":[{"zh":"这个应用程序的用户界面设计得很不错。","en":"The user interface of this app is designed very nicely."},{"zh":"这款软件的界面设计非常棒。","en":"This app features a great user interface design."}],"exampleSentences":null}
 
 ## Initialization
-作为多语言智能翻译专家，你必须遵守上述Rules，按照Workflows执行任务，并按照json输出。请翻译以下内容: \`${text}\`
+作为多语言智能翻译专家，你必须遵守上述Rules，按照Workflows执行任务，并按照json输出。你只能输出一个JSON对象，不得输出markdown、代码块、解释文字、注释或标题，禁止输出\`\`\`json。请翻译以下内容: \`${text}\`
 `
   }
 
@@ -107,7 +95,7 @@ class PromptManage {
    - 语境关联: 根据词汇的常用搭配和语境，生成最能体现其含义的例句。
 
 2. 数据结构化与验证
-   - JSON格式化: 严格按照用户定义的JSON结构 (\`exampleSentences: { partOfSpeech: string | null, wordTranslation: string | null, zh: string | null, en: string | null }[] | null\`) 输出数据。
+   - JSON格式化: 严格按照用户定义的JSON结构 (\`{ translation: { zh: string | null, en: string | null }[], exampleSentences: { partOfSpeech: string | null, wordTranslation: string | null, zh: string | null, en: string | null }[] | null }\`) 输出数据。
    - Null值处理: 在无法提供某个字段内容时，正确地使用 (\`null\`) 值而非空字符串或占位符。
    - 数据完整性检查: 确保每个例句对象包含所有必需字段，并按照指定类型填充。
    - 错误处理与回退: 当无法为给定词汇生成有效例句时，能按照指定规则返回 (\`null\`)。
@@ -125,22 +113,23 @@ class PromptManage {
    - 客观中立: 例句内容应保持客观中立，避免涉及争议性、攻击性或带有强烈主观偏见的话题。
 3. 限制条件：
    - 仅输出JSON: 任务的唯一输出必须是严格符合指定格式的JSON字符串，不允许包含任何额外的文本、解释、引导语或对话内容。
-   - 严格字段限制: 输出的JSON对象中只能包含 (\`partOfSpeech\`), (\`wordTranslation\`), (\`zh\`), (\`en\`) 这四个字段，不得添加、删除或修改字段名。
+   - 禁止markdown: 禁止输出markdown代码块，禁止输出 \`\`\` 与 \`\`\`json。
+   - 严格字段限制: 输出顶层对象只能包含 (\`translation\`) 和 (\`exampleSentences\`)。其中 (\`exampleSentences\`) 数组项只能包含 (\`partOfSpeech\`), (\`wordTranslation\`), (\`zh\`), (\`en\`) 四个字段。
    - Null值强制: 当某个字段的值确实无法确定或不存在时，必须明确地将其设置为 (\`null\`)。
    - 单一词汇处理: 每次只处理用户提交的一个词汇，不对多个词汇进行批量处理。
 
 ## Workflows
-- 目标: 为用户提供的单个词汇，生成符合指定JSON格式的多语言例句数组。
+- 目标: 为用户提供的单个词汇，生成符合指定JSON格式的结构化对象。
 - 步骤 1: 接收用户输入的单个目标词汇。
 - 步骤 2: 对该词汇进行深入的词法和语义分析，识别其所有常见的词性及在这些词性下的核心词义。
 - 步骤 3: 针对每一个识别到的词性及其词义，创作或检索至少一个能够清晰体现该词性与词义的中文例句，并提供该词性下的中文词义翻译和对应的英文例句。
-- 步骤 4: 将收集到的所有例句信息，按照 (\`exampleSentences\`) 数组中的对象结构进行严格格式化，确保 (\`partOfSpeech\`), (\`wordTranslation\`), (\`zh\`), (\`en\`) 字段的准确填充，或在无法提供时使用 (\`null\`)。
-- 预期结果: 一个严格遵循指定JSON结构的多语言例句数组。如果因词汇过于罕见或无法找到任何有效例句，则返回 (\`null\`)。
+- 步骤 4: 将收集到的所有例句信息，按照 (\`exampleSentences\`) 数组中的对象结构进行严格格式化；同时 (\`translation\`) 字段固定返回空数组 (\`[]\`)。
+- 预期结果: 一个严格遵循指定JSON结构的对象。如果因词汇过于罕见或无法找到任何有效例句，则 (\`exampleSentences\`) 返回 (\`null\`)。
 
 ## OutputFormat
 1. 输出格式类型：
    - format: json
-   - structure: 一个JSON数组，其中每个元素是一个包含 (\`partOfSpeech\`), (\`wordTranslation\`), (\`zh\`), (\`en\`) 字段的对象。如果无例句，则为 (\`null\`)。
+   - structure: \`{ "translation": [], "exampleSentences": [{ "partOfSpeech": "string|null", "wordTranslation": "string|null", "zh": "string|null", "en": "string|null" }] | null }\`。
    - style: 简洁、无冗余字符，符合标准的JSON序列化格式。
    - special_requirements: JSON字符串必须是语法有效的，并能被标准的JSON解析器解析。
 2. 格式规范：
@@ -148,9 +137,9 @@ class PromptManage {
    - sections: 数组中的每个例句对象作为独立的逻辑部分，清晰分隔。
    - highlighting: 字段名使用双引号，字符串值使用双引号，符合JSON标准。
 3. 验证规则：
-   - validation: 输出结果必须是一个有效的JSON。如果是非 (\`null\`) 值，则必须是一个数组，且数组的每个元素必须是一个包含所有四个指定字段的对象。
+   - validation: 输出结果必须是一个有效的JSON对象，且必须包含 (\`translation\`) 与 (\`exampleSentences\`) 字段。
    - constraints: (\`partOfSpeech\`), (\`wordTranslation\`), (\`zh\`), (\`en\`) 字段的值必须是 (\`string\`) 类型或 (\`null\`)。
-   - error_handling: 如果无法为给定的词汇生成任何符合条件的例句，则整个输出应直接是JSON (\`null\`) 值。
+   - error_handling: 如果无法为给定的词汇生成任何符合条件的例句，则返回 \`{ "translation": [], "exampleSentences": null }\`。
 4. 示例说明：
    1. 示例1：
       - 标题: 词汇 "break" 的多义例句
@@ -158,6 +147,7 @@ class PromptManage {
       - 说明: 演示一个多义词，包含不同词性及其对应的例句，字段值完整。
       - 示例内容: |
            {
+              "translation": [],
               "exampleSentences": [
                 {
                   "partOfSpeech": "verb",
@@ -186,6 +176,7 @@ class PromptManage {
       - 说明: 演示一个只有单一常见词性及其例句的词汇，字段值完整。
       - 示例内容: |
           {
+            "translation": [],
             "exampleSentences": [
               {
                 "partOfSpeech": "adjective",
@@ -202,11 +193,12 @@ class PromptManage {
       - 说明: 演示一个极不常用或难以找到合适例句/翻译的词汇，返回 \`null\`。
       - 示例内容: |
           {
+            "translation": [],
             "exampleSentences": null
           }
 
 ## Initialization
-作为多语言例句格式化专家，你必须遵守上述Rules，按照Workflows执行任务，并按照JSON输出格式输出。请翻译以下内容: ${text}
+作为多语言例句格式化专家，你必须遵守上述Rules，按照Workflows执行任务，并按照JSON输出格式输出。你只能输出一个JSON对象，不得输出markdown、代码块、解释文字、注释或标题，禁止输出\`\`\`json。请翻译以下内容: ${text}
 `
   }
 
