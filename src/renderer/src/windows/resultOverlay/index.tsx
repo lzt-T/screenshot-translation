@@ -25,8 +25,11 @@ interface ResultData {
   msg?: string
 }
 
+type OverlayMode = 'show-original' | 'hide-original'
+
 const ResultOverlay = () => {
   const [blocksToRender, setBlocksToRender] = useState<TextBlock[]>([])
+  const [overlayMode, setOverlayMode] = useState<OverlayMode>('show-original')
 
   /** 原始文本 */
   const originalText = useRef('')
@@ -96,6 +99,10 @@ const ResultOverlay = () => {
     handleCopyText(translatedText.current)
   }, [handleCopyText])
 
+  /** 切换原图显示状态 */
+  const toggleOverlayMode = useCallback(() => {
+    setOverlayMode((mode) => (mode === 'show-original' ? 'hide-original' : 'show-original'))
+  }, [])
 
   // 添加/移除键盘事件监听器
   useEffect(() => {
@@ -106,7 +113,7 @@ const ResultOverlay = () => {
   }, [handleKeyDown])
 
   return (
-    <OverlayContainer>
+    <OverlayContainer $overlayMode={overlayMode}>
       {blocksToRender.map((block) =>
         block.boundingBox ? (
           <TranslatedTextOverlay
@@ -127,6 +134,9 @@ const ResultOverlay = () => {
         ) : null
       )}
       <FooterContainer>
+        <CopyButton onClick={toggleOverlayMode}>
+          {overlayMode === 'show-original' ? '隐藏原图' : '显示原图'}
+        </CopyButton>
         <CopyButton onClick={copyOriginalText}>复制原文</CopyButton>
         <CopyButton onClick={copyTranslatedText}>复制译文</CopyButton>
       </FooterContainer>

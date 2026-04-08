@@ -2,11 +2,16 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { SendEnum } from '@src/type/ipc-constants'
 import { toast } from 'sonner'
 import { speakText } from '@src/utils/speak'
-import { parseJson } from '@src/utils/ai'
 import { TranslateResponse } from '@src/type/base'
-import { getLanguageType } from '@src/utils/ai'
+import useLocalForage from '@renderer/hooks/useLocalForage'
+import { useNavigate } from 'react-router-dom'
+import { TranslationModelProfile } from '@src/type/model'
 
 export default function useData() {
+  // 路由跳转方法
+  const navigate = useNavigate()
+  // 本地配置状态
+  const { storeSetting, isInit } = useLocalForage()
   const [isLoading, setIsLoading] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   /** 翻译文本 */
@@ -17,6 +22,58 @@ export default function useData() {
   const translateSuccess = useRef(false)
   /** 翻译结果 */
   const [translationResult, setTranslationResult] = useState<TranslateResponse | null>(null)
+
+  /**
+   * 跳转到设置页并聚焦模型配置区域
+   * @returns {void} 无返回值
+   */
+  const goToSettingPage = useCallback(() => {
+    navigate('/setting?focus=model-config')
+  }, [navigate])
+
+  /**
+   * 获取当前激活模型
+   * @returns {TranslationModelProfile | null} 当前模型
+   */
+  const getActiveModel = useCallback((): TranslationModelProfile | null => {
+    // 当前激活模型
+    const currentModel = storeSetting.models.find((item) => item.id === storeSetting.activeModelId)
+    return currentModel || null
+  }, [storeSetting.activeModelId, storeSetting.models])
+
+  /**
+   * 检查当前配置是否可执行翻译
+   * @returns {boolean} 是否满足配置条件
+   */
+  const ensureModelConfigReady = useCallback((): boolean => {
+    if (isInit) {
+      toast.error('配置加载中，请稍后重试')
+      return false
+    }
+    // 当前模型配置
+    const currentModel = getActiveModel()
+    if (!currentModel) {
+      toast.error('当前模型不存在，请前往设置重新选择', {
+        action: {
+          label: '去设置',
+          onClick: goToSettingPage
+        }
+      })
+      return false
+    }
+    if (!currentModel.apiKey?.trim()) {
+      // 当前模型展示名
+      const modelText = currentModel.displayName || currentModel.model || currentModel.id
+      toast.error(`模型 ${modelText} 未配置 API Key，请先到设置页完成配置`, {
+        action: {
+          label: '去设置',
+          onClick: goToSettingPage
+        }
+      })
+      return false
+    }
+    return true
+  }, [getActiveModel, goToSettingPage, isInit])
 
   /** 处理输入文本变化 */
   const handleInputTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -38,6 +95,9 @@ export default function useData() {
 
   /** 开始截图 */
   const onScreenshot = () => {
+    if (!ensureModelConfigReady()) {
+      return
+    }
     window.electron.ipcRenderer.send(SendEnum.SCREENSHOT_START)
   }
 
@@ -49,6 +109,9 @@ export default function useData() {
     }
     if (translationText.current.trim() === '') {
       toast.error('请输入要翻译的文本')
+      return
+    }
+    if (!ensureModelConfigReady()) {
       return
     }
 
@@ -133,7 +196,6 @@ export default function useData() {
     handleKeyDown,
     onScreenshot,
     onEnglishChineseTranslation,
-    speakInputText,
+    speakInputText
   }
 }
-

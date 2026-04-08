@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { TranslationModelProfile } from '@src/type/model'
 import {
   Select,
@@ -18,14 +18,21 @@ import { Button } from '@renderer/components/ui/button'
 import DeleteModelConfirmDialog from './components/DeleteModelConfirmDialog'
 import ModelConfigCard from './components/ModelConfigCard'
 import { ModelFieldKey } from './components/ModelConfigCard/useData'
+import { useSearchParams } from 'react-router-dom'
 
 /**
  * 设置页
  * @returns {React.JSX.Element | null} 设置页面
  */
 const SettingPage: React.FC = () => {
+  // 路由查询参数
+  const [searchParams] = useSearchParams()
   // 设置页数据
   const { data, changeData, resetModelSettings, dataIsInit } = useData()
+  // 模型配置区域元素引用
+  const modelConfigSectionRef = useRef<HTMLDivElement | null>(null)
+  // 模型配置区域高亮状态
+  const [isModelConfigHighlight, setIsModelConfigHighlight] = useState(false)
 
   // 待删除模型
   const [pendingRemoveModel, setPendingRemoveModel] = useState<TranslationModelProfile | null>(null)
@@ -175,6 +182,31 @@ const SettingPage: React.FC = () => {
     toast.success('重置成功')
   }, [resetModelSettings])
 
+  useEffect(() => {
+    // 聚焦目标参数
+    const focusTarget = searchParams.get('focus')
+    if (!dataIsInit || focusTarget !== 'model-config') {
+      return
+    }
+    // 模型配置区域元素
+    const modelConfigSection = modelConfigSectionRef.current
+    if (!modelConfigSection) {
+      return
+    }
+    modelConfigSection.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    })
+    setIsModelConfigHighlight(true)
+    // 高亮清理定时器
+    const highlightTimer = window.setTimeout(() => {
+      setIsModelConfigHighlight(false)
+    }, 2200)
+    return () => {
+      window.clearTimeout(highlightTimer)
+    }
+  }, [dataIsInit, searchParams])
+
   if (!dataIsInit) {
     return null
   }
@@ -235,7 +267,11 @@ const SettingPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-8 space-y-4">
+        <div
+          className={`mt-8 space-y-4 rounded-lg border border-transparent transition-all duration-500 ${isModelConfigHighlight ? 'border-primary/60 bg-primary/5 p-3' : ''}`}
+          id="model-config-section"
+          ref={modelConfigSectionRef}
+        >
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-[550] text-gray-600">模型配置</h2>
             <div className="flex items-center gap-2">

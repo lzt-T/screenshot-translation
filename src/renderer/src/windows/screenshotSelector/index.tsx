@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, StrictMode } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FullScreenContainer, OverlayPiece, SelectionBox, SizeInfo } from './style';
 import { SendEnum } from '@src/type/ipc-constants';
 
@@ -14,8 +14,12 @@ const ScreenshotSelector: React.FC = () => {
   const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [selectionRect, setSelectionRect] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
   const [screenSize, setScreenSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  // 是否展示选区过小提示
+  const [showSmallSelectionTip, setShowSmallSelectionTip] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  // 选区过小提示定时器
+  const smallTipTimerRef = useRef<number | null>(null);
 
   // 监听窗口大小变化
   useEffect(() => {
@@ -34,6 +38,7 @@ const ScreenshotSelector: React.FC = () => {
     const clientY = e.clientY;
     console.log('[ScreenshotSelector] Mouse down at:', { clientX, clientY });
     setIsDrawing(true);
+    setShowSmallSelectionTip(false);
     setStartPos({ x: clientX, y: clientY });
     setSelectionRect({ x: clientX, y: clientY, width: 0, height: 0 });
   };
@@ -68,7 +73,13 @@ const ScreenshotSelector: React.FC = () => {
       window.electron.ipcRenderer.send(SendEnum.SCREENSHOT_SELECTED, finalRect);
     } else {
       console.log('[ScreenshotSelector] Selection too small, cancelling');
-      // ipcRenderer.send('SCREENSHOT_CANCEL');
+      setShowSmallSelectionTip(true);
+      if (smallTipTimerRef.current) {
+        window.clearTimeout(smallTipTimerRef.current);
+      }
+      smallTipTimerRef.current = window.setTimeout(() => {
+        setShowSmallSelectionTip(false);
+      }, 1400);
     }
     setSelectionRect({ x: 0, y: 0, width: 0, height: 0 }); // 重置选区
 
@@ -112,6 +123,39 @@ const ScreenshotSelector: React.FC = () => {
     };
   }, [isDrawing, handleMouseMove, handleMouseUp, handleKeyDown]);
 
+  // 卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (smallTipTimerRef.current) {
+        window.clearTimeout(smallTipTimerRef.current);
+      }
+    };
+  }, []);
+
+  // 计算尺寸提示展示位置，避免遮挡选区核心区域
+  const getSizeInfoStyle = useCallback(() => {
+    // 提示框边距
+    const PADDING = 8;
+    // 提示框预估宽度
+    const BOX_WIDTH = 110;
+    // 提示框预估高度
+    const BOX_HEIGHT = 30;
+    let left = selectionRect.x + selectionRect.width + PADDING;
+    let top = selectionRect.y + selectionRect.height + PADDING;
+
+    if (left + BOX_WIDTH > screenSize.width) {
+      left = Math.max(PADDING, selectionRect.x - BOX_WIDTH - PADDING);
+    }
+    if (top + BOX_HEIGHT > screenSize.height) {
+      top = Math.max(PADDING, selectionRect.y - BOX_HEIGHT - PADDING);
+    }
+
+    return {
+      left: `${left}px`,
+      top: `${top}px`
+    };
+  }, [screenSize.height, screenSize.width, selectionRect.height, selectionRect.width, selectionRect.x, selectionRect.y]);
+
   // 渲染覆盖层
   const renderOverlay = () => {
     const { width: screenW, height: screenH } = screenSize;
@@ -138,11 +182,19 @@ const ScreenshotSelector: React.FC = () => {
   return (
     // 容器捕获初始 mousedown
     <FullScreenContainer ref={containerRef} onMouseDown={handleMouseDown}>
+      <SizeInfo style={{ left: '50%', top: '18px', transform: 'translateX(-50%)' }}>
+        拖拽选择区域 · 松开完成 · Esc 取消
+      </SizeInfo>
+      {showSmallSelectionTip ? (
+        <SizeInfo style={{ left: '50%', top: '50px', transform: 'translateX(-50%)' }}>
+          选区过小，请重新选择
+        </SizeInfo>
+      ) : null}
       {renderOverlay()}
       {isDrawing && selectionRect.width > 0 && selectionRect.height > 0 && (
         <>
           <SelectionBox $rect={selectionRect} />
-          <SizeInfo style={{ left: `${selectionRect.x + selectionRect.width + 5}px`, top: `${selectionRect.y + selectionRect.height + 5}px` }}>
+          <SizeInfo style={getSizeInfoStyle()}>
             {`${Math.round(selectionRect.width)} x ${Math.round(selectionRect.height)}`}
           </SizeInfo>
         </>

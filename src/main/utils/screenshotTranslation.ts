@@ -36,7 +36,7 @@ class ScreenshotTranslationManager {
 
     if (!apiKey) {
       showNotification(
-        `模型 ${currentModelText} 的 API Key 未配置,请在设置中配置`,
+        `模型 ${currentModelText} 的 API Key 未配置，请前往设置完成配置后重试`,
         NoticeType.ERROR
       )
       return
@@ -99,4 +99,3 @@ class ScreenshotTranslationManager {
 
 
 export const screenshotTranslationManager = new ScreenshotTranslationManager()
-

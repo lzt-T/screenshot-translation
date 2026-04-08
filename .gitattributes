@@ -1,0 +1,2 @@
+resources/tts/kokoro-int8-multi-lang-v1_1/model.int8.onnx filter=lfs diff=lfs merge=lfs -text
+resources/tts/kokoro-int8-multi-lang-v1_1/voices.bin filter=lfs diff=lfs merge=lfs -text
