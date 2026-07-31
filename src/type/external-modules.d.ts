@@ -23,3 +23,24 @@ declare module '@tailwindcss/vite' {
   const tailwindcss: (...args: unknown[]) => PluginOption
   export default tailwindcss
 }
+
+declare module 'sherpa-onnx-node' {
+  export interface GeneratedAudio {
+    samples: Float32Array
+    sampleRate: number
+  }
+
+  export class GenerationConfig {
+    constructor(config: { sid: number; speed: number; silenceScale: number })
+  }
+
+  export class OfflineTts {
+    static createAsync(config: unknown): Promise<OfflineTts>
+    generateAsync(config: {
+      text: string
+      enableExternalBuffer: boolean
+      generationConfig: GenerationConfig
+      onProgress: () => boolean
+    }): Promise<GeneratedAudio>
+  }
+}

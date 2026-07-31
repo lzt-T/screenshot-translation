@@ -2,6 +2,7 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { ChatOpenAI } from '@langchain/openai'
 import { ZodError, type ZodType } from 'zod'
 import { TranslationModelProfile } from '../../../type/model'
+import { isGeminiModel } from '../../../utils/modelProfiles'
 
 /** 统一 LLM 调用结果 */
 export interface LlmInvokeResult {
@@ -39,9 +40,7 @@ type StructuredOutputMethod = 'default' | 'jsonMode' | 'textJson'
 const MODEL_REQUEST_TIMEOUT_MS = 60_000
 
 // 模型前缀对应的结构化输出方式
-const STRUCTURED_OUTPUT_METHOD_BY_MODEL_PREFIX: Readonly<
-  Record<string, StructuredOutputMethod>
-> = {
+const STRUCTURED_OUTPUT_METHOD_BY_MODEL_PREFIX: Readonly<Record<string, StructuredOutputMethod>> = {
   'gemini-': 'textJson',
   'deepseek-': 'jsonMode',
   'glm-': 'jsonMode',
@@ -80,22 +79,11 @@ const extractTextFromContent = (content: unknown): string => {
 }
 
 /**
- * 是否是 Gemini 模型
- * @param {string} modelName 模型名称
- * @returns {boolean} 是否是 Gemini 模型
- */
-const isGeminiModel = (modelName: string): boolean => {
-  return modelName.toLowerCase().startsWith('gemini-')
-}
-
-/**
  * 获取结构化输出方式
  * @param {TranslationModelProfile} profile 模型配置
  * @returns {StructuredOutputMethod} 结构化输出方式
  */
-const getStructuredOutputMethod = (
-  profile: TranslationModelProfile
-): StructuredOutputMethod => {
+const getStructuredOutputMethod = (profile: TranslationModelProfile): StructuredOutputMethod => {
   // 标准化后的模型名称
   const normalizedModelName = profile.model.toLowerCase()
   // 命中的模型前缀策略

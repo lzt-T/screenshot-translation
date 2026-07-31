@@ -6,11 +6,19 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:"
     />
   </head>
 
   <body>
+    <!--
+      THESIS: Bai_Ze 是一张正在工作的识别台，拒绝默认灰蓝工具壳。
+      OWN-WORLD: 骨白与枪灰工作面、朱橙主操作、琥珀状态、精密标线和克制圆角。
+      STORY: 用户框选样本、看见识别过程，并在原任务附近获得清晰译文。
+      FIRST VIEWPORT: 左侧窄控制轨；右侧主操作与双语工作区占据中心，截图按钮始终可见。
+      FORM: 识别实验台；候选 4；seed 26a0dc10。
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

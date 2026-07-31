@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { SendEnum } from '@src/type/ipc-constants'
 import { toast } from 'sonner'
-import { speakText } from '@src/utils/speak'
+import { speakText, stopSpeaking } from '@src/utils/speak'
 import { TranslateResponse } from '@src/type/base'
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import { useNavigate } from 'react-router-dom'
@@ -20,8 +20,8 @@ export default function useData() {
   const [isLoading, setIsLoading] = useState(false)
   // 是否正在朗读
   const [isSpeaking, setIsSpeaking] = useState(false)
-  /** 翻译文本 */
-  const translationText = useRef('')
+  // 翻译文本
+  const [translationText, setTranslationText] = useState('')
   /** 上一次翻译文本 */
   const lastTranslationText = useRef('')
   /** 翻译是否成功 */
@@ -83,7 +83,7 @@ export default function useData() {
 
   /** 处理输入文本变化 */
   const handleInputTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    translationText.current = e.target.value
+    setTranslationText(e.target.value)
 
     if (e.target.value.trim() === '') {
       setTranslationResult(null)
@@ -113,7 +113,7 @@ export default function useData() {
       toast.error('正在翻译中...')
       return
     }
-    if (translationText.current.trim() === '') {
+    if (translationText.trim() === '') {
       toast.error('请输入要翻译的文本')
       return
     }
@@ -121,29 +121,35 @@ export default function useData() {
       return
     }
 
-    if (translateSuccess.current && lastTranslationText.current === translationText.current) {
+    if (translateSuccess.current && lastTranslationText.current === translationText) {
       toast.error('已翻译')
       return
     }
 
-    lastTranslationText.current = translationText.current.trim()
+    lastTranslationText.current = translationText.trim()
     setIsLoading(true)
-    window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, translationText.current.trim())
+    window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, translationText.trim())
   }
 
   /** 朗读输入文本 */
   const speakInputText = () => {
-    if (!translationText.current || isSpeaking) {
+    if (isSpeaking) {
+      stopSpeaking()
+      setIsSpeaking(false)
+      return
+    }
+    if (!translationText.trim()) {
       return
     }
     setIsSpeaking(true)
-    speakText(
-      translationText.current,
+    void speakText(
+      translationText,
       () => {
         setIsSpeaking(false)
       },
-      () => {
+      (error) => {
         setIsSpeaking(false)
+        toast.error(error.message)
       }
     )
   }
@@ -154,7 +160,7 @@ export default function useData() {
     window.electron.ipcRenderer.removeAllListeners(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL)
 
     // 成功处理函数
-    const handleSuccess = (event, result) => {
+    const handleSuccess = (_event, result) => {
       setIsLoading(false)
 
       console.log(result, 'result');
@@ -167,7 +173,7 @@ export default function useData() {
     }
 
     // 失败处理函数
-    const handleFail = (event, result) => {
+    const handleFail = (_event, result) => {
       setIsLoading(false)
       toast.error(result, {
         id: 'translation-fail'
@@ -188,8 +194,8 @@ export default function useData() {
       window.electron.ipcRenderer.removeAllListeners(
         SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL
       )
-      // 确保离开页面时停止所有语音
-      window.speechSynthesis.cancel()
+      // 确保离开页面时停止本地语音
+      stopSpeaking()
     }
   }, [])
 

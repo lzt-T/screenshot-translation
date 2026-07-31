@@ -1,16 +1,20 @@
 import './../../assets/main.css'
-import React, { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import ScreenshotSelector from './index'; // 导入 ScreenshotSelector 组件
+import React, { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import ThemeProvider from '@renderer/components/ThemeProvider'
+import ScreenshotSelector from './index'
 
-const rootElement = document.getElementById('root');
+// 截图选择器根节点
+const rootElement = document.getElementById('root')
 
 if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>
-      <ScreenshotSelector />
+      <ThemeProvider>
+        <ScreenshotSelector />
+      </ThemeProvider>
     </StrictMode>
-  );
+  )
 } else {
-  console.error('ScreenshotSelector entry point: Root element #root not found!');
-} 
+  console.error('ScreenshotSelector entry point: Root element #root not found!')
+}

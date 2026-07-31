@@ -1,18 +1,25 @@
 import styled from 'styled-components'
+
+/** 选区矩形属性 */
+interface RectProps {
+  /* 矩形坐标与尺寸 */
+  $rect: { x: number; y: number; width: number; height: number }
+}
+
+/** 截图全屏容器 */
 export const FullScreenContainer = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
+  z-index: 9998;
   background: transparent;
   cursor: crosshair;
   user-select: none;
-  overflow: hidden;
-  z-index: 9998;
 `
 
-// 覆盖层片段，用于创建镂空效果
+/** 选区外遮罩片段 */
 export const OverlayPiece = styled.div.attrs<RectProps>((props) => ({
   style: {
     left: `${props.$rect.x}px`,
@@ -22,16 +29,12 @@ export const OverlayPiece = styled.div.attrs<RectProps>((props) => ({
   }
 }))<RectProps>`
   position: fixed;
-  background: rgba(0, 0, 0, 0.5);
-  pointer-events: none;
   z-index: 9999;
+  background: var(--capture-mask);
+  pointer-events: none;
 `
 
-interface RectProps {
-  $rect: { x: number; y: number; width: number; height: number }
-}
-
-// 选区边框
+/** 当前截图选区 */
 export const SelectionBox = styled.div.attrs<RectProps>((props) => ({
   style: {
     left: `${props.$rect.x}px`,
@@ -41,32 +44,28 @@ export const SelectionBox = styled.div.attrs<RectProps>((props) => ({
   }
 }))<RectProps>`
   position: absolute;
-  border: 2px dashed #677CFF; // 蓝色虚线边框
-  background: rgba(59, 130, 246, 0.05); // 轻微的蓝色背景
-  pointer-events: none;
-  box-sizing: border-box;
   z-index: 10000;
-  animation: pulse 1.5s infinite alternate; // 添加脉冲动画
+  box-sizing: border-box;
+  border: 2px solid var(--primary);
+  background: color-mix(in oklab, var(--primary) 7%, transparent);
+  box-shadow: 0 0 0 1px var(--floating-border),
+    0 10px 28px -20px color-mix(in oklab, var(--primary) 80%, transparent);
+  pointer-events: none;
 
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
-    }
-    100% {
-      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
-    }
-  }
 `
 
-// 尺寸信息提示框
+/** 选区尺寸与操作提示 */
 export const SizeInfo = styled.div`
   position: absolute;
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  pointer-events: none;
   z-index: 10001;
+  padding: 6px 9px;
+  border: 1px solid var(--floating-border);
+  border-radius: 7px;
+  color: var(--floating-foreground);
+  background: var(--floating-surface-strong);
+  box-shadow: 0 8px 24px -16px var(--floating-surface-strong);
+  font-family: var(--font-measure);
+  font-size: 11px;
   white-space: nowrap;
+  pointer-events: none;
 `

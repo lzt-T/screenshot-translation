@@ -4,6 +4,7 @@ import { registerAutoUpdate } from './utils/update'
 import { mainWindow } from './windowClasses/mainWindow'
 import { init } from './utils/init'
 import { terminateOcrWorker } from './utils/imageOCR'
+import { speechService } from './speech/speech-service'
 
 // 检查是否是第一个实例
 const gotTheLock = app.requestSingleInstanceLock()
@@ -56,4 +57,6 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   // 退出前释放 OCR Worker
   void terminateOcrWorker()
+  // 退出前释放语音 Worker
+  void speechService.dispose()
 })

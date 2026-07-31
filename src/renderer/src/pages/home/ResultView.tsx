@@ -1,102 +1,92 @@
-/* 结果展示组件 */
-import { TextType, TranslateResponse, Language } from '@src/type/base'
-import { Badge } from '@renderer/components/ui/badge'
-import { BookOpen } from 'lucide-react'
+import React from 'react'
+import { BookOpen, ScanText } from 'lucide-react'
+import { Language, TextType, TranslateResponse } from '@src/type/base'
 import { cn } from '@renderer/lib/utils'
 
+/** 翻译结果属性 */
 interface ResultViewProps {
+  /* 翻译结果 */
   result: TranslateResponse | null
+  /* 是否正在翻译 */
+  isLoading: boolean
 }
 
 /**
- * 展示翻译结果
+ * 渲染翻译结果与等待状态
  * @param {ResultViewProps} props 组件属性
- * @returns {React.ReactNode} 翻译结果视图
+ * @returns {React.JSX.Element} 翻译结果区域
  */
-export default function ResultView({ result }: ResultViewProps) {
+export default function ResultView({ result, isLoading }: ResultViewProps): React.JSX.Element {
+  // 当前结果是否是单词
+  const isWord = result?.textType === TextType.WORD
+
   if (!result) {
-    return null
+    return (
+      <div className="lab-panel flex min-h-56 items-center justify-center overflow-hidden px-8 py-10">
+        <div className="max-w-xs text-center">
+          <div className="mx-auto mb-4 flex size-11 items-center justify-center rounded-xl bg-accent text-muted-foreground">
+            <ScanText size={20} />
+          </div>
+          <p className="text-sm font-medium text-foreground">
+            {isLoading ? '正在识别与翻译' : '译文将在这里显现'}
+          </p>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            {isLoading ? '请稍候，处理完成后会保留原有段落结构。' : '从截图开始，或在左侧输入文字。'}
+          </p>
+        </div>
+      </div>
+    )
   }
 
-  // 是否是单词
-  const isWord = result.textType === TextType.WORD
-  // 是否存在可展示的单词例句
-  const hasExampleSentences = Boolean(result.exampleSentences?.length)
-
   return (
-    <div className="w-full flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-6">
-      {/* 翻译结果卡片 */}
+    <div className="lab-panel min-h-56 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex h-12 items-center justify-between border-b border-border px-4">
+        <span className="measurement-label">Translation layer</span>
+        <span className="rounded-md bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
+          已完成
+        </span>
+      </div>
+
       {!isWord && (
-        <div className="bg-card text-card-foreground rounded-xl border shadow-sm overflow-hidden transition-all hover:shadow-md">
-          <div className="p-1">
-            {result.translation?.map((item, index) => (
-              <div
-                key={index}
-                className={cn(
-                  'group flex flex-col p-3 rounded-lg transition-colors hover:bg-muted/50',
-                  index !== (result.translation?.length || 0) - 1 && 'border-b border-border/50'
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  {/* 翻译内容 */}
-                  <div className="flex-1 min-w-0">
-                    {result.sourceLanguage === Language.ZH_AND_EN ? (
-                      <div className="flex flex-col gap-1">
-                        <div className="text-base tracking-tight text-foreground break-words">
-                          {item.en}
-                        </div>
-                        <div className="text-sm text-muted-foreground break-words">{item.zh}</div>
-                      </div>
-                    ) : result.sourceLanguage === Language.ZH ? (
-                      <div className="text-base tracking-tight text-foreground break-words">
-                        {item.en}
-                      </div>
-                    ) : (
-                      <div className="text-base tracking-tight text-foreground break-words">
-                        {item.zh}
-                      </div>
-                    )}
-                  </div>
+        <div className="divide-y divide-border">
+          {result.translation?.map((item, index) => (
+            <div className="px-5 py-4 transition-colors hover:bg-accent/35" key={index}>
+              {result.sourceLanguage === Language.ZH_AND_EN ? (
+                <div className="space-y-2">
+                  <p className="break-words text-[15px] leading-7 text-foreground">{item.en}</p>
+                  <p className="break-words text-sm leading-6 text-muted-foreground">{item.zh}</p>
                 </div>
-              </div>
-            ))}
-          </div>
+              ) : (
+                <p className="break-words text-[15px] leading-7 text-foreground">
+                  {result.sourceLanguage === Language.ZH ? item.en : item.zh}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
-      {/* 例句卡片 */}
-      {isWord && (
-        <div className="bg-card text-card-foreground rounded-xl border shadow-sm overflow-hidden transition-all hover:shadow-md">
-          <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-2">
-            <div className="p-1 rounded-md bg-primary/10 text-primary">
-              <BookOpen size={14} />
-            </div>
-            <span className="text-sm font-medium text-foreground/80">例句</span>
+      {isWord && result.exampleSentences && result.exampleSentences.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 border-b border-border bg-accent/45 px-4 py-3">
+            <BookOpen size={15} className="text-primary" />
+            <span className="text-sm font-medium">例句观察</span>
           </div>
-
-          {hasExampleSentences ? (
-            <div className="divide-y divide-border/50">
-              {result.exampleSentences?.map((item, index) => (
-                <div key={index} className="p-4 hover:bg-muted/30 transition-colors">
-                  <div className="flex flex-col gap-2">
-                    {item.partOfSpeech && (
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        {item.partOfSpeech}: {item.wordTranslation}
-                      </span>
-                    )}
-                    <div className="space-y-1">
-                      <div className="text-[15px] leading-relaxed text-foreground font-medium">
-                        {item.en}
-                      </div>
-                      <div className="text-sm leading-relaxed text-muted-foreground">{item.zh}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-4 text-sm text-muted-foreground">未生成有效例句，请重试</div>
-          )}
+          <div className="divide-y divide-border">
+            {result.exampleSentences.map((item, index) => (
+              <div className="px-5 py-4 hover:bg-accent/30" key={index}>
+                {item.partOfSpeech && (
+                  <span className="measurement-label">
+                    {item.partOfSpeech} · {item.wordTranslation}
+                  </span>
+                )}
+                <p className={cn('text-[15px] leading-7 text-foreground', item.partOfSpeech && 'mt-2')}>
+                  {item.en}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.zh}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

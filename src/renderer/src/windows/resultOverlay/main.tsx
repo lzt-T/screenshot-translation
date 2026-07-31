@@ -1,16 +1,20 @@
 import './../../assets/main.css'
-import React, { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import ResultOverlay from './index'; // 导入 ScreenshotSelector 组件
+import React, { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import ThemeProvider from '@renderer/components/ThemeProvider'
+import ResultOverlay from './index'
 
-const rootElement = document.getElementById('root');
+// 翻译浮层根节点
+const rootElement = document.getElementById('root')
 
 if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>
-      <ResultOverlay />
+      <ThemeProvider>
+        <ResultOverlay />
+      </ThemeProvider>
     </StrictMode>
-  );
+  )
 } else {
-  console.error('ResultOverlay entry point: Root element #root not found!');
-} 
+  console.error('ResultOverlay entry point: Root element #root not found!')
+}

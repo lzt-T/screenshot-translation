@@ -20,6 +20,8 @@ export enum SendEnum {
   ENGLISH_CHINESE_TRANSLATION_FAIL = 'ENGLISH_CHINESE_TRANSLATION_FAIL',
   /** 设置开机自启动 */
   SET_AUTO_LAUNCH = 'SET_AUTO_LAUNCH',
+  /** 测试模型连接 */
+  TEST_MODEL_CONNECTION = 'TEST_MODEL_CONNECTION',
   /** 交换内容 */
   SWAP_CONTENT = 'SWAP_CONTENT',
   /** 检查更新 */
@@ -42,4 +44,8 @@ export enum SendEnum {
   START_SCREENSHOT = 'START_SCREENSHOT',
   /** 打开外部链接 */
   OPEN_EXTERNAL_URL = 'OPEN_EXTERNAL_URL',
+  /** 生成本地语音 */
+  SPEECH_SYNTHESIZE = 'SPEECH_SYNTHESIZE',
+  /** 取消本地语音 */
+  SPEECH_CANCEL = 'SPEECH_CANCEL'
 }

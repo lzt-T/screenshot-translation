@@ -19,6 +19,7 @@ extraResources:
 asarUnpack:
   - resources/**
   - '**/node_modules/tesseract.js-core/**'
+  - '**/node_modules/sherpa-onnx-*/**'
 win:
   icon: resources/icon.png
   executableName: Bai_Ze

@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-31T00:00:00+08:00",
+  "title": "Design System: Bai_Ze",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "墨黑/象牙操作色",
+        "canonical": "oklch(0.3 0.015 260)",
+        "tonalRamp": ["oklch(0.18 0.01 260)", "oklch(0.24 0.012 260)", "oklch(0.3 0.015 260)", "oklch(0.42 0.018 260)", "oklch(0.58 0.018 260)", "oklch(0.72 0.015 80)", "oklch(0.88 0.012 80)", "oklch(0.96 0.006 80)"]
+      },
+      "status": {
+        "role": "secondary",
+        "displayName": "雾紫状态色",
+        "canonical": "oklch(0.48 0.075 295)",
+        "tonalRamp": ["oklch(0.2 0.025 295)", "oklch(0.3 0.045 295)", "oklch(0.4 0.065 295)", "oklch(0.48 0.075 295)", "oklch(0.6 0.075 295)", "oklch(0.74 0.07 295)", "oklch(0.86 0.045 295)", "oklch(0.95 0.02 295)"]
+      },
+      "workbench-light": {
+        "role": "neutral",
+        "displayName": "骨白工作面",
+        "canonical": "oklch(0.964 0.008 78)",
+        "tonalRamp": ["oklch(0.15 0.008 78)", "oklch(0.28 0.008 78)", "oklch(0.42 0.008 78)", "oklch(0.56 0.008 78)", "oklch(0.7 0.008 78)", "oklch(0.82 0.008 78)", "oklch(0.9 0.008 78)", "oklch(0.964 0.008 78)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "观察标题", "purpose": "品牌和一级标题。" },
+      "body": { "displayName": "桌面正文", "purpose": "导航、表单、说明与译文。" },
+      "measurement": { "displayName": "测量标签", "purpose": "层名称、快捷键、版本和尺寸。" }
+    },
+    "shadows": [
+      { "name": "action-lift", "value": "0 10px 24px -16px var(--action-shadow)", "purpose": "主截图按钮和选中主题的中性轻微抬升。" },
+      { "name": "floating-control", "value": "0 10px 28px -18px rgba(0,0,0,0.75)", "purpose": "翻译浮层操作栏。" }
+    ],
+    "motion": [
+      { "name": "state-fast", "value": "140ms ease-out", "purpose": "悬停、颜色和按压反馈。" },
+      { "name": "result-enter", "value": "300ms ease-out", "purpose": "译文完成后的单次进入。" }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Capture Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "页面唯一的墨黑/象牙主操作。",
+      "html": "<button class=\"ds-capture-button\">开始截图</button>",
+      "css": ".ds-capture-button{height:44px;padding:0 20px;border:0;border-radius:12px;background:var(--primary);color:var(--primary-foreground);font:600 14px var(--font-ui);box-shadow:0 10px 24px -16px var(--action-shadow);transition:filter 140ms ease-out,transform 140ms ease-out}.ds-capture-button:hover{filter:brightness(.94)}.ds-capture-button:active{transform:translateY(1px)}.ds-capture-button:focus-visible{outline:3px solid color-mix(in oklab,var(--ring) 45%,transparent);outline-offset:2px}"
+    },
+    {
+      "name": "Workbench Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "输入、译文和设置内容的平整工作面。",
+      "html": "<section class=\"ds-lab-panel\"><strong>Source sample</strong><p>待识别内容</p></section>",
+      "css": ".ds-lab-panel{padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--card-foreground)}.ds-lab-panel strong{font:400 11px var(--font-measure);letter-spacing:.08em;text-transform:uppercase;color:var(--muted-foreground)}.ds-lab-panel p{margin:16px 0 0;font:400 15px/1.75 var(--font-ui)}"
+    },
+    {
+      "name": "Source Field",
+      "kind": "input",
+      "description": "与样本标题栏组成连续表面的长文本输入。",
+      "html": "<textarea class=\"ds-source-field\" placeholder=\"输入中文或英文\"></textarea>",
+      "css": ".ds-source-field{min-height:160px;width:100%;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--foreground);font:400 15px/1.75 var(--font-ui);resize:none}.ds-source-field:focus-visible{outline:3px solid color-mix(in oklab,var(--ring) 45%,transparent);outline-offset:1px;border-color:var(--ring)}"
+    },
+    {
+      "name": "Active Navigation Item",
+      "kind": "nav",
+      "description": "侧栏当前页面状态。",
+      "html": "<button class=\"ds-nav-active\">翻译台<span></span></button>",
+      "css": ".ds-nav-active{display:flex;align-items:center;gap:12px;width:100%;height:40px;padding:0 12px;border:0;border-radius:8px;background:var(--sidebar-accent);color:var(--sidebar-accent-foreground);font:600 14px var(--font-ui)}.ds-nav-active span{width:6px;height:6px;margin-left:auto;border-radius:50%;background:var(--primary)}.ds-nav-active:focus-visible{outline:3px solid color-mix(in oklab,var(--ring) 45%,transparent)}"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status-badge",
+      "description": "处理中或完成状态的雾紫标记。",
+      "html": "<span class=\"ds-status\">已完成</span>",
+      "css": ".ds-status{display:inline-flex;padding:4px 8px;border-radius:8px;background:var(--status);color:var(--status-foreground);font:600 11px var(--font-ui)}"
+    },
+    {
+      "name": "Screenshot Selection",
+      "kind": "custom",
+      "description": "跨屏截图时的精确取景轮廓。",
+      "html": "<div class=\"ds-selection\"><span>640 × 360</span></div>",
+      "css": ".ds-selection{position:relative;width:320px;height:180px;border:2px solid var(--primary);background:color-mix(in oklab,var(--primary) 7%,transparent);box-shadow:0 0 0 1px rgba(255,255,255,.48)}.ds-selection span{position:absolute;right:0;bottom:-32px;padding:6px 9px;border-radius:7px;background:rgba(24,26,26,.9);color:#fff;font:400 11px var(--font-measure)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "识别实验台",
+    "overview": "Bai_Ze 把屏幕内容视作待观察的样本：取景符号负责聚焦，双语层负责比对，测量标签负责标记状态。界面安静但不匿名，密度服务高频桌面操作。",
+    "keyCharacteristics": ["骨白与枪灰双主题工作面", "墨黑/象牙主操作与雾紫状态严格分工", "取景孔径与测量标签跨窗口一致", "平整表面和明确触感"],
+    "rules": [
+      { "name": "The Two Signals Rule", "body": "墨黑/象牙只表示用户行动，雾紫只表示系统状态。", "section": "colors" },
+      { "name": "The Display Ration Rule", "body": "Smiley Sans 只用于品牌与一级标题。", "section": "typography" },
+      { "name": "The Flat Workbench Rule", "body": "普通内容表面默认无阴影。", "section": "elevation" }
+    ],
+    "dos": ["保持截图主操作在首屏。", "使用语义 token 保持跨窗口一致。", "为长原文与译文保留清晰段落。"],
+    "donts": ["不使用字面神兽插画。", "不混用主操作色和状态色。", "不引入玻璃拟态或默认灰蓝 AI 卡片。", "普通面板不同时叠加边框和宽阴影。"]
+  }
+}

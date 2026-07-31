@@ -15,9 +15,6 @@ import { mainWindow } from '../windowClasses/mainWindow'
 export const registerAutoUpdate = () => {
   /* 开发环境 */
   if (!app.isPackaged) {
-    Object.defineProperty(app, 'isPackaged', {
-      get: () => true
-    })
     autoUpdater.forceDevUpdateConfig = true
     autoUpdater.updateConfigPath = path.join(__dirname, '../../dev-app-update.yml')
   }

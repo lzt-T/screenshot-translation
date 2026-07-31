@@ -1,38 +1,44 @@
 import React from 'react'
+import { ScanLine } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
-import { Languages, Camera } from 'lucide-react'
 
+/** 首页头部属性 */
 interface HeaderProps {
+  /* 截图回调 */
   onScreenshot: () => void
 }
 
-export default function Header({ onScreenshot }: HeaderProps) {
+/**
+ * 渲染截图翻译主操作区
+ * @param {HeaderProps} props 组件属性
+ * @returns {React.JSX.Element} 主操作区
+ */
+export default function Header({ onScreenshot }: HeaderProps): React.JSX.Element {
   return (
-    <div className="w-full max-w-3xl mb-4">
-      <div className="flex flex-col items-center mb-3">
-        <div className="flex items-center justify-center mb-3 text-primary">
-          <Languages size={32} className="mr-2" />
-          <Camera size={28} />
-        </div>
-        <p className="text-sm text-muted-foreground">截取屏幕内容，即时翻译</p>
+    <header className="flex w-full flex-col gap-6 border-b border-border pb-7 md:flex-row md:items-end md:justify-between">
+      <div className="max-w-xl">
+        <h2 className="font-display text-4xl tracking-[-0.03em] text-foreground">截图翻译</h2>
+        <p className="mt-3 max-w-[58ch] text-sm leading-6 text-muted-foreground">
+          按 F2 或点击「开始截图」，框选屏幕区域后自动识别并翻译。
+        </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <Button
-          className="w-full sm:w-auto cursor-pointer bg-primary hover:bg-primary/90 text-white shadow-sm transition-all"
-          size="lg"
-          onClick={onScreenshot}
-        >
-          开始截图
-        </Button>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2 sm:mt-0">
-          <span>或按</span>
-          <kbd className="px-2 py-1 bg-muted rounded border border-border shadow-sm text-xs font-mono">
+      <div className="flex shrink-0 items-center gap-3">
+        <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
+          <span>快捷键</span>
+          <kbd className="rounded-md border border-border bg-card px-2 py-1 font-mono text-[11px] text-foreground">
             F2
           </kbd>
-          <span>快捷键</span>
         </div>
+        <Button
+          className="h-11 cursor-pointer rounded-xl px-5 shadow-[0_10px_24px_-16px_var(--action-shadow)] active:translate-y-px"
+          onClick={onScreenshot}
+          size="lg"
+        >
+          <ScanLine size={18} />
+          开始截图
+        </Button>
       </div>
-    </div>
+    </header>
   )
 }
