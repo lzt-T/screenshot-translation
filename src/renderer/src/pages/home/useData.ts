@@ -7,12 +7,18 @@ import useLocalForage from '@renderer/hooks/useLocalForage'
 import { useNavigate } from 'react-router-dom'
 import { TranslationModelProfile } from '@src/type/model'
 
+/**
+ * 首页翻译数据 Hook
+ * @returns 首页翻译状态与交互方法
+ */
 export default function useData() {
   // 路由跳转方法
   const navigate = useNavigate()
   // 本地配置状态
   const { storeSetting, isInit } = useLocalForage()
+  // 是否正在翻译
   const [isLoading, setIsLoading] = useState(false)
+  // 是否正在朗读
   const [isSpeaking, setIsSpeaking] = useState(false)
   /** 翻译文本 */
   const translationText = useRef('')
@@ -61,7 +67,7 @@ export default function useData() {
       })
       return false
     }
-    if (!currentModel.apiKey?.trim()) {
+    if (!currentModel.isBuiltInFree && !currentModel.apiKey?.trim()) {
       // 当前模型展示名
       const modelText = currentModel.displayName || currentModel.model || currentModel.id
       toast.error(`模型 ${modelText} 未配置 API Key，请先到设置页完成配置`, {

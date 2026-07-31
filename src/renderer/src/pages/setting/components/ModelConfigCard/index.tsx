@@ -88,6 +88,10 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({ model, onChangeField,
           placeholder="输入 Base URL，如 https://api.openai.com/v1"
           disabled={isBuiltIn}
         />
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          填写 API 根地址，如 https://api.openai.com/v1；不要填写完整的
+          /chat/completions，特殊网关请以其文档为准。
+        </p>
       </div>
 
       <div className="space-y-2">

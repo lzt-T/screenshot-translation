@@ -6,22 +6,20 @@ export interface ScreenshotTranslationPromptItem {
   text: string
 }
 
-/** 获取翻译prompt */
+/** 获取文本翻译提示词 */
 export const getTranslatePrompt = (text: string, targetLanguage: Language) => {
-
-  const config = {
+  // 目标语言文案
+  const languageTextMap = {
     [Language.ZH]: '简体中文',
     [Language.EN]: '英语'
   }
 
   return `
-  背景：你是一个翻译专家，擅长将文本翻译为${config[targetLanguage]}\n
-  用户："${text}"\n
-  输出要求：
-  1. 用户需要翻译的文本由多个 | 分隔，你必须在翻译结果中完整且精确保留这些分隔符，不要省略或修改它们。
-  2. 只输出一个 JSON 对象，结构为 {"translation":"..."}。
-  3. 不要输出 markdown，不要输出 \`\`\` 或 \`\`\`json，不要输出注释、标题或任何额外解释。
-  4. 你的最终输出必须是可直接被 JSON.parse 解析的 JSON 字符串。`
+将以下文本翻译为${languageTextMap[targetLanguage]}。
+文本可能包含多个 | 分隔符，译文必须完整、准确地保留其数量和位置。
+仅返回 JSON，例如：{"translation":"译文"}。
+
+待翻译文本：${text}`
 }
 
 /** 获取截图块结构化翻译 prompt */
@@ -39,17 +37,11 @@ export const getScreenshotBlocksTranslatePrompt = (
   const inputJsonText = JSON.stringify({ items }, null, 2)
 
   return `
-你是专业翻译引擎。请将输入 JSON 中每个 items[].text 翻译为${languageTextMap[targetLanguage]}。
+将输入中每项文本翻译为${languageTextMap[targetLanguage]}。
+必须原样保留每个 id，不得新增、删除或修改；无法翻译时保留原文。
+仅返回 JSON，例如：{"items":[{"id":"原ID","translation":"译文"}]}。
 
-强约束：
-1. 必须严格保留每个 id，不得新增、删除、修改 id。
-2. 输出必须是 JSON 对象，顶层仅包含 "items" 字段。
-3. 输出结构必须是：{"items":[{"id":"...","translation":"..."}]}。
-4. 只输出一个 JSON 对象字面量，顶层仅允许 "items" 字段。
-5. 禁止输出 markdown、解释、注释、代码块；禁止输出 \`\`\` 或 \`\`\`json。
-6. 如果某项无法翻译，translation 返回原文 text。
-
-输入如下：
+输入：
 ${inputJsonText}
 `
 }
@@ -60,7 +52,9 @@ ${inputJsonText}
  * @returns {Language} 语言类型
  */
 export const getLanguageType = (text: string) => {
+  // 是否包含英文字符
   const isEnglish = /[a-zA-Z]/.test(text)
+  // 是否包含中文字符
   const isChinese = /[\u4e00-\u9fa5]/.test(text)
 
   if (isEnglish && isChinese) {
@@ -78,8 +72,10 @@ export const getLanguageType = (text: string) => {
  * @returns {Language} 目标语言
  */
 export const getTargetLanguage = (text: string) => {
+  // 输入文本语言
   const language = getLanguageType(text)
 
+  // 源语言到目标语言的映射
   const config = {
     [Language.ZH]: Language.EN,
     [Language.EN]: Language.ZH,
@@ -94,7 +90,9 @@ export const getTargetLanguage = (text: string) => {
  * @returns {TextType} 文本类型
  */
 export const getTextType = (text: string) => {
+  // 输入文本语言
   const language = getLanguageType(text)
+  // 语言对应的文本类型策略
   const config = {
     [Language.ZH_AND_EN]: () => {
       return TextType.SENTENCE
@@ -115,26 +113,11 @@ export const getTextType = (text: string) => {
 }
 
 
-/* 解析json */
-export const parseJson = (text: string): unknown | null => {
-  try {
-    // 尝试直接解析JSON
-    return JSON.parse(text)
-  } catch (error) {
-    // 尝试从文本中提取JSON格式内容
-    const jsonMatch = text.match(/\{[\s\S]*\}/m)
-    if (jsonMatch) {
-      try {
-        return JSON.parse(jsonMatch[0])
-      } catch (innerError) {
-        return null
-      }
-    }
-    return null
-  }
-}
-
-
+/**
+ * 获取旧版中英文翻译提示词
+ * @param {string} text 待翻译文本
+ * @returns {string} 翻译提示词
+ */
 export const getTranslateResponsePrompt = (text: string) => {
   return `
 # Role: 中英文翻译专家

@@ -1,7 +1,6 @@
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { ChatOpenAI } from '@langchain/openai'
-import { ZodType } from 'zod'
-import { parseJson } from '../../../utils/ai'
+import { ZodError, type ZodType } from 'zod'
 import { TranslationModelProfile } from '../../../type/model'
 
 /** 统一 LLM 调用结果 */
@@ -26,12 +25,30 @@ export interface LlmStructuredInvokeResult<TData> {
 
 /** 可执行 LangChain 调用的客户端 */
 interface LangchainRunnableClient {
-  invoke: (input: string) => Promise<{ content: unknown }>
-  withStructuredOutput?: (schema: unknown) => { invoke: (input: string) => Promise<unknown> }
+  invoke: (input: string, config?: { signal?: AbortSignal }) => Promise<{ content: unknown }>
+  withStructuredOutput?: (
+    schema: unknown,
+    config?: { method?: 'jsonMode' }
+  ) => { invoke: (input: string, config?: { signal?: AbortSignal }) => Promise<unknown> }
 }
 
-/** 结构化输出策略 */
-type StructuredInvokeStrategy = 'nativeStructured' | 'textParseStructured'
+/** 结构化输出方式 */
+type StructuredOutputMethod = 'default' | 'jsonMode' | 'textJson'
+
+// 模型请求超时时间
+const MODEL_REQUEST_TIMEOUT_MS = 60_000
+
+// 模型前缀对应的结构化输出方式
+const STRUCTURED_OUTPUT_METHOD_BY_MODEL_PREFIX: Readonly<
+  Record<string, StructuredOutputMethod>
+> = {
+  'gemini-': 'textJson',
+  'deepseek-': 'jsonMode',
+  'glm-': 'jsonMode',
+  qwen: 'jsonMode',
+  'claude-': 'textJson',
+  'anthropic/claude-': 'textJson'
+}
 
 /**
  * 提取 LangChain 返回消息中的文本内容
@@ -72,19 +89,20 @@ const isGeminiModel = (modelName: string): boolean => {
 }
 
 /**
- * 选择结构化输出策略
+ * 获取结构化输出方式
  * @param {TranslationModelProfile} profile 模型配置
- * @returns {StructuredInvokeStrategy} 结构化输出策略
+ * @returns {StructuredOutputMethod} 结构化输出方式
  */
-const getStructuredInvokeStrategy = (
+const getStructuredOutputMethod = (
   profile: TranslationModelProfile
-): StructuredInvokeStrategy => {
-  // Gemini 兼容性策略：禁用原生 response_schema
-  if (isGeminiModel(profile.model)) {
-    return 'textParseStructured'
-  }
-
-  return 'nativeStructured'
+): StructuredOutputMethod => {
+  // 标准化后的模型名称
+  const normalizedModelName = profile.model.toLowerCase()
+  // 命中的模型前缀策略
+  const matchedMethod = Object.entries(STRUCTURED_OUTPUT_METHOD_BY_MODEL_PREFIX).find(
+    ([modelPrefix]) => normalizedModelName.startsWith(modelPrefix)
+  )
+  return matchedMethod?.[1] || 'default'
 }
 
 /**
@@ -93,13 +111,17 @@ const getStructuredInvokeStrategy = (
  * @returns {boolean} 是否是解析错误
  */
 const isStructuredParseError = (error: unknown): boolean => {
+  if (error instanceof ZodError) {
+    return true
+  }
+
   // 错误消息
   const errorMessage = error instanceof Error ? error.message.toLowerCase() : ''
   if (!errorMessage) {
     return false
   }
 
-  return ['parse', 'json', 'schema', 'zod', 'structured'].some((keyword) => {
+  return ['parse', 'json', 'schema', 'zod'].some((keyword) => {
     return errorMessage.includes(keyword)
   })
 }
@@ -136,30 +158,42 @@ class LangchainGateway {
    * @param {LangchainRunnableClient} client LangChain 客户端
    * @param {string} prompt 输入提示词
    * @param {ZodType<TData>} schema Zod 结构定义
+   * @param {StructuredOutputMethod} method 结构化输出方式
    * @returns {Promise<TData>} 结构化输出数据
    */
   private async invokeWithSchema<TData>(
     client: LangchainRunnableClient,
     prompt: string,
     schema: ZodType<TData>,
-    strategy: StructuredInvokeStrategy
+    method: StructuredOutputMethod
   ): Promise<TData> {
-    // 原生结构化输出策略
-    if (strategy === 'nativeStructured' && typeof client.withStructuredOutput === 'function') {
-      // 结构化运行器
-      const structuredRunnable = client.withStructuredOutput(schema)
-      // 结构化响应
-      const structuredResponse = await structuredRunnable.invoke(prompt)
-      return schema.parse(structuredResponse)
+    // 当前模型请求中止信号
+    const requestSignal = AbortSignal.timeout(MODEL_REQUEST_TIMEOUT_MS)
+
+    if (method === 'textJson') {
+      // Gemini 严格 JSON 输出提示词
+      const jsonPrompt = `${prompt}\n只返回一个可被 JSON.parse 直接解析的 JSON 对象，不要使用 Markdown 代码块，不要添加解释。`
+      // Gemini 文本响应
+      const response = await client.invoke(jsonPrompt, { signal: requestSignal })
+      // Gemini 返回的 JSON 文本
+      const text = extractTextFromContent(response.content)
+      // 严格解析后的原始数据
+      const parsedData: unknown = JSON.parse(text)
+      return schema.parse(parsedData)
     }
 
-    // 兼容无结构化能力时的解析路径
-    const response = await client.invoke(prompt)
-    // 原始文本
-    const text = extractTextFromContent(response.content)
-    // 解析后的 JSON
-    const parsedJson = parseJson(text)
-    return schema.parse(parsedJson)
+    if (typeof client.withStructuredOutput !== 'function') {
+      throw new Error('当前模型不支持 withStructuredOutput')
+    }
+
+    // 结构化运行器
+    const structuredRunnable =
+      method === 'jsonMode'
+        ? client.withStructuredOutput(schema, { method: 'jsonMode' })
+        : client.withStructuredOutput(schema)
+    // 结构化响应
+    const structuredResponse = await structuredRunnable.invoke(prompt, { signal: requestSignal })
+    return schema.parse(structuredResponse)
   }
 
   /**
@@ -172,8 +206,10 @@ class LangchainGateway {
     try {
       // LangChain 客户端
       const client = this.createClient(profile)
+      // 当前模型请求中止信号
+      const requestSignal = AbortSignal.timeout(MODEL_REQUEST_TIMEOUT_MS)
       // 模型响应
-      const response = await client.invoke(prompt)
+      const response = await client.invoke(prompt, { signal: requestSignal })
       // 文本内容
       const text = extractTextFromContent(response.content)
       return {
@@ -206,16 +242,15 @@ class LangchainGateway {
 
     // 最大尝试次数
     const maxAttemptCount = Math.max(1, maxRetryCount + 1)
-
-    // 结构化调用策略
-    const strategy = getStructuredInvokeStrategy(profile)
+    // 当前模型的结构化输出方式
+    const method = getStructuredOutputMethod(profile)
 
     for (let attemptIndex = 0; attemptIndex < maxAttemptCount; attemptIndex += 1) {
       try {
         // LangChain 客户端
         const client = this.createClient(profile)
         // 结构化数据
-        const data = await this.invokeWithSchema(client, prompt, schema, strategy)
+        const data = await this.invokeWithSchema(client, prompt, schema, method)
 
         return {
           success: true,
@@ -233,17 +268,27 @@ class LangchainGateway {
 
         // 错误消息
         const rawMessage = error instanceof Error ? error.message : String(error)
+        // 响应是否缺少 OpenAI Chat Completions 必需的数组字段
+        const isInvalidOpenAiResponse =
+          rawMessage === "Cannot read properties of undefined (reading 'map')"
+        if (isInvalidOpenAiResponse) {
+          throw new Error(
+            '模型网关响应不符合 OpenAI Chat Completions 格式，请检查 Base URL 是否包含正确的 API 路径（常见为 /v1 或 /api/v1）',
+            { cause: error }
+          )
+        }
         // 带上下文的错误消息
-        const errorMessage = `langchain structured invoke failed: model=${profile.model}; strategy=${strategy}; parseError=${isStructuredParseError(error)}; message=${rawMessage}`
+        const errorMessage = `langchain structured invoke failed: model=${profile.model}; method=${method}; parseError=${isStructuredParseError(error)}; message=${rawMessage}`
         throw new Error(errorMessage)
       }
     }
 
     // 理论兜底
     throw new Error(
-      `langchain structured invoke failed: model=${profile.model}; strategy=${strategy}; parseError=${isStructuredParseError(lastError)}; message=unknown error`
+      `langchain structured invoke failed: model=${profile.model}; method=${method}; parseError=${isStructuredParseError(lastError)}; message=unknown error`
     )
   }
 }
 
+// LangChain 统一网关实例
 export const langchainGateway = new LangchainGateway()

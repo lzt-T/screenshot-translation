@@ -1,50 +1,11 @@
 import { TextBlock, extractTextFromImage } from './imageOCR'
 import { Language } from '../../type/base'
 import { aiManage } from './aiManage'
-import { parseJson } from '../../utils/ai'
-
-// 截图块翻译结果项
-interface ScreenshotTranslatedItem {
-  id: string
-  translation: string
-}
-
-// 截图块翻译结果
-interface ScreenshotTranslatedResponse {
-  items: ScreenshotTranslatedItem[]
-}
 
 export interface TranslateTextBlock extends TextBlock {
   id: string
   translation: string
   warning?: string
-}
-
-/**
- * 检查是否是合法翻译结果
- * @param {unknown} response 未知结构响应
- * @returns {response is ScreenshotTranslatedResponse} 是否合法
- */
-function isValidScreenshotTranslatedResponse(
-  response: unknown
-): response is ScreenshotTranslatedResponse {
-  if (!response || typeof response !== 'object') {
-    return false
-  }
-
-  // 响应中的 items
-  const responseItems = (response as ScreenshotTranslatedResponse).items
-  if (!Array.isArray(responseItems)) {
-    return false
-  }
-
-  return responseItems.every((item) => {
-    return (
-      item &&
-      typeof item.id === 'string' &&
-      typeof item.translation === 'string'
-    )
-  })
 }
 
 /**
@@ -89,22 +50,16 @@ export async function analyzeScreenshot(imageDataUrl: string, targetLanguage: La
 
     // 4. 批量结构化翻译
     const translateResult = await aiManage.translateScreenshotBlocks(promptItems, targetLanguage)
-    if (!translateResult.success) {
+    if (!translateResult.success || !translateResult.data) {
       return { success: false, textBlocks: [], msg: translateResult.msg }
     }
 
-    // 5. 解析模型返回 JSON
-    const parsed = parseJson(translateResult.translation)
-    if (!isValidScreenshotTranslatedResponse(parsed)) {
-      return { success: false, textBlocks: [], msg: '截图翻译结果解析失败' }
-    }
-
-    // 6. 构建 id 到译文映射
+    // 5. 构建 id 到译文映射
     const translationMap = new Map(
-      parsed.items.map((item) => [item.id, item.translation.trim()])
+      translateResult.data.items.map((item) => [item.id, item.translation.trim()])
     )
 
-    // 7. 回填并对缺项兜底
+    // 6. 回填并对缺项兜底
     const finalBlocks: TranslateTextBlock[] = normalizedBlocks.map((block) => {
       // 当前块翻译文本
       const translatedText = translationMap.get(block.id) || ''

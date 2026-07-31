@@ -1,5 +1,5 @@
 /** 内置免费模型名称 */
-export const BUILTIN_FREE_MODEL = 'glm-4-flash-250414'
+export const BUILTIN_FREE_MODEL = 'glm-4.7-flash'
 
 /** 用户可配置的翻译模型信息 */
 export interface TranslationModelProfile {

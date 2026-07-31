@@ -1,26 +1,30 @@
 import { Language } from '../../type/base'
 import {
+  getTextType,
   getTranslatePrompt,
   getScreenshotBlocksTranslatePrompt,
   ScreenshotTranslationPromptItem
 } from '../../utils/ai'
 import { promptManage } from '../../utils/promptManage'
-import { TranslationModelProfile } from '../../type/model'
+import { BUILTIN_FREE_MODEL, TranslationModelProfile } from '../../type/model'
 import { createDefaultModelProfiles, DEFAULT_ACTIVE_MODEL_ID } from '../../utils/modelProfiles'
 import { langchainGateway } from './aiClients/langchainGateway'
 import {
-  englishChineseTranslationSchema,
+  type EnglishChineseTranslation,
+  type ScreenshotTranslation,
+  type TextTranslation,
+  englishChineseTranslationSchemaMap,
   screenshotTranslationSchema,
   textTranslationSchema
 } from './aiClients/translationSchemas'
 import { log } from 'node:console'
 
-/** 翻译结果类型 */
-type TranslationResult = {
+/** 结构化翻译结果类型 */
+type TranslationResult<TData> = {
   /* 调用是否成功 */
   success: boolean
-  /* 翻译结果文本 */
-  translation: string
+  /* 结构化翻译数据 */
+  data: TData | null
   /* 结果提示 */
   msg?: string
 }
@@ -36,8 +40,9 @@ class AiManage {
   public currentActiveModelId: string = DEFAULT_ACTIVE_MODEL_ID
 
   // 当前翻译模型名称
-  public currentTranslationModelName: string = 'glm-4-flash-250414-free'
+  public currentTranslationModelName: string = BUILTIN_FREE_MODEL
 
+  /** 初始化 AI 调度管理器 */
   constructor() {}
 
   /**
@@ -53,12 +58,12 @@ class AiManage {
 
   /**
    * 构建结构化失败结果
-   * @returns {TranslationResult} 翻译失败结果
+   * @returns {TranslationResult<TData>} 翻译失败结果
    */
-  private createStructuredFailResult(): TranslationResult {
+  private createStructuredFailResult<TData>(): TranslationResult<TData> {
     return {
       success: false,
-      translation: '',
+      data: null,
       msg: '模型输出不符合 JSON 结构要求'
     }
   }
@@ -72,7 +77,13 @@ class AiManage {
   public setModelSettings(activeModelId: string, models: TranslationModelProfile[]) {
     // 是否有可用模型配置
     const hasValidModels = Array.isArray(models) && models.length > 0
-    this.currentModels = hasValidModels ? models : createDefaultModelProfiles()
+    // 当前可用模型配置
+    const availableModels = hasValidModels ? models : createDefaultModelProfiles()
+    this.currentModels = availableModels.map((modelProfile) => {
+      return modelProfile.isBuiltInFree
+        ? { ...modelProfile, model: BUILTIN_FREE_MODEL }
+        : modelProfile
+    })
 
     // 当前可用的激活模型
     const activeProfile =
@@ -153,15 +164,18 @@ class AiManage {
    * 文字翻译
    * @param {string} text 待翻译文本
    * @param {Language} targetLanguage 目标语言
-   * @returns {Promise<TranslationResult>} 翻译结果
+   * @returns {Promise<TranslationResult<TextTranslation>>} 翻译结果
    */
-  public async translateText(text: string, targetLanguage: Language): Promise<TranslationResult> {
+  public async translateText(
+    text: string,
+    targetLanguage: Language
+  ): Promise<TranslationResult<TextTranslation>> {
     // 运行时模型配置
     const runtimeProfile = this.getRuntimeModelProfile()
     if (!runtimeProfile) {
       return {
         success: false,
-        translation: '',
+        data: null,
         msg: '未找到可用模型配置'
       }
     }
@@ -171,7 +185,7 @@ class AiManage {
     if (!apiKey) {
       return {
         success: false,
-        translation: '',
+        data: null,
         msg: `${runtimeProfile.model} 模型的 API Key 未配置`
       }
     }
@@ -190,7 +204,7 @@ class AiManage {
 
       return {
         success: invokeResult.success,
-        translation: invokeResult.data.translation,
+        data: invokeResult.data,
         msg: invokeResult.msg
       }
     } catch (error) {
@@ -205,18 +219,18 @@ class AiManage {
    * 截图文本块批量翻译
    * @param {ScreenshotTranslationPromptItem[]} items 截图文本块
    * @param {Language} targetLanguage 目标语言
-   * @returns {Promise<TranslationResult>} 翻译结果
+   * @returns {Promise<TranslationResult<ScreenshotTranslation>>} 翻译结果
    */
   public async translateScreenshotBlocks(
     items: ScreenshotTranslationPromptItem[],
     targetLanguage: Language
-  ): Promise<TranslationResult> {
+  ): Promise<TranslationResult<ScreenshotTranslation>> {
     // 运行时模型配置
     const runtimeProfile = this.getRuntimeModelProfile()
     if (!runtimeProfile) {
       return {
         success: false,
-        translation: '',
+        data: null,
         msg: '未找到可用模型配置'
       }
     }
@@ -226,7 +240,7 @@ class AiManage {
     if (!apiKey) {
       return {
         success: false,
-        translation: '',
+        data: null,
         msg: `${runtimeProfile.model} 模型的 API Key 未配置`
       }
     }
@@ -253,7 +267,7 @@ class AiManage {
 
       return {
         success: invokeResult.success,
-        translation: JSON.stringify({ items: normalizedItems }),
+        data: { items: normalizedItems },
         msg: invokeResult.msg
       }
     } catch (error) {
@@ -267,15 +281,17 @@ class AiManage {
   /**
    * 英汉互译
    * @param {string} text 待翻译文本
-   * @returns {Promise<TranslationResult>} 翻译结果
+   * @returns {Promise<TranslationResult<EnglishChineseTranslation>>} 翻译结果
    */
-  public async englishChineseTranslation(text: string): Promise<TranslationResult> {
+  public async englishChineseTranslation(
+    text: string
+  ): Promise<TranslationResult<EnglishChineseTranslation>> {
     // 运行时模型配置
     const runtimeProfile = this.getRuntimeModelProfile()
     if (!runtimeProfile) {
       return {
         success: false,
-        translation: '',
+        data: null,
         msg: '未找到可用模型配置'
       }
     }
@@ -285,26 +301,30 @@ class AiManage {
     if (!apiKey) {
       return {
         success: false,
-        translation: '',
+        data: null,
         msg: `${runtimeProfile.model} 模型的 API Key 未配置`
       }
     }
 
     try {
+      // 待翻译文本类型
+      const textType = getTextType(text)
       // 英汉互译提示词
       const prompt = `${promptManage.getTranslatePrompt(text)}`
+      // 当前文本类型对应的结构
+      const schema = englishChineseTranslationSchemaMap[textType]
       // 模型调用结果
-      const invokeResult = await langchainGateway.invokeStructured(
+      const invokeResult = await langchainGateway.invokeStructured<EnglishChineseTranslation>(
         runtimeProfile,
         prompt,
-        englishChineseTranslationSchema
+        schema
       )
 
       console.log(invokeResult, 'invokeResult')
 
       return {
         success: invokeResult.success,
-        translation: JSON.stringify(invokeResult.data),
+        data: invokeResult.data,
         msg: invokeResult.msg
       }
     } catch (error) {
@@ -317,4 +337,5 @@ class AiManage {
   }
 }
 
+// AI 调度管理器实例
 export const aiManage = new AiManage()
