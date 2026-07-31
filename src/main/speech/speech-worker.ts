@@ -24,7 +24,7 @@ const speechWorkerData = workerData as SpeechWorkerData
 // 英文与中文默认音色映射
 const SPEAKER_ID_BY_LANGUAGE: Readonly<Record<'en' | 'zh', number>> = {
   en: 0,
-  zh: 48
+  zh: 3
 }
 // 模型不支持标点到半角标点的规范化映射
 const PUNCTUATION_NORMALIZATION_MAP: Readonly<Record<string, string>> = {
