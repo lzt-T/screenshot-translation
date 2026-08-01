@@ -2,6 +2,7 @@ appId: com.electron.app
 productName: Bai_Ze
 directories:
   buildResources: build
+beforePack: build/validate-tts-assets.cjs
 files:
   - '!**/.vscode/*'
   - '!src/*'
