@@ -38,6 +38,8 @@ export enum SendEnum {
   GET_APP_VERSION = 'GET_APP_VERSION',
   /** 检查更新结果 */
   CHECK_UPDATE_RESULT = 'CHECK_UPDATE_RESULT',
+  /** 发现可用更新 */
+  UPDATE_AVAILABLE = 'UPDATE_AVAILABLE',
   /** 下载进度 */
   DOWNLOAD_PROGRESS = 'DOWNLOAD_PROGRESS',
   /** 下载失败 */

@@ -3,6 +3,7 @@ import { ExternalLink, Github, RefreshCw, ScanLine } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@renderer/components/ui/button'
 import { SendEnum } from '@src/type/ipc-constants'
+import type { UpdateCheckCompleteResult } from '@src/type/update'
 
 /**
  * 渲染产品信息与更新入口
@@ -40,18 +41,21 @@ export default function AboutPage(): React.JSX.Element {
       setAppVersion(version)
     })
 
-    window.electron.ipcRenderer.on(SendEnum.CHECK_UPDATE_COMPLETE, (_event, data) => {
-      // 更新检查结果
-      const { isUpdateAvailable } = data
-      if (!isUpdateAvailable) {
-        toast.success('当前已是最新版本')
+    // 检查完成事件的注销方法
+    const removeCheckUpdateCompleteListener = window.electron.ipcRenderer.on(
+      SendEnum.CHECK_UPDATE_COMPLETE,
+      (_event, data: UpdateCheckCompleteResult) => {
+        // 更新检查结果
+        const { isUpdateAvailable, errorMessage } = data
+        if (!isUpdateAvailable && !errorMessage) {
+          toast.success('当前已是最新版本')
+        }
+        setIsUpdating(false)
       }
-      setIsUpdating(false)
-    })
+    )
 
     return () => {
-      window.electron.ipcRenderer.removeAllListeners(SendEnum.CHECK_UPDATE_COMPLETE)
-      window.electron.ipcRenderer.removeAllListeners(SendEnum.GET_APP_VERSION)
+      removeCheckUpdateCompleteListener()
     }
   }, [])
 
