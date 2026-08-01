@@ -46,6 +46,27 @@ class PromptManage {
   }
 
   /**
+   * 获取英文句子分析提示词
+   * @param {string} sourceText 待分析英文原文
+   * @param {string} translation 已展示的中文译文
+   * @returns {string} 英文句子分析提示词
+   */
+  public getSentenceAnalysisPrompt(sourceText: string, translation: string) {
+    return `
+逐句分析以下英文原文，帮助中文用户理解句子结构、关键短语和语法。
+必须覆盖原文中的全部句子并保持原有顺序；sourceText 必须原样保留对应的完整英文句子。
+chunks 必须按照原句顺序拆分为连续意群，并分别给出简明句法角色和当前语境中的中文含义。
+structureSummary 只概括句子主干与从句关系；keyPhrases 和 grammarPoints 必须使用数组，没有合适内容时返回空数组。
+参考译文仅用于保持解释一致，不要重新翻译，不要扩展语气、文化背景、相似例句或深度语言学内容。
+所有解释使用简体中文。仅返回一个可被 JSON.parse 直接解析的 JSON 对象，不要使用 Markdown 代码块，不要添加解释。
+JSON 结构示例：{"sentences":[{"sourceText":"Original English sentence.","structureSummary":"句子主干与从句关系","chunks":[{"text":"Original English sentence","role":"句法角色","meaning":"中文含义"}],"keyPhrases":[{"phrase":"English phrase","meaning":"中文解释"}],"grammarPoints":[{"name":"语法点名称","explanation":"结合原句的中文说明"}]}]}
+
+英文原文：${sourceText}
+参考译文：${translation}
+`
+  }
+
+  /**
    * 根据文本类型获取翻译提示词
    * @param {string} text 待翻译文本
    * @returns {string} 翻译提示词

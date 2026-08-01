@@ -1,4 +1,4 @@
-import { Language } from '../../type/base'
+import { Language, SentenceAnalysis } from '../../type/base'
 import {
   getTextType,
   getTranslatePrompt,
@@ -14,6 +14,7 @@ import {
   type ScreenshotTranslation,
   type TextTranslation,
   englishChineseTranslationSchemaMap,
+  sentenceAnalysisSchema,
   screenshotTranslationSchema,
   textTranslationSchema
 } from './aiClients/translationSchemas'
@@ -330,6 +331,60 @@ class AiManage {
     } catch (error) {
       console.error(error, 'error')
       if (this.isStructuredOutputValidationError(error)) {
+        return this.createStructuredFailResult()
+      }
+      throw error
+    }
+  }
+
+  /**
+   * 分析英文句子
+   * @param {string} sourceText 待分析英文原文
+   * @param {string} translation 已展示的中文译文
+   * @returns {Promise<TranslationResult<SentenceAnalysis>>} 句子分析结果
+   */
+  public async analyzeEnglishSentences(
+    sourceText: string,
+    translation: string
+  ): Promise<TranslationResult<SentenceAnalysis>> {
+    // 运行时模型配置
+    const runtimeProfile = this.getRuntimeModelProfile()
+    if (!runtimeProfile) {
+      return {
+        success: false,
+        data: null,
+        msg: '未找到可用模型配置'
+      }
+    }
+
+    // 当前模型 API Key
+    const apiKey = runtimeProfile.apiKey
+    if (!apiKey) {
+      return {
+        success: false,
+        data: null,
+        msg: `${runtimeProfile.model} 模型的 API Key 未配置`
+      }
+    }
+
+    try {
+      // 英文句子分析提示词
+      const prompt = promptManage.getSentenceAnalysisPrompt(sourceText, translation)
+      // 结构化分析结果
+      const invokeResult = await langchainGateway.invokeStructured(
+        runtimeProfile,
+        prompt,
+        sentenceAnalysisSchema
+      )
+
+      return {
+        success: invokeResult.success,
+        data: invokeResult.data,
+        msg: invokeResult.msg
+      }
+    } catch (error) {
+      if (this.isStructuredOutputValidationError(error)) {
+        console.error('英文句子分析结构化输出解析失败', error)
         return this.createStructuredFailResult()
       }
       throw error

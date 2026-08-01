@@ -2,7 +2,15 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { SendEnum } from '@src/type/ipc-constants'
 import { toast } from 'sonner'
 import { speakText, stopSpeaking } from '@src/utils/speak'
-import { TranslateResponse } from '@src/type/base'
+import {
+  Language,
+  SentenceAnalysis,
+  SentenceAnalysisFailureResponse,
+  SentenceAnalysisRequest,
+  SentenceAnalysisSuccessResponse,
+  TextType,
+  TranslateResponse
+} from '@src/type/base'
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import { useNavigate } from 'react-router-dom'
 import { TranslationModelProfile } from '@src/type/model'
@@ -27,16 +35,28 @@ export default function useData() {
   const [translationText, setTranslationText] = useState('')
   // 翻译错误信息
   const [translationError, setTranslationError] = useState('')
+  // 句子分析结果
+  const [sentenceAnalysis, setSentenceAnalysis] = useState<SentenceAnalysis | null>(null)
+  // 是否正在分析句子
+  const [isSentenceAnalysisLoading, setIsSentenceAnalysisLoading] = useState(false)
+  // 句子分析错误信息
+  const [sentenceAnalysisError, setSentenceAnalysisError] = useState('')
   /** 上一次翻译文本 */
   const lastTranslationText = useRef('')
   /** 翻译是否成功 */
   const translateSuccess = useRef(false)
+  /** 当前有效的句子分析请求编号 */
+  const activeSentenceAnalysisRequestId = useRef(0)
   /** 翻译结果 */
   const [translationResult, setTranslationResult] = useState<TranslateResponse | null>(null)
   // 是否正在朗读原文
   const isSpeakingInput = speakingTarget === 'input'
   // 正在朗读的译文条目索引
   const speakingResultIndex = typeof speakingTarget === 'number' ? speakingTarget : null
+  // 当前结果是否允许句子分析
+  const canAnalyzeSentence =
+    translationResult?.sourceLanguage === Language.EN &&
+    translationResult.textType === TextType.SENTENCE
 
   /**
    * 跳转到设置页并聚焦模型配置区域
@@ -90,6 +110,14 @@ export default function useData() {
     return true
   }, [getActiveModel, goToSettingPage, isInit])
 
+  /** 清空句子分析并使未完成请求失效 */
+  const resetSentenceAnalysis = (): void => {
+    activeSentenceAnalysisRequestId.current += 1
+    setSentenceAnalysis(null)
+    setIsSentenceAnalysisLoading(false)
+    setSentenceAnalysisError('')
+  }
+
   /** 处理输入文本变化 */
   const handleInputTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     // 最新输入文本
@@ -100,6 +128,7 @@ export default function useData() {
       setTranslationResult(null)
       setTranslationError('')
       translateSuccess.current = false
+      resetSentenceAnalysis()
     }
   }
 
@@ -145,6 +174,7 @@ export default function useData() {
     setSpeakingTarget(null)
     setTranslationResult(null)
     setTranslationError('')
+    resetSentenceAnalysis()
     setIsLoading(true)
     window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, normalizedText)
   }
@@ -192,10 +222,45 @@ export default function useData() {
     toggleSpeech(index, text)
   }
 
+  /** 发起当前英文句子的结构分析 */
+  const onAnalyzeSentence = (): void => {
+    if (!canAnalyzeSentence || !translationResult || isSentenceAnalysisLoading) {
+      return
+    }
+    if (!ensureModelConfigReady()) {
+      return
+    }
+
+    // 首条可用中文译文
+    const primaryTranslation =
+      translationResult.translation.find((item) => item.zh?.trim())?.zh?.trim() || ''
+    if (!primaryTranslation) {
+      setSentenceAnalysisError('缺少可供参考的中文译文，请重新翻译后再试')
+      return
+    }
+
+    // 本次分析请求编号
+    const requestId = activeSentenceAnalysisRequestId.current + 1
+    // 句子分析请求参数
+    const request: SentenceAnalysisRequest = {
+      requestId,
+      sourceText: translationResult.sourceWords,
+      translation: primaryTranslation
+    }
+
+    activeSentenceAnalysisRequestId.current = requestId
+    setSentenceAnalysis(null)
+    setSentenceAnalysisError('')
+    setIsSentenceAnalysisLoading(true)
+    window.electron.ipcRenderer.send(SendEnum.SENTENCE_ANALYSIS, request)
+  }
+
   useEffect(() => {
     // 移除可能存在的旧监听器
     window.electron.ipcRenderer.removeAllListeners(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS)
     window.electron.ipcRenderer.removeAllListeners(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL)
+    window.electron.ipcRenderer.removeAllListeners(SendEnum.SENTENCE_ANALYSIS_SUCCESS)
+    window.electron.ipcRenderer.removeAllListeners(SendEnum.SENTENCE_ANALYSIS_FAIL)
 
     // 成功处理函数
     const handleSuccess = (_event, result: TranslateResponse) => {
@@ -220,9 +285,39 @@ export default function useData() {
       translateSuccess.current = false
     }
 
+    /** 处理句子分析成功响应 */
+    const handleSentenceAnalysisSuccess = (
+      _event,
+      response: SentenceAnalysisSuccessResponse
+    ): void => {
+      if (response.requestId !== activeSentenceAnalysisRequestId.current) {
+        return
+      }
+      setIsSentenceAnalysisLoading(false)
+      setSentenceAnalysisError('')
+      setSentenceAnalysis(response.analysis)
+    }
+
+    /** 处理句子分析失败响应 */
+    const handleSentenceAnalysisFail = (
+      _event,
+      response: SentenceAnalysisFailureResponse
+    ): void => {
+      if (response.requestId !== activeSentenceAnalysisRequestId.current) {
+        return
+      }
+      setIsSentenceAnalysisLoading(false)
+      setSentenceAnalysisError(response.message || '句子分析失败，请稍后重试')
+    }
+
     // 注册监听器
     window.electron.ipcRenderer.on(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS, handleSuccess)
     window.electron.ipcRenderer.on(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL, handleFail)
+    window.electron.ipcRenderer.on(
+      SendEnum.SENTENCE_ANALYSIS_SUCCESS,
+      handleSentenceAnalysisSuccess
+    )
+    window.electron.ipcRenderer.on(SendEnum.SENTENCE_ANALYSIS_FAIL, handleSentenceAnalysisFail)
 
 
     // 清理函数，组件卸载时移除监听器
@@ -233,6 +328,8 @@ export default function useData() {
       window.electron.ipcRenderer.removeAllListeners(
         SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL
       )
+      window.electron.ipcRenderer.removeAllListeners(SendEnum.SENTENCE_ANALYSIS_SUCCESS)
+      window.electron.ipcRenderer.removeAllListeners(SendEnum.SENTENCE_ANALYSIS_FAIL)
       // 确保离开页面时停止本地语音
       stopSpeaking()
     }
@@ -242,6 +339,10 @@ export default function useData() {
     isLoading,
     isSpeakingInput,
     speakingResultIndex,
+    canAnalyzeSentence,
+    isSentenceAnalysisLoading,
+    sentenceAnalysis,
+    sentenceAnalysisError,
     translationText,
     translationError,
     translationResult,
@@ -249,6 +350,7 @@ export default function useData() {
     handleKeyDown,
     onScreenshot,
     onEnglishChineseTranslation,
+    onAnalyzeSentence,
     speakInputText,
     speakResultItem
   }

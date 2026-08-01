@@ -19,6 +19,10 @@ export default function HomePage(): React.JSX.Element {
     isLoading,
     isSpeakingInput,
     speakingResultIndex,
+    canAnalyzeSentence,
+    isSentenceAnalysisLoading,
+    sentenceAnalysis,
+    sentenceAnalysisError,
     translationText,
     translationError,
     translationResult,
@@ -26,6 +30,7 @@ export default function HomePage(): React.JSX.Element {
     handleKeyDown,
     onScreenshot,
     onEnglishChineseTranslation,
+    onAnalyzeSentence,
     speakInputText,
     speakResultItem
   } = useData()
@@ -36,8 +41,8 @@ export default function HomePage(): React.JSX.Element {
     <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-6 py-8 lg:px-10 lg:py-10">
       <Header onScreenshot={onScreenshot} />
 
-      <section className="mt-7 grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-[minmax(250px,0.8fr)_minmax(330px,1.2fr)]">
-        <div className="lab-panel flex min-h-56 flex-col overflow-hidden transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
+      <section className="mt-7 grid min-h-0 flex-1 grid-cols-1 items-start gap-4 md:grid-cols-[minmax(250px,0.8fr)_minmax(330px,1.2fr)]">
+        <div className="lab-panel flex min-h-80 flex-col overflow-hidden transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 md:min-h-[calc(100vh-13rem)]">
           <div className="flex h-12 items-center justify-between border-b border-border px-4">
             <span className="measurement-label">原文样本</span>
             <div className="flex items-center gap-1">
@@ -91,12 +96,17 @@ export default function HomePage(): React.JSX.Element {
         </div>
 
         <ResultView
+          canAnalyzeSentence={canAnalyzeSentence}
           errorMessage={translationError}
           isLoading={isLoading}
+          isSentenceAnalysisLoading={isSentenceAnalysisLoading}
+          onAnalyzeSentence={onAnalyzeSentence}
           onCopyItem={copyText}
           onRetry={onEnglishChineseTranslation}
           onSpeakItem={speakResultItem}
           result={translationResult}
+          sentenceAnalysis={sentenceAnalysis}
+          sentenceAnalysisError={sentenceAnalysisError}
           speakingItemIndex={speakingResultIndex}
         />
       </section>

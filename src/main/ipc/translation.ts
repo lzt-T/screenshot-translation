@@ -2,7 +2,13 @@ import { ipcMain } from "electron"
 import { SendEnum } from "../../type/ipc-constants"
 import { aiManage } from "../utils/aiManage"
 import { getErrorMessage } from "../utils/error"
-import { ExampleSentence, Language, TextType, TranslateResponse } from "../../type/base"
+import {
+  ExampleSentence,
+  Language,
+  SentenceAnalysisRequest,
+  TextType,
+  TranslateResponse
+} from "../../type/base"
 import { getTextType, getLanguageType, getTargetLanguage } from "../../utils/ai"
 import lemmatize = require('wink-lemmatizer')
 
@@ -119,5 +125,39 @@ export const registerTranslationIpcEvents = () => {
       event.reply(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL, getErrorMessage(error))
     }
   })
+
+  /** 英文句子分析 */
+  ipcMain.on(
+    SendEnum.SENTENCE_ANALYSIS,
+    async (event, request: SentenceAnalysisRequest) => {
+      try {
+        if (
+          getLanguageType(request.sourceText) !== Language.EN ||
+          getTextType(request.sourceText) !== TextType.SENTENCE
+        ) {
+          throw new Error('仅支持分析英文句子')
+        }
+
+        // 结构化分析调用结果
+        const analysisResult = await aiManage.analyzeEnglishSentences(
+          request.sourceText,
+          request.translation
+        )
+        if (!analysisResult.success || !analysisResult.data) {
+          throw new Error(analysisResult.msg || '英文句子分析失败')
+        }
+
+        event.reply(SendEnum.SENTENCE_ANALYSIS_SUCCESS, {
+          requestId: request.requestId,
+          analysis: analysisResult.data
+        })
+      } catch (error) {
+        event.reply(SendEnum.SENTENCE_ANALYSIS_FAIL, {
+          requestId: request.requestId,
+          message: getErrorMessage(error)
+        })
+      }
+    }
+  )
 
 }

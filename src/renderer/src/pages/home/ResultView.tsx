@@ -1,8 +1,15 @@
 import React from 'react'
 import { BookOpen, CircleAlert, Copy, Loader2, ScanText, Volume2, VolumeX } from 'lucide-react'
-import { ExampleSentence, Language, TextType, TranslateResponse } from '@src/type/base'
+import {
+  ExampleSentence,
+  Language,
+  SentenceAnalysis,
+  TextType,
+  TranslateResponse
+} from '@src/type/base'
 import { cn } from '@renderer/lib/utils'
 import { Button } from '@renderer/components/ui/button'
+import SentenceAnalysisView from './SentenceAnalysisView'
 
 /** 译文面板状态 */
 type ResultStatus = 'idle' | 'loading' | 'error' | 'success'
@@ -121,6 +128,16 @@ interface ResultViewProps {
   onCopyItem: (text: string) => void
   /* 朗读条目回调 */
   onSpeakItem: (index: number, text: string) => void
+  /* 是否允许分析英文句子 */
+  canAnalyzeSentence: boolean
+  /* 句子分析结果 */
+  sentenceAnalysis: SentenceAnalysis | null
+  /* 是否正在分析句子 */
+  isSentenceAnalysisLoading: boolean
+  /* 句子分析错误信息 */
+  sentenceAnalysisError: string
+  /* 分析句子回调 */
+  onAnalyzeSentence: () => void
 }
 
 /**
@@ -135,7 +152,12 @@ export default function ResultView({
   speakingItemIndex,
   onRetry,
   onCopyItem,
-  onSpeakItem
+  onSpeakItem,
+  canAnalyzeSentence,
+  sentenceAnalysis,
+  isSentenceAnalysisLoading,
+  sentenceAnalysisError,
+  onAnalyzeSentence
 }: ResultViewProps): React.JSX.Element {
   // 当前结果是否是单词
   const isWord = result?.textType === TextType.WORD
@@ -153,7 +175,7 @@ export default function ResultView({
   return (
     <div
       aria-busy={isLoading}
-      className="lab-panel min-h-56 overflow-hidden"
+      className="lab-panel flex min-h-80 flex-col overflow-hidden md:min-h-[calc(100vh-13rem)]"
       role="region"
       aria-label="译文结果"
     >
@@ -172,7 +194,7 @@ export default function ResultView({
       </div>
 
       {!result && (
-        <div className="flex min-h-44 items-center justify-center px-8 py-10">
+        <div className="flex flex-1 items-center justify-center px-8 py-10">
           <div className="max-w-xs text-center">
             <div
               className={cn(
@@ -241,6 +263,15 @@ export default function ResultView({
             )
           })}
         </div>
+      )}
+
+      {canAnalyzeSentence && (
+        <SentenceAnalysisView
+          analysis={sentenceAnalysis}
+          errorMessage={sentenceAnalysisError}
+          isLoading={isSentenceAnalysisLoading}
+          onAnalyze={onAnalyzeSentence}
+        />
       )}
 
       {result && isWord && result.exampleSentences && result.exampleSentences.length > 0 && (
