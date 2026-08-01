@@ -1,5 +1,5 @@
 import React from 'react'
-import { Copy, Loader2, Volume2, VolumeX } from 'lucide-react'
+import { Copy, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Textarea } from '@renderer/components/ui/textarea'
 import { cn } from '@renderer/lib/utils'
@@ -17,13 +17,17 @@ export default function HomePage(): React.JSX.Element {
   // 首页状态和交互方法
   const {
     isLoading,
-    isSpeaking,
+    isSpeakingInput,
+    speakingResultIndex,
     translationText,
+    translationError,
     translationResult,
     handleInputTextChange,
     handleKeyDown,
     onScreenshot,
-    speakInputText
+    onEnglishChineseTranslation,
+    speakInputText,
+    speakResultItem
   } = useData()
   // 当前是否存在输入文本
   const hasInputText = Boolean(translationText.trim())
@@ -33,12 +37,9 @@ export default function HomePage(): React.JSX.Element {
       <Header onScreenshot={onScreenshot} />
 
       <section className="mt-7 grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-[minmax(250px,0.8fr)_minmax(330px,1.2fr)]">
-        <div className="lab-panel flex min-h-56 flex-col overflow-hidden">
+        <div className="lab-panel flex min-h-56 flex-col overflow-hidden transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
           <div className="flex h-12 items-center justify-between border-b border-border px-4">
-            <div className="flex items-center gap-3">
-              <span className="measurement-label">Source sample</span>
-              {isLoading && <Loader2 size={14} className="animate-spin text-primary" />}
-            </div>
+            <span className="measurement-label">原文样本</span>
             <div className="flex items-center gap-1">
               <Button
                 aria-label="复制输入文本"
@@ -52,27 +53,52 @@ export default function HomePage(): React.JSX.Element {
                 <Copy size={14} />
               </Button>
               <Button
-                aria-label={isSpeaking ? '停止朗读' : '朗读输入文本'}
+                aria-label={isSpeakingInput ? '停止朗读原文' : '朗读原文'}
+                aria-pressed={isSpeakingInput}
                 className={cn('size-8 cursor-pointer', !hasInputText && 'cursor-not-allowed')}
                 disabled={!hasInputText}
                 onClick={speakInputText}
                 size="icon"
-                title={isSpeaking ? '停止朗读' : '朗读输入文本'}
+                title={isSpeakingInput ? '停止朗读原文' : '朗读原文'}
                 variant="ghost"
               >
-                {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                {isSpeakingInput ? <VolumeX size={14} /> : <Volume2 size={14} />}
               </Button>
             </div>
           </div>
           <Textarea
-            className="custom-scrollbar min-h-48 flex-1 resize-none rounded-none border-0 bg-transparent px-4 py-4 text-[15px] leading-7 shadow-none focus-visible:ring-0"
+            aria-describedby="translation-shortcuts"
+            className="custom-scrollbar min-h-40 flex-1 resize-none rounded-none border-0 bg-transparent px-4 py-4 text-[15px] leading-7 shadow-none focus-visible:ring-0"
+            disabled={isLoading}
             onChange={handleInputTextChange}
             onKeyDown={handleKeyDown}
-            placeholder="输入中文或英文，按 Enter 互译，Shift + Enter 换行"
+            placeholder="输入中文或英文"
           />
+          <div className="flex min-h-12 items-center justify-between gap-3 border-t border-border px-4 py-2">
+            <p className="text-[11px] leading-5 text-muted-foreground" id="translation-shortcuts">
+              Enter 翻译 · Shift + Enter 换行
+            </p>
+            <Button
+              className={cn('shrink-0 cursor-pointer', (!hasInputText || isLoading) && 'cursor-not-allowed')}
+              disabled={!hasInputText || isLoading}
+              onClick={onEnglishChineseTranslation}
+              size="sm"
+              variant="secondary"
+            >
+              {isLoading ? '翻译中' : '翻译'}
+            </Button>
+          </div>
         </div>
 
-        <ResultView isLoading={isLoading} result={translationResult} />
+        <ResultView
+          errorMessage={translationError}
+          isLoading={isLoading}
+          onCopyItem={copyText}
+          onRetry={onEnglishChineseTranslation}
+          onSpeakItem={speakResultItem}
+          result={translationResult}
+          speakingItemIndex={speakingResultIndex}
+        />
       </section>
     </div>
   )

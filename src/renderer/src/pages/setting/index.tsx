@@ -7,7 +7,6 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { Label } from '@renderer/components/ui/label'
-import { Palette } from 'lucide-react'
 import { Switch } from '@renderer/components/ui/switch'
 import { toast } from 'sonner'
 import useData from './useData'
@@ -116,88 +115,102 @@ const SettingPage: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-9 px-6 py-8 lg:px-10 lg:py-10">
+    <div className="mx-auto max-w-5xl space-y-8 px-6 py-8 lg:px-10 lg:py-10">
       <div>
         <h1 className="font-display text-4xl tracking-[-0.03em] text-foreground">设置</h1>
         <p className="mt-2 text-sm text-muted-foreground">调整翻译偏好、界面外观与模型连接。</p>
       </div>
 
-      <section className="lab-panel overflow-hidden" aria-label="常规设置">
-        <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <Label className="text-base font-medium" htmlFor="target-language-select">
-            截取翻译目标语言
-          </Label>
-          <div className="w-full sm:w-70">
-            <Select value={data.targetLanguage} onValueChange={handleTargetLanguageChange}>
-              <SelectTrigger className="w-full cursor-pointer" id="target-language-select">
-                <SelectValue placeholder="选择目标语言" />
-              </SelectTrigger>
-              <SelectContent>
-                {[Language.ZH, Language.EN].map((language) => (
-                  <SelectItem className="cursor-pointer" key={language} value={language}>
-                    {getLanguageText(language)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <section className="space-y-4" aria-labelledby="general-settings-title">
+        <div>
+          <h2
+            className="text-lg font-semibold tracking-[-0.01em] text-foreground"
+            id="general-settings-title"
+          >
+            常规设置
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            设置目标语言、当前模型与开机自启。
+          </p>
         </div>
 
-        <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <Label className="text-base font-medium" htmlFor="active-model-select">
-            当前使用模型
-          </Label>
-          <div className="w-full sm:w-70">
-            <Select value={data.activeModelId} onValueChange={handleActiveModelChange}>
-              <SelectTrigger className="w-full cursor-pointer" id="active-model-select">
-                <SelectValue placeholder="选择模型" />
-              </SelectTrigger>
-              <SelectContent>
-                {data.models.map((model) => {
-                  // 模型展示文本
-                  const modelText = model.displayName || model.model || '未命名模型'
-                  // 模型配置是否有效
-                  const isModelValid = validateModelProfile(model).isValid
-                  return (
-                    <SelectItem
-                      className="cursor-pointer"
-                      disabled={!isModelValid && model.id !== data.activeModelId}
-                      key={model.id}
-                      value={model.id}
-                    >
-                      {modelText}
-                      {isModelValid ? '' : '（配置不完整）'}
+        <div className="lab-panel overflow-hidden">
+          <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <Label className="text-base font-medium" htmlFor="target-language-select">
+              截取翻译目标语言
+            </Label>
+            <div className="w-full sm:w-70">
+              <Select value={data.targetLanguage} onValueChange={handleTargetLanguageChange}>
+                <SelectTrigger className="w-full cursor-pointer" id="target-language-select">
+                  <SelectValue placeholder="选择目标语言" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[Language.ZH, Language.EN].map((language) => (
+                    <SelectItem className="cursor-pointer" key={language} value={language}>
+                      {getLanguageText(language)}
                     </SelectItem>
-                  )
-                })}
-              </SelectContent>
-            </Select>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-between px-5 py-4">
-          <Label className="text-base font-medium" htmlFor="autoLaunch">
-            开机自启
-          </Label>
-          <Switch
-            checked={data.autoLaunch?.enabled || false}
-            id="autoLaunch"
-            onCheckedChange={handleAutoLaunchChange}
-          />
+          <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <Label className="text-base font-medium" htmlFor="active-model-select">
+              当前使用模型
+            </Label>
+            <div className="w-full sm:w-70">
+              <Select value={data.activeModelId} onValueChange={handleActiveModelChange}>
+                <SelectTrigger className="w-full cursor-pointer" id="active-model-select">
+                  <SelectValue placeholder="选择模型" />
+                </SelectTrigger>
+                <SelectContent>
+                  {data.models.map((model) => {
+                    // 模型展示文本
+                    const modelText = model.displayName || model.model || '未命名模型'
+                    // 模型配置是否有效
+                    const isModelValid = validateModelProfile(model).isValid
+                    return (
+                      <SelectItem
+                        className="cursor-pointer"
+                        disabled={!isModelValid && model.id !== data.activeModelId}
+                        key={model.id}
+                        value={model.id}
+                      >
+                        {modelText}
+                        {isModelValid ? '' : '（配置不完整）'}
+                      </SelectItem>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between px-5 py-4">
+            <Label className="text-base font-medium" htmlFor="autoLaunch">
+              开机自启
+            </Label>
+            <Switch
+              checked={data.autoLaunch?.enabled || false}
+              id="autoLaunch"
+              onCheckedChange={handleAutoLaunchChange}
+            />
+          </div>
         </div>
       </section>
 
       <section aria-labelledby="appearance-title">
-        <div className="mb-4 flex items-center gap-2">
-          <Palette aria-hidden="true" className="text-primary" size={18} />
-          <div>
-            <h2 className="text-lg font-semibold tracking-[-0.01em]" id="appearance-title">
-              外观
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              主题会同步应用到主窗口、截图选区与翻译浮层。
-            </p>
-          </div>
+        <div className="mb-4">
+          <h2
+            className="text-lg font-semibold tracking-[-0.01em] text-foreground"
+            id="appearance-title"
+          >
+            外观
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            主题会同步应用到主窗口、截图选区与翻译浮层。
+          </p>
         </div>
         <ThemeSelector />
       </section>

@@ -259,29 +259,28 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor={fieldIds.baseUrl}>Base URL</Label>
-                <Input
-                  aria-describedby={baseUrlHelpId}
-                  aria-invalid={Boolean(validation.errors.baseUrl)}
-                  id={fieldIds.baseUrl}
-                  onChange={(event) => handleChangeField('baseUrl', event.target.value)}
-                  placeholder="输入 Base URL，如 https://api.openai.com/v1"
-                  value={model.baseUrl || ''}
-                />
-                <p
-                  className={cn(
-                    'text-xs leading-relaxed',
-                    validation.errors.baseUrl ? 'text-destructive' : 'text-muted-foreground'
-                  )}
-                  id={baseUrlHelpId}
-                >
-                  {validation.errors.baseUrl ||
-                    (isGemini
-                      ? 'Gemini 模型可留空。'
-                      : '填写 API 根地址，不要包含 /chat/completions。')}
-                </p>
-              </div>
+              {!isGemini && (
+                <div className="space-y-2">
+                  <Label htmlFor={fieldIds.baseUrl}>Base URL</Label>
+                  <Input
+                    aria-describedby={baseUrlHelpId}
+                    aria-invalid={Boolean(validation.errors.baseUrl)}
+                    id={fieldIds.baseUrl}
+                    onChange={(event) => handleChangeField('baseUrl', event.target.value)}
+                    placeholder="输入 Base URL，如 https://api.openai.com/v1"
+                    value={model.baseUrl || ''}
+                  />
+                  <p
+                    className={cn(
+                      'text-xs leading-relaxed',
+                      validation.errors.baseUrl ? 'text-destructive' : 'text-muted-foreground'
+                    )}
+                    id={baseUrlHelpId}
+                  >
+                    {validation.errors.baseUrl || '填写 API 根地址，不要包含 /chat/completions。'}
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor={fieldIds.apiKey}>API Key</Label>

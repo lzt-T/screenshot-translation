@@ -175,7 +175,7 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Gemini 模型可以不填写 Base URL，其他模型请填写 API 根地址。
+        Gemini 模型将直接连接 Google；其他模型请填写 API 根地址。
       </p>
 
       <div className="space-y-3">

@@ -7,6 +7,9 @@ import useLocalForage from '@renderer/hooks/useLocalForage'
 import { useNavigate } from 'react-router-dom'
 import { TranslationModelProfile } from '@src/type/model'
 
+/** 当前朗读目标，数字表示译文条目索引 */
+type SpeakingTarget = 'input' | number | null
+
 /**
  * 首页翻译数据 Hook
  * @returns 首页翻译状态与交互方法
@@ -18,16 +21,22 @@ export default function useData() {
   const { storeSetting, isInit } = useLocalForage()
   // 是否正在翻译
   const [isLoading, setIsLoading] = useState(false)
-  // 是否正在朗读
-  const [isSpeaking, setIsSpeaking] = useState(false)
+  // 当前朗读目标
+  const [speakingTarget, setSpeakingTarget] = useState<SpeakingTarget>(null)
   // 翻译文本
   const [translationText, setTranslationText] = useState('')
+  // 翻译错误信息
+  const [translationError, setTranslationError] = useState('')
   /** 上一次翻译文本 */
   const lastTranslationText = useRef('')
   /** 翻译是否成功 */
   const translateSuccess = useRef(false)
   /** 翻译结果 */
   const [translationResult, setTranslationResult] = useState<TranslateResponse | null>(null)
+  // 是否正在朗读原文
+  const isSpeakingInput = speakingTarget === 'input'
+  // 正在朗读的译文条目索引
+  const speakingResultIndex = typeof speakingTarget === 'number' ? speakingTarget : null
 
   /**
    * 跳转到设置页并聚焦模型配置区域
@@ -83,17 +92,20 @@ export default function useData() {
 
   /** 处理输入文本变化 */
   const handleInputTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setTranslationText(e.target.value)
+    // 最新输入文本
+    const nextText = e.target.value
+    setTranslationText(nextText)
 
-    if (e.target.value.trim() === '') {
+    if (nextText.trim() !== lastTranslationText.current) {
       setTranslationResult(null)
+      setTranslationError('')
       translateSuccess.current = false
     }
   }
 
   /** 处理键盘事件 */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
       onEnglishChineseTranslation()
     }
@@ -126,32 +138,58 @@ export default function useData() {
       return
     }
 
-    lastTranslationText.current = translationText.trim()
+    // 清理后的待翻译文本
+    const normalizedText = translationText.trim()
+    lastTranslationText.current = normalizedText
+    stopSpeaking()
+    setSpeakingTarget(null)
+    setTranslationResult(null)
+    setTranslationError('')
     setIsLoading(true)
-    window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, translationText.trim())
+    window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, normalizedText)
+  }
+
+  /**
+   * 切换指定文本的朗读状态
+   * @param target 朗读目标或译文条目索引
+   * @param text 朗读文本
+   * @returns {void} 无返回值
+   */
+  function toggleSpeech(target: Exclude<SpeakingTarget, null>, text: string): void {
+    if (speakingTarget === target) {
+      stopSpeaking()
+      setSpeakingTarget(null)
+      return
+    }
+    if (!text.trim()) {
+      return
+    }
+    setSpeakingTarget(target)
+    void speakText(
+      text,
+      () => {
+        setSpeakingTarget(null)
+      },
+      (error) => {
+        setSpeakingTarget(null)
+        toast.error(error.message)
+      }
+    )
   }
 
   /** 朗读输入文本 */
   const speakInputText = () => {
-    if (isSpeaking) {
-      stopSpeaking()
-      setIsSpeaking(false)
-      return
-    }
-    if (!translationText.trim()) {
-      return
-    }
-    setIsSpeaking(true)
-    void speakText(
-      translationText,
-      () => {
-        setIsSpeaking(false)
-      },
-      (error) => {
-        setIsSpeaking(false)
-        toast.error(error.message)
-      }
-    )
+    toggleSpeech('input', translationText)
+  }
+
+  /**
+   * 朗读指定译文条目
+   * @param index 译文条目索引
+   * @param text 译文条目文本
+   * @returns {void} 无返回值
+   */
+  const speakResultItem = (index: number, text: string): void => {
+    toggleSpeech(index, text)
   }
 
   useEffect(() => {
@@ -160,11 +198,9 @@ export default function useData() {
     window.electron.ipcRenderer.removeAllListeners(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL)
 
     // 成功处理函数
-    const handleSuccess = (_event, result) => {
+    const handleSuccess = (_event, result: TranslateResponse) => {
       setIsLoading(false)
-
-      console.log(result, 'result');
-
+      setTranslationError('')
       setTranslationResult(result)
       translateSuccess.current = true
       toast.success('翻译成功', {
@@ -173,9 +209,12 @@ export default function useData() {
     }
 
     // 失败处理函数
-    const handleFail = (_event, result) => {
+    const handleFail = (_event, result: string) => {
+      // 可持续展示的失败信息
+      const errorMessage = result || '翻译失败，请稍后重试'
       setIsLoading(false)
-      toast.error(result, {
+      setTranslationError(errorMessage)
+      toast.error(errorMessage, {
         id: 'translation-fail'
       })
       translateSuccess.current = false
@@ -201,13 +240,16 @@ export default function useData() {
 
   return {
     isLoading,
-    isSpeaking,
+    isSpeakingInput,
+    speakingResultIndex,
     translationText,
+    translationError,
     translationResult,
     handleInputTextChange,
     handleKeyDown,
     onScreenshot,
     onEnglishChineseTranslation,
-    speakInputText
+    speakInputText,
+    speakResultItem
   }
 }
