@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Home, LibraryBig, MessageCircleMore, Package, ScanLine, Settings } from 'lucide-react'
 import { SendEnum } from '@src/type/ipc-constants'
+import SelectionTranslator from '@renderer/components/SelectionTranslator'
 import UpdateDialog from '@renderer/components/UpdateDialog'
 import { cn } from '@renderer/lib/utils'
 import useLocalForage from '@renderer/hooks/useLocalForage'
@@ -62,8 +63,8 @@ function App(): React.JSX.Element {
           </div>
           <div className="min-w-0">
             <h1 className="font-display text-xl tracking-[-0.02em]">Bai_Ze</h1>
-            <p className="mt-0.5 whitespace-nowrap text-[9px] uppercase tracking-[0.08em] text-muted-foreground">
-              The Enlightened Beast
+            <p className="mt-0.5 whitespace-nowrap text-[9px] text-muted-foreground">
+              从看懂到开口
             </p>
           </div>
         </div>
@@ -108,7 +109,9 @@ function App(): React.JSX.Element {
       </aside>
 
       <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
-        <Outlet />
+        <SelectionTranslator>
+          <Outlet />
+        </SelectionTranslator>
       </main>
     </div>
   )

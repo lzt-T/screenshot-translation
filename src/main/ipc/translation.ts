@@ -74,55 +74,79 @@ const filterExampleSentences = (
   )
 }
 
+/**
+ * 执行英汉互译并组装统一结果
+ * @param {string} text 待翻译文本
+ * @returns {Promise<TranslateResponse>} 翻译结果
+ */
+const translateEnglishChineseText = async (text: string): Promise<TranslateResponse> => {
+  // 返回给渲染进程的翻译结果
+  const resultData: TranslateResponse = {
+    textType: getTextType(text),
+    sourceLanguage: getLanguageType(text),
+    targetLanguage: getTargetLanguage(text),
+    sourceWords: text,
+    translation: [],
+    exampleSentences: null
+  }
+  // 结构化模型调用结果
+  const translateResult = await aiManage.englishChineseTranslation(text)
+  if (!translateResult.success || !translateResult.data) {
+    throw new Error(translateResult.msg || '英汉互译失败')
+  }
+
+  // 结构化英汉翻译数据
+  const data = translateResult.data
+
+  if (resultData.textType === TextType.SENTENCE) {
+    if ([Language.ZH_AND_EN, Language.EN].includes(resultData.targetLanguage)) {
+      // 已出现的英文译文
+      const translatedEnglishTexts: string[] = []
+      data.translation = data.translation.map(
+        (item: { en: string | null; zh: string | null }) => {
+          if (item.en && !translatedEnglishTexts.includes(item.en)) {
+            translatedEnglishTexts.push(item.en)
+            return item
+          }
+          return { en: null, zh: null }
+        }
+      )
+
+      data.translation = data.translation.filter(
+        (item: { en: string | null; zh: string | null }) => item.en !== null
+      )
+    }
+  }
+
+  resultData.exampleSentences =
+    resultData.textType === TextType.WORD
+      ? filterExampleSentences(data.exampleSentences, text)
+      : data.exampleSentences || []
+  resultData.translation = data.translation || []
+
+  return resultData
+}
+
 /** 注册翻译 IPC 事件 */
 export const registerTranslationIpcEvents = () => {
 
   /** 英汉互译 */
   ipcMain.on(SendEnum.ENGLISH_CHINESE_TRANSLATION, async (event, text) => {
     try {
-      // 返回给渲染进程的翻译结果
-      let resultData: TranslateResponse | null = {
-        textType: getTextType(text),
-        sourceLanguage: getLanguageType(text),
-        targetLanguage: getTargetLanguage(text),
-        sourceWords: text,
-        translation: [],
-        exampleSentences: null
-      }
-      // 结构化模型调用结果
-      const translateResult = await aiManage.englishChineseTranslation(text)
-      if (!translateResult.success || !translateResult.data) {
-        throw new Error(translateResult.msg || '英汉互译失败')
-      }
-
-      // 结构化英汉翻译数据
-      const data = translateResult.data
-
-      if (resultData.textType === TextType.SENTENCE) {
-        if ([Language.ZH_AND_EN, Language.EN].includes(resultData.targetLanguage)) {
-          // 去除重复重复的en翻译
-          let tempStr: string[] = []
-          data.translation = data.translation.map((item: { en: string | null, zh: string | null }) => {
-            if (item.en && !tempStr.includes(item.en)) {
-              tempStr.push(item.en)
-              return item
-            }
-            return { en: null, zh: null }
-          })
-
-          data.translation = data.translation.filter((item: { en: string | null, zh: string | null }) => item.en !== null)
-        }
-      }
-
-      resultData.exampleSentences =
-        resultData.textType === TextType.WORD
-          ? filterExampleSentences(data.exampleSentences, text)
-          : data.exampleSentences || []
-      resultData.translation = data.translation || []
-
+      // 英汉互译结果
+      const resultData = await translateEnglishChineseText(text)
       event.reply(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS, resultData)
     } catch (error) {
       event.reply(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL, getErrorMessage(error))
+    }
+  })
+
+  /** 划词翻译 */
+  ipcMain.handle(SendEnum.SELECTION_TRANSLATION, async (_event, text: string) => {
+    try {
+      return await translateEnglishChineseText(text)
+    } catch (error) {
+      throw new Error(getErrorMessage(error))
     }
   })
 
