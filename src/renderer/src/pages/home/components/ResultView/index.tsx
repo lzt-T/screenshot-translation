@@ -19,7 +19,7 @@ import {
 } from '@src/type/base'
 import { cn } from '@renderer/lib/utils'
 import { Button } from '@renderer/components/ui/button'
-import SentenceAnalysisView from './SentenceAnalysisView'
+import SentenceAnalysisView from '@renderer/components/SentenceAnalysisView'
 
 /** 译文面板状态 */
 type ResultStatus = 'idle' | 'loading' | 'error' | 'success'

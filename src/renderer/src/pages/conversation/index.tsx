@@ -13,7 +13,7 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
 import type { ConversationStatus } from '@src/type/conversation'
-import ConversationTranscript from './ConversationTranscript'
+import ConversationTranscript from './components/ConversationTranscript'
 import useConversation from './useConversation'
 
 /** 对话状态展示配置 */

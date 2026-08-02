@@ -5,8 +5,8 @@ import { Textarea } from '@renderer/components/ui/textarea'
 import { cn } from '@renderer/lib/utils'
 import { copyText } from '@src/utils/copy'
 import '../../scroll.css'
-import Header from './Header'
-import ResultView from './ResultView'
+import Header from './components/Header'
+import ResultView from './components/ResultView'
 import useData from './useData'
 
 /**

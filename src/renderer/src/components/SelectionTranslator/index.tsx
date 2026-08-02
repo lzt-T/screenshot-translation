@@ -1,8 +1,20 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import React, { useEffect, useRef, useState } from 'react'
-import { Check, CircleAlert, Copy, Languages, Loader2, X } from 'lucide-react'
+import {
+  Bookmark,
+  BookmarkCheck,
+  Check,
+  CircleAlert,
+  Copy,
+  Languages,
+  Loader2,
+  Volume2,
+  VolumeX,
+  X
+} from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
+import useSelectionTranslationActions from '@renderer/components/SelectionTranslator/useSelectionTranslationActions'
 import { Language, TranslateResponse } from '@src/type/base'
 import { SendEnum } from '@src/type/ipc-constants'
 import { copyText } from '@src/utils/copy'
@@ -176,6 +188,16 @@ export default function SelectionTranslator({
   const translationDirection = translationResult
     ? `${LANGUAGE_LABELS[translationResult.sourceLanguage]} → ${LANGUAGE_LABELS[translationResult.targetLanguage]}`
     : '自动识别语言'
+  // 收藏与朗读状态和操作
+  const {
+    isBookmarked,
+    isBookmarkPending,
+    isSpeakingSource,
+    isSpeakingTranslation,
+    stopSpeech,
+    toggleSpeech,
+    toggleBookmark
+  } = useSelectionTranslationActions({ translationResult, sourceText, translatedText })
 
   /** 隐藏选区浮动按钮 */
   function dismissSelectionCandidate(): void {
@@ -191,6 +213,7 @@ export default function SelectionTranslator({
     // 本次请求序号
     const requestId = activeRequestId.current + 1
     activeRequestId.current = requestId
+    stopSpeech()
     setSourceText(text)
     setTranslationResult(null)
     setErrorMessage('')
@@ -249,6 +272,7 @@ export default function SelectionTranslator({
     if (!isOpen) {
       activeRequestId.current += 1
       setIsLoading(false)
+      stopSpeech()
     }
   }
 
@@ -359,7 +383,22 @@ export default function SelectionTranslator({
 
             <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
               <section className="border-b border-border px-5 py-5">
-                <p className="measurement-label">选中原文</p>
+                <div className="flex min-h-8 items-center justify-between gap-3">
+                  <p className="measurement-label">选中原文</p>
+                  {sourceText && (
+                    <Button
+                      aria-label={isSpeakingSource ? '停止朗读原文' : '朗读原文'}
+                      aria-pressed={isSpeakingSource}
+                      className="size-8"
+                      onClick={() => toggleSpeech('source', sourceText)}
+                      size="icon"
+                      title={isSpeakingSource ? '停止朗读原文' : '朗读原文'}
+                      variant="ghost"
+                    >
+                      {isSpeakingSource ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                    </Button>
+                  )}
+                </div>
                 <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-foreground">
                   {sourceText}
                 </p>
@@ -369,16 +408,47 @@ export default function SelectionTranslator({
                 <div className="flex min-h-8 items-center justify-between gap-3">
                   <p className="measurement-label">直译结果</p>
                   {translatedText && !isLoading && (
-                    <Button
-                      aria-label="复制直译结果"
-                      className="size-8"
-                      onClick={() => copyText(translatedText)}
-                      size="icon"
-                      title="复制直译结果"
-                      variant="ghost"
-                    >
-                      <Copy size={14} />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        aria-label="复制直译结果"
+                        className="size-8"
+                        onClick={() => copyText(translatedText)}
+                        size="icon"
+                        title="复制直译结果"
+                        variant="ghost"
+                      >
+                        <Copy size={14} />
+                      </Button>
+                      <Button
+                        aria-label={isSpeakingTranslation ? '停止朗读译文' : '朗读译文'}
+                        aria-pressed={isSpeakingTranslation}
+                        className="size-8"
+                        onClick={() => toggleSpeech('translation', translatedText)}
+                        size="icon"
+                        title={isSpeakingTranslation ? '停止朗读译文' : '朗读译文'}
+                        variant="ghost"
+                      >
+                        {isSpeakingTranslation ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                      </Button>
+                      <Button
+                        aria-label={isBookmarked ? '取消收藏划词翻译' : '收藏划词翻译'}
+                        aria-pressed={isBookmarked}
+                        className={cn('size-8', isBookmarked && 'text-primary')}
+                        disabled={isBookmarkPending}
+                        onClick={() => void toggleBookmark()}
+                        size="icon"
+                        title={isBookmarked ? '取消收藏' : '加入学习收藏'}
+                        variant="ghost"
+                      >
+                        {isBookmarkPending ? (
+                          <Loader2 className="animate-spin" size={14} />
+                        ) : isBookmarked ? (
+                          <BookmarkCheck size={14} />
+                        ) : (
+                          <Bookmark size={14} />
+                        )}
+                      </Button>
+                    </div>
                   )}
                 </div>
 
