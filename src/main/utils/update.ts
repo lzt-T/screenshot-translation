@@ -10,6 +10,27 @@ import { NoticeType } from '../../type/notice'
 import { mainWindow } from '../windowClasses/mainWindow'
 import type { UpdateCheckCompleteResult, UpdateAvailableInfo } from '../../type/update'
 
+// 差分更新偶发断连时 Electron 抛出的网络错误标识
+const UPDATE_CONNECTION_CLOSED_ERROR = 'net::ERR_CONNECTION_CLOSED'
+
+/**
+ * 处理更新下载期间未捕获的主进程异常
+ * @param error 主进程捕获的异常
+ */
+function handleUpdateDownloadException(error: Error): void {
+  if (!error.message.includes(UPDATE_CONNECTION_CLOSED_ERROR)) {
+    process.off('uncaughtException', handleUpdateDownloadException)
+    throw error
+  }
+
+  console.warn('update differential download connection closed, fallback continues', error.message)
+}
+
+/** 移除更新下载期间的网络异常边界 */
+function removeUpdateDownloadErrorBoundary(): void {
+  process.off('uncaughtException', handleUpdateDownloadException)
+}
+
 /**
  * @description 注册自动更新
  */
@@ -43,8 +64,13 @@ export const registerAutoUpdate = (): void => {
     // 提供给渲染层的可用更新信息
     const updateInfo: UpdateAvailableInfo = { version: info.version }
     mainWindow.window?.webContents.send(SendEnum.UPDATE_AVAILABLE, updateInfo)
+    removeUpdateDownloadErrorBoundary()
+    process.on('uncaughtException', handleUpdateDownloadException)
     /* 下载错误由 autoUpdater 的 error 事件统一处理 */
-    void autoUpdater.downloadUpdate().catch(() => undefined)
+    void autoUpdater
+      .downloadUpdate()
+      .catch(removeUpdateDownloadErrorBoundary)
+      .finally(removeUpdateDownloadErrorBoundary)
   })
   /* 没有更新 */
   autoUpdater.on('update-not-available', (info) => {
