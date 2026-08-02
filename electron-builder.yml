@@ -17,6 +17,8 @@ extraResources:
   - resources
   - eng.traineddata
   - chi_sim.traineddata
+  - from: drizzle
+    to: drizzle
 asarUnpack:
   - resources/**
   - '**/node_modules/tesseract.js-core/**'

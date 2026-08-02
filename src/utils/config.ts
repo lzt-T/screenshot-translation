@@ -1,5 +1,5 @@
 /** 最小结果窗口宽度 */
-const MIN_RESULT_WINDOW_WIDTH = 160
+const MIN_RESULT_WINDOW_WIDTH = 220
 /** 最小结果窗口高度 */
 const MIN_RESULT_WINDOW_HEIGHT = 70
 /** 结果弹窗操作栏高度 */

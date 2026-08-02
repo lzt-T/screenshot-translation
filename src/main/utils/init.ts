@@ -11,6 +11,7 @@ import { initializeOcrWorker } from './imageOCR'
 import { registerSpeechIpcEvents } from '../ipc/speech'
 import { registerConversationIpcEvents } from '../ipc/conversation'
 import { registerRecognitionIpcEvents } from '../ipc/recognition'
+import { registerLearningIpcEvents } from '../ipc/learning'
 
 export const init = () => {
   /**
@@ -39,6 +40,7 @@ export const init = () => {
   registerSpeechIpcEvents()
   registerConversationIpcEvents()
   registerRecognitionIpcEvents()
+  registerLearningIpcEvents()
 
   // 预热 OCR Worker，降低首次截图耗时
   void initializeOcrWorker().catch((error) => {

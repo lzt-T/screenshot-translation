@@ -26,11 +26,14 @@ export default function HomePage(): React.JSX.Element {
     translationText,
     translationError,
     translationResult,
+    bookmarkedItemId,
+    isBookmarkSaving,
     handleInputTextChange,
     handleKeyDown,
     onScreenshot,
     onEnglishChineseTranslation,
     onAnalyzeSentence,
+    toggleBookmark,
     speakInputText,
     speakResultItem
   } = useData()
@@ -100,7 +103,10 @@ export default function HomePage(): React.JSX.Element {
           errorMessage={translationError}
           isLoading={isLoading}
           isSentenceAnalysisLoading={isSentenceAnalysisLoading}
+          isBookmarked={Boolean(bookmarkedItemId)}
+          isBookmarkSaving={isBookmarkSaving}
           onAnalyzeSentence={onAnalyzeSentence}
+          onToggleBookmark={toggleBookmark}
           onCopyItem={copyText}
           onRetry={onEnglishChineseTranslation}
           onSpeakItem={speakResultItem}

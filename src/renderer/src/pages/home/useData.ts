@@ -14,6 +14,12 @@ import {
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import { useNavigate } from 'react-router-dom'
 import { TranslationModelProfile } from '@src/type/model'
+import { createTextLearningItemInput } from '@src/utils/learning'
+import {
+  findLearningItem,
+  removeLearningItem,
+  saveLearningItem
+} from '@renderer/services/learning-service'
 
 /** 当前朗读目标，数字表示译文条目索引 */
 type SpeakingTarget = 'input' | number | null
@@ -49,6 +55,12 @@ export default function useData() {
   const activeSentenceAnalysisRequestId = useRef(0)
   /** 翻译结果 */
   const [translationResult, setTranslationResult] = useState<TranslateResponse | null>(null)
+  // 已收藏记录 ID
+  const [bookmarkedItemId, setBookmarkedItemId] = useState<string | null>(null)
+  // 是否正在保存收藏状态
+  const [isBookmarkSaving, setIsBookmarkSaving] = useState(false)
+  /** 当前收藏查询编号 */
+  const activeBookmarkRequestId = useRef(0)
   // 是否正在朗读原文
   const isSpeakingInput = speakingTarget === 'input'
   // 正在朗读的译文条目索引
@@ -255,6 +267,75 @@ export default function useData() {
     window.electron.ipcRenderer.send(SendEnum.SENTENCE_ANALYSIS, request)
   }
 
+  /** 切换当前翻译结果的收藏状态 */
+  const toggleBookmark = async (): Promise<void> => {
+    if (!translationResult || isBookmarkSaving) {
+      return
+    }
+
+    setIsBookmarkSaving(true)
+    try {
+      if (bookmarkedItemId) {
+        await removeLearningItem(bookmarkedItemId)
+        setBookmarkedItemId(null)
+        toast.success('已取消收藏')
+        return
+      }
+
+      // 当前翻译收藏参数
+      const input = createTextLearningItemInput(translationResult, sentenceAnalysis)
+      // 保存后的收藏记录
+      const savedItem = await saveLearningItem(input)
+      setBookmarkedItemId(savedItem.id)
+      toast.success('已加入学习收藏')
+    } catch (error) {
+      // 可展示的收藏错误
+      const errorMessage = error instanceof Error ? error.message : '收藏数据暂不可用'
+      toast.error(errorMessage)
+    } finally {
+      setIsBookmarkSaving(false)
+    }
+  }
+
+  /** 当前翻译结果变化后同步收藏状态 */
+  useEffect(() => {
+    activeBookmarkRequestId.current += 1
+    // 本次收藏查询编号
+    const requestId = activeBookmarkRequestId.current
+    setBookmarkedItemId(null)
+
+    if (!translationResult) {
+      return
+    }
+
+    // 当前翻译收藏身份
+    const identity = createTextLearningItemInput(translationResult, null)
+    void findLearningItem(identity)
+      .then((item) => {
+        if (requestId === activeBookmarkRequestId.current) {
+          setBookmarkedItemId(item?.id || null)
+        }
+      })
+      .catch(() => {
+        if (requestId === activeBookmarkRequestId.current) {
+          setBookmarkedItemId(null)
+        }
+      })
+  }, [translationResult])
+
+  /** 已收藏句子的分析完成后更新收藏快照 */
+  useEffect(() => {
+    if (!translationResult || !sentenceAnalysis || !bookmarkedItemId) {
+      return
+    }
+
+    // 包含最新分析的收藏参数
+    const input = createTextLearningItemInput(translationResult, sentenceAnalysis)
+    void saveLearningItem(input)
+      .then((savedItem) => setBookmarkedItemId(savedItem.id))
+      .catch(() => toast.error('句子分析已完成，但收藏更新失败'))
+  }, [bookmarkedItemId, sentenceAnalysis, translationResult])
+
   useEffect(() => {
     // 移除可能存在的旧监听器
     window.electron.ipcRenderer.removeAllListeners(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS)
@@ -346,11 +427,14 @@ export default function useData() {
     translationText,
     translationError,
     translationResult,
+    bookmarkedItemId,
+    isBookmarkSaving,
     handleInputTextChange,
     handleKeyDown,
     onScreenshot,
     onEnglishChineseTranslation,
     onAnalyzeSentence,
+    toggleBookmark,
     speakInputText,
     speakResultItem
   }

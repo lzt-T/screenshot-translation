@@ -50,20 +50,27 @@ export const FooterContainer = styled.div`
   display: flex;
   align-items: center;
   height: ${RESULT_WINDOW_BAR_HEIGHT}px;
-  gap: 10px;
-  padding: 0 8px;
+  gap: 4px;
+  padding: 0 4px;
   background: none;
   -webkit-app-region: no-drag;
 `
 
 /** 浮层文本操作 */
-export const CopyButton = styled.div`
+export const CopyButton = styled.button`
   z-index: 1000;
   padding: 2px 4px;
+  border: 0;
   color: var(--floating-foreground);
   background: none;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
 
   &:hover {
     color: var(--floating-accent);

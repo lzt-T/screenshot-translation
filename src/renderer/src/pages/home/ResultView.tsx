@@ -1,5 +1,15 @@
 import React from 'react'
-import { BookOpen, CircleAlert, Copy, Loader2, ScanText, Volume2, VolumeX } from 'lucide-react'
+import {
+  Bookmark,
+  BookmarkCheck,
+  BookOpen,
+  CircleAlert,
+  Copy,
+  Loader2,
+  ScanText,
+  Volume2,
+  VolumeX
+} from 'lucide-react'
 import {
   ExampleSentence,
   Language,
@@ -138,6 +148,12 @@ interface ResultViewProps {
   sentenceAnalysisError: string
   /* 分析句子回调 */
   onAnalyzeSentence: () => void
+  /* 当前结果是否已收藏 */
+  isBookmarked: boolean
+  /* 是否正在保存收藏 */
+  isBookmarkSaving: boolean
+  /* 切换收藏回调 */
+  onToggleBookmark: () => void
 }
 
 /**
@@ -157,7 +173,10 @@ export default function ResultView({
   sentenceAnalysis,
   isSentenceAnalysisLoading,
   sentenceAnalysisError,
-  onAnalyzeSentence
+  onAnalyzeSentence,
+  isBookmarked,
+  isBookmarkSaving,
+  onToggleBookmark
 }: ResultViewProps): React.JSX.Element {
   // 当前结果是否是单词
   const isWord = result?.textType === TextType.WORD
@@ -181,16 +200,29 @@ export default function ResultView({
     >
       <div className="flex h-12 items-center justify-between border-b border-border px-4">
         <span className="measurement-label">译文结果</span>
-        <span
-          aria-live="polite"
-          className={cn(
-            'rounded-md px-2 py-1 text-[11px] font-medium',
-            statusConfig.className
+        <div className="flex items-center gap-2">
+          {result && (
+            <Button
+              aria-pressed={isBookmarked}
+              className="h-8 cursor-pointer px-2.5"
+              disabled={isBookmarkSaving}
+              onClick={onToggleBookmark}
+              size="sm"
+              title={isBookmarked ? '取消收藏' : '加入学习收藏'}
+              variant="ghost"
+            >
+              {isBookmarked ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
+              {isBookmarkSaving ? '保存中' : isBookmarked ? '已收藏' : '收藏'}
+            </Button>
           )}
-          role="status"
-        >
-          {statusConfig.label}
-        </span>
+          <span
+            aria-live="polite"
+            className={cn('rounded-md px-2 py-1 text-[11px] font-medium', statusConfig.className)}
+            role="status"
+          >
+            {statusConfig.label}
+          </span>
+        </div>
       </div>
 
       {!result && (

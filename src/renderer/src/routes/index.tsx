@@ -7,6 +7,7 @@ import ScreenshotSelector from '@renderer/windows/screenshotSelector'
 import ResultOverlay from '@renderer/windows/resultOverlay'
 import Setting from '@renderer/pages/setting'
 import Conversation from '@renderer/pages/conversation'
+import LearningCollectionPage from '@renderer/pages/learning-collection'
 // 主窗口与辅助窗口路由配置
 const router = createHashRouter([
   {
@@ -24,6 +25,10 @@ const router = createHashRouter([
       {
         path: 'conversation',
         element: <Conversation />
+      },
+      {
+        path: 'collection',
+        element: <LearningCollectionPage />
       },
       {
         path: 'about',

@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { SendEnum } from '@src/type/ipc-constants'
+import { TextType } from '@src/type/base'
+import type { SaveLearningItemInput } from '@src/type/learning'
+import { getTextType } from '@src/utils/ai'
+import {
+  findLearningItem,
+  removeLearningItem,
+  saveLearningItem
+} from '@renderer/services/learning-service'
 import { CopyButton, FooterContainer, OverlayContainer, TranslatedTextOverlay } from './style'
 
 /** 文本边界框 */
@@ -56,6 +64,27 @@ export default function ResultOverlay(): React.JSX.Element {
   const originalText = useRef('')
   // 翻译文本
   const translatedText = useRef('')
+  // 已收藏记录 ID
+  const [bookmarkedItemId, setBookmarkedItemId] = useState<string | null>(null)
+  // 是否正在保存收藏
+  const [isBookmarkSaving, setIsBookmarkSaving] = useState(false)
+  // 收藏操作错误状态
+  const [hasBookmarkError, setHasBookmarkError] = useState(false)
+  /** 当前收藏查询编号 */
+  const activeBookmarkRequestId = useRef(0)
+
+  /**
+   * 创建当前截图收藏参数
+   * @returns 截图学习收藏参数
+   */
+  function createScreenshotLearningInput(): SaveLearningItemInput {
+    return {
+      kind: getTextType(originalText.current) === TextType.WORD ? 'word' : 'sentence',
+      source: 'screenshot',
+      originalText: originalText.current,
+      translatedText: translatedText.current
+    }
+  }
 
   /**
    * 复制指定文本并通知主进程
@@ -89,6 +118,31 @@ export default function ResultOverlay(): React.JSX.Element {
    */
   function toggleOverlayMode(): void {
     setOverlayMode((mode) => (mode === 'show-original' ? 'hide-original' : 'show-original'))
+  }
+
+  /** 切换当前截图翻译的收藏状态 */
+  async function toggleBookmark(): Promise<void> {
+    if (!originalText.current || !translatedText.current || isBookmarkSaving) {
+      return
+    }
+
+    setIsBookmarkSaving(true)
+    setHasBookmarkError(false)
+    try {
+      if (bookmarkedItemId) {
+        await removeLearningItem(bookmarkedItemId)
+        setBookmarkedItemId(null)
+        return
+      }
+
+      // 保存后的截图收藏
+      const savedItem = await saveLearningItem(createScreenshotLearningInput())
+      setBookmarkedItemId(savedItem.id)
+    } catch {
+      setHasBookmarkError(true)
+    } finally {
+      setIsBookmarkSaving(false)
+    }
   }
 
   /** 接收并整理翻译结果 */
@@ -126,6 +180,31 @@ export default function ResultOverlay(): React.JSX.Element {
     }
   }, [])
 
+  /** 截图翻译结果变化后同步收藏状态 */
+  useEffect(() => {
+    activeBookmarkRequestId.current += 1
+    // 本次收藏查询编号
+    const requestId = activeBookmarkRequestId.current
+    setBookmarkedItemId(null)
+    setHasBookmarkError(false)
+
+    if (blocksToRender.length === 0) {
+      return
+    }
+
+    void findLearningItem(createScreenshotLearningInput())
+      .then((item) => {
+        if (requestId === activeBookmarkRequestId.current) {
+          setBookmarkedItemId(item?.id || null)
+        }
+      })
+      .catch(() => {
+        if (requestId === activeBookmarkRequestId.current) {
+          setHasBookmarkError(true)
+        }
+      })
+  }, [blocksToRender])
+
   /** 监听 Escape 键关闭浮层 */
   useEffect(() => {
     /**
@@ -161,11 +240,29 @@ export default function ResultOverlay(): React.JSX.Element {
         </TranslatedTextOverlay>
       ))}
       <FooterContainer>
-        <CopyButton onClick={toggleOverlayMode}>
+        <CopyButton onClick={toggleOverlayMode} type="button">
           {overlayMode === 'show-original' ? '隐藏原图' : '显示原图'}
         </CopyButton>
-        <CopyButton onClick={copyOriginalText}>复制原文</CopyButton>
-        <CopyButton onClick={copyTranslatedText}>复制译文</CopyButton>
+        <CopyButton onClick={copyOriginalText} type="button">
+          复制原文
+        </CopyButton>
+        <CopyButton onClick={copyTranslatedText} type="button">
+          复制译文
+        </CopyButton>
+        <CopyButton
+          aria-pressed={Boolean(bookmarkedItemId)}
+          disabled={isBookmarkSaving}
+          onClick={toggleBookmark}
+          type="button"
+        >
+          {isBookmarkSaving
+            ? '保存中'
+            : hasBookmarkError
+              ? '收藏失败，重试'
+              : bookmarkedItemId
+                ? '取消收藏'
+                : '收藏'}
+        </CopyButton>
       </FooterContainer>
     </OverlayContainer>
   )

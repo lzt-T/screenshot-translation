@@ -6,6 +6,7 @@ import { init } from './utils/init'
 import { terminateOcrWorker } from './utils/imageOCR'
 import { speechService } from './speech/speech-service'
 import { recognitionService } from './speech/recognition-service'
+import { learningRepository } from './learning/learning-repository'
 
 // 检查是否是第一个实例
 const gotTheLock = app.requestSingleInstanceLock()
@@ -41,6 +42,12 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  try {
+    learningRepository.initialize()
+  } catch (error) {
+    console.error('学习收藏数据库初始化失败：', error)
+  }
+
   createWindow()
   init()
 
@@ -56,6 +63,8 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  // 退出前关闭学习收藏数据库
+  learningRepository.close()
   // 退出前释放 OCR Worker
   void terminateOcrWorker()
   // 退出前释放语音 Worker
