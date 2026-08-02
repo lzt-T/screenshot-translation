@@ -4,6 +4,12 @@ export interface SpeechAudioResult {
   audioBuffer: ArrayBuffer
 }
 
+/** 语音 Worker 预加载消息 */
+export interface SpeechPreloadMessage {
+  /** 消息类型 */
+  type: 'preload'
+}
+
 /** 语音 Worker 合成消息 */
 export interface SpeechSynthesizeMessage {
   /** 消息类型 */
@@ -23,7 +29,10 @@ export interface SpeechCancelMessage {
 }
 
 /** 语音 Worker 请求消息 */
-export type SpeechWorkerRequest = SpeechSynthesizeMessage | SpeechCancelMessage
+export type SpeechWorkerRequest =
+  | SpeechPreloadMessage
+  | SpeechSynthesizeMessage
+  | SpeechCancelMessage
 
 /** 语音 Worker 响应消息 */
 export interface SpeechWorkerResponse {

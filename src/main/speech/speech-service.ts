@@ -99,8 +99,13 @@ class SpeechService {
     this.worker = null
   }
 
+  /** 预加载并复用本地语音模型 */
+  public preload(): void {
+    this.getWorker().postMessage({ type: 'preload' })
+  }
+
   /**
-   * 异步合成单段语音
+   * 异步合成完整语音
    * @param {string} text 待朗读文本
    * @returns {Promise<SpeechAudioResult>} WAV 音频
    */

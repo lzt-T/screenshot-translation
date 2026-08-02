@@ -10,6 +10,16 @@ const TTS_ASSETS = [
   { fileName: 'model.int8.onnx', expectedSize: 114299010 },
   { fileName: 'voices.bin', expectedSize: 53790720 }
 ]
+// 英文 ASR 资源目录
+const ASR_ASSET_DIRECTORY = 'sherpa-onnx-streaming-zipformer-en-2023-06-26'
+// 英文 ASR 打包资源及其预期大小
+const ASR_ASSETS = [
+  { fileName: 'encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx', expectedSize: 70108816 },
+  { fileName: 'decoder-epoch-99-avg-1-chunk-16-left-128.onnx', expectedSize: 2093080 },
+  { fileName: 'joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx', expectedSize: 259416 },
+  { fileName: 'tokens.txt', expectedSize: 5048 },
+  { fileName: 'bpe.model', expectedSize: 244865 }
+]
 
 /**
  * 读取资源文件开头，用于识别 Git LFS 指针。
@@ -32,11 +42,43 @@ function readAssetHeader(assetPath) {
 }
 
 /**
- * 在 Electron Builder 打包前校验 Kokoro 二进制资源。
+ * 校验一组本地语音资源。
+ * @param {string} assetDirectory 资源目录
+ * @param {{ fileName: string, expectedSize: number }[]} assets 资源清单
+ * @param {string} assetType 资源类型
+ * @returns {void} 无返回值
+ */
+function validateAssets(assetDirectory, assets, assetType) {
+  // 逐个校验打包所需资源
+  for (const asset of assets) {
+    // 当前资源的绝对路径
+    const assetPath = path.join(assetDirectory, asset.fileName)
+    if (!fs.existsSync(assetPath)) {
+      throw new Error(`${assetType} 资源不存在：${assetPath}。请先执行 git lfs pull。`)
+    }
+
+    // 当前资源文件开头
+    const assetHeader = readAssetHeader(assetPath)
+    if (assetHeader.startsWith(GIT_LFS_POINTER_PREFIX)) {
+      throw new Error(`${assetType} 资源仍是 Git LFS 指针：${assetPath}。请先执行 git lfs pull。`)
+    }
+
+    // 当前资源文件大小
+    const assetSize = fs.statSync(assetPath).size
+    if (assetSize !== asset.expectedSize) {
+      throw new Error(
+        `${assetType} 资源大小不正确：${assetPath}，预期 ${asset.expectedSize} 字节，实际 ${assetSize} 字节。请重新执行 git lfs pull。`
+      )
+    }
+  }
+}
+
+/**
+ * 在 Electron Builder 打包前校验本地语音资源。
  * @param {{ packager: { projectDir: string } }} context Electron Builder 打包上下文
  * @returns {void} 无返回值
  */
-function validateTtsAssets(context) {
+function validateSpeechAssets(context) {
   // Kokoro 模型资源目录
   const assetDirectory = path.join(
     context.packager.projectDir,
@@ -45,28 +87,16 @@ function validateTtsAssets(context) {
     'kokoro-int8-multi-lang-v1_1'
   )
 
-  // 逐个校验打包所需资源
-  for (const asset of TTS_ASSETS) {
-    // 当前资源的绝对路径
-    const assetPath = path.join(assetDirectory, asset.fileName)
-    if (!fs.existsSync(assetPath)) {
-      throw new Error(`TTS 资源不存在：${assetPath}。请先执行 git lfs pull。`)
-    }
+  // 英文 ASR 模型资源目录
+  const asrAssetDirectory = path.join(
+    context.packager.projectDir,
+    'resources',
+    'asr',
+    ASR_ASSET_DIRECTORY
+  )
 
-    // 当前资源文件开头
-    const assetHeader = readAssetHeader(assetPath)
-    if (assetHeader.startsWith(GIT_LFS_POINTER_PREFIX)) {
-      throw new Error(`TTS 资源仍是 Git LFS 指针：${assetPath}。请先执行 git lfs pull。`)
-    }
-
-    // 当前资源文件大小
-    const assetSize = fs.statSync(assetPath).size
-    if (assetSize !== asset.expectedSize) {
-      throw new Error(
-        `TTS 资源大小不正确：${assetPath}，预期 ${asset.expectedSize} 字节，实际 ${assetSize} 字节。请重新执行 git lfs pull。`
-      )
-    }
-  }
+  validateAssets(assetDirectory, TTS_ASSETS, 'TTS')
+  validateAssets(asrAssetDirectory, ASR_ASSETS, 'ASR')
 }
 
-module.exports.default = validateTtsAssets
+module.exports.default = validateSpeechAssets

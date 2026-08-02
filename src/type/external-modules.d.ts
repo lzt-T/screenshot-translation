@@ -1,6 +1,6 @@
 declare module '@langchain/google-genai' {
   export class ChatGoogleGenerativeAI {
-    constructor(config: { apiKey: string; model: string })
+    constructor(config: { apiKey: string; model: string; temperature?: number })
     invoke(input: string): Promise<{ content: unknown }>
   }
 }
@@ -10,6 +10,7 @@ declare module '@langchain/openai' {
     constructor(config: {
       apiKey: string;
       model: string;
+      temperature?: number;
       configuration?: {
         baseURL?: string;
       };
@@ -25,6 +26,24 @@ declare module '@tailwindcss/vite' {
 }
 
 declare module 'sherpa-onnx-node' {
+  export interface OnlineRecognizerResult {
+    text: string
+  }
+
+  export interface OnlineStream {
+    acceptWaveform(input: { samples: Float32Array; sampleRate: number }): void
+  }
+
+  export class OnlineRecognizer {
+    constructor(config: unknown)
+    createStream(): OnlineStream
+    isReady(stream: OnlineStream): boolean
+    decode(stream: OnlineStream): void
+    isEndpoint(stream: OnlineStream): boolean
+    reset(stream: OnlineStream): void
+    getResult(stream: OnlineStream): OnlineRecognizerResult
+  }
+
   export interface GeneratedAudio {
     samples: Float32Array
     sampleRate: number

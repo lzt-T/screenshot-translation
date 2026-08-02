@@ -7,6 +7,10 @@ import { speechService } from '../speech/speech-service'
  * @returns {void} 无返回值
  */
 export function registerSpeechIpcEvents(): void {
+  ipcMain.on(SendEnum.SPEECH_PRELOAD, () => {
+    speechService.preload()
+  })
+
   ipcMain.handle(SendEnum.SPEECH_SYNTHESIZE, (_event, text: string) => {
     return speechService.synthesize(text)
   })

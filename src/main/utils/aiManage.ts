@@ -19,6 +19,9 @@ import {
   textTranslationSchema
 } from './aiClients/translationSchemas'
 import { log } from 'node:console'
+import type { ConversationCoachResponse, ConversationRequest } from '../../type/conversation'
+import { getConversationPrompt } from '../../utils/conversation-prompt'
+import { conversationCoachResponseSchema } from './aiClients/conversationSchemas'
 
 /** 结构化翻译结果类型 */
 type TranslationResult<TData> = {
@@ -385,6 +388,50 @@ class AiManage {
     } catch (error) {
       if (this.isStructuredOutputValidationError(error)) {
         console.error('英文句子分析结构化输出解析失败', error)
+        return this.createStructuredFailResult()
+      }
+      throw error
+    }
+  }
+
+  /**
+   * 生成英语口语教练回复
+   * @param request 当前对话请求
+   * @returns 结构化口语教练响应
+   */
+  public async createConversationReply(
+    request: ConversationRequest
+  ): Promise<TranslationResult<ConversationCoachResponse>> {
+    // 运行时模型配置
+    const runtimeProfile = this.getRuntimeModelProfile()
+    if (!runtimeProfile) {
+      return { success: false, data: null, msg: '未找到可用模型配置' }
+    }
+    if (!runtimeProfile.apiKey) {
+      return {
+        success: false,
+        data: null,
+        msg: `${runtimeProfile.model} 模型的 API Key 未配置`
+      }
+    }
+
+    try {
+      // 口语教练提示词
+      const prompt = getConversationPrompt(request)
+      // 结构化模型响应
+      const invokeResult = await langchainGateway.invokeStructured(
+        runtimeProfile,
+        prompt,
+        conversationCoachResponseSchema,
+        { temperature: 0.85 }
+      )
+      return {
+        success: invokeResult.success,
+        data: invokeResult.data,
+        msg: invokeResult.msg
+      }
+    } catch (error) {
+      if (this.isStructuredOutputValidationError(error)) {
         return this.createStructuredFailResult()
       }
       throw error

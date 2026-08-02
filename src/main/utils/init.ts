@@ -9,6 +9,8 @@ import { registerScreenshotIpcEvents } from '../ipc/screenshot'
 import { registerTranslationIpcEvents } from '../ipc/translation'
 import { initializeOcrWorker } from './imageOCR'
 import { registerSpeechIpcEvents } from '../ipc/speech'
+import { registerConversationIpcEvents } from '../ipc/conversation'
+import { registerRecognitionIpcEvents } from '../ipc/recognition'
 
 export const init = () => {
   /**
@@ -35,6 +37,8 @@ export const init = () => {
   registerScreenshotIpcEvents()
   registerTranslationIpcEvents()
   registerSpeechIpcEvents()
+  registerConversationIpcEvents()
+  registerRecognitionIpcEvents()
 
   // 预热 OCR Worker，降低首次截图耗时
   void initializeOcrWorker().catch((error) => {

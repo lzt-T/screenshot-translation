@@ -5,6 +5,7 @@ import { mainWindow } from './windowClasses/mainWindow'
 import { init } from './utils/init'
 import { terminateOcrWorker } from './utils/imageOCR'
 import { speechService } from './speech/speech-service'
+import { recognitionService } from './speech/recognition-service'
 
 // 检查是否是第一个实例
 const gotTheLock = app.requestSingleInstanceLock()
@@ -59,4 +60,6 @@ app.on('before-quit', () => {
   void terminateOcrWorker()
   // 退出前释放语音 Worker
   void speechService.dispose()
+  // 退出前释放实时识别 Worker
+  void recognitionService.dispose()
 })

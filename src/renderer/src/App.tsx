@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Package, ScanLine, Settings } from 'lucide-react'
+import { Home, MessageCircleMore, Package, ScanLine, Settings } from 'lucide-react'
 import { SendEnum } from '@src/type/ipc-constants'
 import UpdateDialog from '@renderer/components/UpdateDialog'
 import { cn } from '@renderer/lib/utils'
@@ -9,6 +9,7 @@ import useLocalForage from '@renderer/hooks/useLocalForage'
 /** 导航项目配置 */
 const NAVIGATION_ITEMS = [
   { path: '/home', label: '翻译台', icon: Home },
+  { path: '/conversation', label: '口语对话', icon: MessageCircleMore },
   { path: '/setting', label: '设置', icon: Settings },
   { path: '/about', label: '关于', icon: Package }
 ] as const

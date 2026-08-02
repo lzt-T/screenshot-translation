@@ -24,6 +24,14 @@ export interface LlmStructuredInvokeResult<TData> {
   msg?: string
 }
 
+/** 结构化模型调用配置 */
+export interface LlmStructuredInvokeOptions {
+  /* 最大重试次数 */
+  maxRetryCount?: number
+  /* 模型采样温度 */
+  temperature?: number
+}
+
 /** 可执行 LangChain 调用的客户端 */
 interface LangchainRunnableClient {
   invoke: (input: string, config?: { signal?: AbortSignal }) => Promise<{ content: unknown }>
@@ -121,13 +129,18 @@ class LangchainGateway {
   /**
    * 创建模型客户端
    * @param {TranslationModelProfile} profile 模型配置
+   * @param {number} temperature 模型采样温度
    * @returns {LangchainRunnableClient} LangChain 客户端
    */
-  private createClient(profile: TranslationModelProfile): LangchainRunnableClient {
+  private createClient(
+    profile: TranslationModelProfile,
+    temperature?: number
+  ): LangchainRunnableClient {
     if (isGeminiModel(profile.model)) {
       return new ChatGoogleGenerativeAI({
         apiKey: profile.apiKey,
-        model: profile.model
+        model: profile.model,
+        temperature
       }) as unknown as LangchainRunnableClient
     }
 
@@ -136,6 +149,7 @@ class LangchainGateway {
     return new ChatOpenAI({
       apiKey: profile.apiKey,
       model: profile.model,
+      temperature,
       configuration: { baseURL: openAiBaseUrl }
     }) as unknown as LangchainRunnableClient
   }
@@ -216,18 +230,20 @@ class LangchainGateway {
    * @param {TranslationModelProfile} profile 模型配置
    * @param {string} prompt 输入提示词
    * @param {ZodType<TData>} schema Zod 结构定义
-   * @param {number} maxRetryCount 最大重试次数
+   * @param {LlmStructuredInvokeOptions} options 结构化调用配置
    * @returns {Promise<LlmStructuredInvokeResult<TData>>} 结构化调用结果
    */
   public async invokeStructured<TData>(
     profile: TranslationModelProfile,
     prompt: string,
     schema: ZodType<TData>,
-    maxRetryCount: number = 1
+    options: LlmStructuredInvokeOptions = {}
   ): Promise<LlmStructuredInvokeResult<TData>> {
     // 最后一次错误
     let lastError: unknown = null
 
+    // 最大重试次数
+    const maxRetryCount = options.maxRetryCount ?? 1
     // 最大尝试次数
     const maxAttemptCount = Math.max(1, maxRetryCount + 1)
     // 当前模型的结构化输出方式
@@ -236,7 +252,7 @@ class LangchainGateway {
     for (let attemptIndex = 0; attemptIndex < maxAttemptCount; attemptIndex += 1) {
       try {
         // LangChain 客户端
-        const client = this.createClient(profile)
+        const client = this.createClient(profile, options.temperature)
         // 结构化数据
         const data = await this.invokeWithSchema(client, prompt, schema, method)
 

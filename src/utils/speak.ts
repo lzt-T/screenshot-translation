@@ -2,49 +2,20 @@ import type { ElectronAPI } from '@electron-toolkit/preload'
 import { SendEnum } from '../type/ipc-constants'
 import type { SpeechAudioResult } from '../type/speech'
 
-// 单次生成的最大文本长度
-const MAX_SPEECH_SEGMENT_LENGTH = 160
 // 当前播放会话编号
 let activeSessionId = 0
 // 当前音频播放取消方法
 let cancelActivePlayback: (() => void) | null = null
 // 上一次缓存的完整文本
 let cachedText = ''
-// 上一次缓存的分段音频
-let cachedAudioBuffers: ArrayBuffer[] = []
+// 上一次缓存的完整音频
+let cachedAudioBuffer: ArrayBuffer | null = null
 
 // 已暴露的 Electron IPC 能力
 const electronIpcRenderer = (window as unknown as { electron: ElectronAPI }).electron.ipcRenderer
 
 /**
- * 将朗读文本按标点和长度拆分
- * @param {string} text 待朗读文本
- * @returns {string[]} 文本分段
- */
-function splitSpeechText(text: string): string[] {
-  // 按句末标点切分的原始分段
-  const rawSegments = text.match(/[^。！？!?；;\n]+[。！？!?；;]?/gu) || [text]
-  // 长度受限的最终分段
-  const segments: string[] = []
-
-  rawSegments.forEach((rawSegment) => {
-    // 清理空白后的分段
-    const normalizedSegment = rawSegment.trim()
-    if (!normalizedSegment) {
-      return
-    }
-
-    // 当前分段截取偏移
-    for (let offset = 0; offset < normalizedSegment.length; offset += MAX_SPEECH_SEGMENT_LENGTH) {
-      segments.push(normalizedSegment.slice(offset, offset + MAX_SPEECH_SEGMENT_LENGTH))
-    }
-  })
-
-  return segments
-}
-
-/**
- * 播放单段 WAV 音频
+ * 播放 WAV 音频
  * @param {ArrayBuffer} audioBuffer WAV 音频数据
  * @returns {Promise<void>} 播放结束任务
  */
@@ -123,6 +94,20 @@ function playAudioBuffer(audioBuffer: ArrayBuffer): Promise<void> {
 }
 
 /**
+ * 使用本地模型生成完整语音
+ * @param {string} text 待生成的完整文本
+ * @returns {Promise<ArrayBuffer>} WAV 音频数据
+ */
+async function synthesizeSpeech(text: string): Promise<ArrayBuffer> {
+  // 完整文本的本地语音生成结果
+  const result = (await electronIpcRenderer.invoke(
+    SendEnum.SPEECH_SYNTHESIZE,
+    text
+  )) as SpeechAudioResult
+  return result.audioBuffer
+}
+
+/**
  * 停止当前语音生成和播放
  * @returns {void} 无返回值
  */
@@ -156,40 +141,21 @@ export async function speakText(
   }
 
   try {
-    // 当前朗读音频缓存
-    const audioBuffers: ArrayBuffer[] = cachedText === normalizedText ? cachedAudioBuffers : []
-
-    if (audioBuffers.length === 0) {
-      // 当前朗读文本分段
-      const textSegments = splitSpeechText(normalizedText)
-      // 逐段生成并播放文本
-      for (const textSegment of textSegments) {
-        // 单段本地语音生成结果
-        const result = (await electronIpcRenderer.invoke(
-          SendEnum.SPEECH_SYNTHESIZE,
-          textSegment
-        )) as SpeechAudioResult
-        if (sessionId !== activeSessionId) {
-          return
-        }
-
-        audioBuffers.push(result.audioBuffer)
-        await playAudioBuffer(result.audioBuffer)
-        if (sessionId !== activeSessionId) {
-          return
-        }
+    // 当前完整朗读音频
+    let audioBuffer = cachedText === normalizedText ? cachedAudioBuffer : null
+    if (!audioBuffer) {
+      audioBuffer = await synthesizeSpeech(normalizedText)
+      if (sessionId !== activeSessionId) {
+        return
       }
 
       cachedText = normalizedText
-      cachedAudioBuffers = audioBuffers
-    } else {
-      // 顺序播放缓存音频
-      for (const audioBuffer of audioBuffers) {
-        await playAudioBuffer(audioBuffer)
-        if (sessionId !== activeSessionId) {
-          return
-        }
-      }
+      cachedAudioBuffer = audioBuffer
+    }
+
+    await playAudioBuffer(audioBuffer)
+    if (sessionId !== activeSessionId) {
+      return
     }
 
     onEnd?.()

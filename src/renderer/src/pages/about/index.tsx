@@ -69,7 +69,7 @@ export default function AboutPage(): React.JSX.Element {
           <div>
             <h1 className="font-display text-5xl tracking-[-0.04em]">Bai_Ze</h1>
             <p className="mt-3 max-w-sm text-sm leading-6 text-background/70">
-              让屏幕上的陌生文字就地变得清晰。截图、识别、翻译，不打断当前工作。
+              从看懂到开口，让英语学习自然融入日常。截图翻译、句子分析、口语陪练，一处完成。
             </p>
             <p className="mt-5 font-mono text-xs text-background/55">VERSION {appVersion || '—'}</p>
           </div>

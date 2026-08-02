@@ -6,6 +6,8 @@ import { createHashRouter } from 'react-router-dom'
 import ScreenshotSelector from '@renderer/windows/screenshotSelector'
 import ResultOverlay from '@renderer/windows/resultOverlay'
 import Setting from '@renderer/pages/setting'
+import Conversation from '@renderer/pages/conversation'
+// 主窗口与辅助窗口路由配置
 const router = createHashRouter([
   {
     path: '/',
@@ -18,6 +20,10 @@ const router = createHashRouter([
       {
         path: 'home',
         element: <Home />
+      },
+      {
+        path: 'conversation',
+        element: <Conversation />
       },
       {
         path: 'about',

@@ -10,7 +10,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
-          'speech-worker': resolve(__dirname, 'src/main/speech/speech-worker.ts')
+          'speech-worker': resolve(__dirname, 'src/main/speech/speech-worker.ts'),
+          'recognition-worker': resolve(__dirname, 'src/main/speech/recognition-worker.ts')
         },
         external: ['electron']
       },

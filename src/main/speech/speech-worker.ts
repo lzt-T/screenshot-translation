@@ -1,4 +1,5 @@
 import { parentPort, workerData } from 'node:worker_threads'
+import { availableParallelism } from 'node:os'
 import path from 'node:path'
 import { GenerationConfig, OfflineTts } from 'sherpa-onnx-node'
 import type { SpeechWorkerRequest, SpeechWorkerResponse } from '../../type/speech'
@@ -36,6 +37,8 @@ const PUNCTUATION_NORMALIZATION_MAP: Readonly<Record<string, string>> = {
   '；': ';',
   '：': ':'
 }
+// 为界面与系统任务预留两个线程，并限制 TTS 最多使用四个线程
+const TTS_THREAD_COUNT = Math.min(4, Math.max(1, availableParallelism() - 2))
 // 当前有效请求编号
 let activeRequestId: number | null = null
 // 已取消的请求编号
@@ -65,7 +68,8 @@ function getOfflineTts(): Promise<OfflineTts> {
       path.join(speechWorkerData.modelDirectory, 'lexicon-zh.txt')
     ].join(',')
 
-    offlineTtsPromise = OfflineTts.createAsync({
+    // 当前模型初始化任务
+    const initializationPromise = OfflineTts.createAsync({
       model: {
         kokoro: {
           model: modelPath,
@@ -76,12 +80,23 @@ function getOfflineTts(): Promise<OfflineTts> {
         }
       },
       maxNumSentences: 1,
-      numThreads: 2,
+      numThreads: TTS_THREAD_COUNT,
       provider: 'cpu'
+    })
+    offlineTtsPromise = initializationPromise
+    void initializationPromise.catch(() => {
+      if (offlineTtsPromise === initializationPromise) {
+        offlineTtsPromise = null
+      }
     })
   }
 
   return offlineTtsPromise
+}
+
+/** 在后台预加载并复用 Kokoro 语音模型 */
+function preloadSpeechModel(): void {
+  void getOfflineTts().catch(() => undefined)
 }
 
 /**
@@ -177,7 +192,7 @@ function postResponse(response: SpeechWorkerResponse): void {
 }
 
 /**
- * 合成单段语音
+ * 合成完整语音
  * @param {number} requestId 请求编号
  * @param {string} text 待朗读文本
  * @returns {Promise<void>} 无返回值
@@ -237,15 +252,25 @@ async function synthesizeSpeech(requestId: number, text: string): Promise<void> 
  * @returns {void} 无返回值
  */
 function handleSpeechMessage(message: SpeechWorkerRequest): void {
-  if (message.type === 'cancel') {
-    cancelledRequestIds.add(message.requestId)
-    if (activeRequestId === message.requestId) {
-      activeRequestId = null
+  // 固定消息类型对应的处理策略
+  const messageHandlers: Record<SpeechWorkerRequest['type'], () => void> = {
+    preload: preloadSpeechModel,
+    synthesize: () => {
+      if (message.type === 'synthesize') {
+        synthesisQueue = synthesisQueue.then(() => synthesizeSpeech(message.requestId, message.text))
+      }
+    },
+    cancel: () => {
+      if (message.type !== 'cancel') {
+        return
+      }
+      cancelledRequestIds.add(message.requestId)
+      if (activeRequestId === message.requestId) {
+        activeRequestId = null
+      }
     }
-    return
   }
-
-  synthesisQueue = synthesisQueue.then(() => synthesizeSpeech(message.requestId, message.text))
+  messageHandlers[message.type]()
 }
 
 messagePort?.on('message', handleSpeechMessage)
