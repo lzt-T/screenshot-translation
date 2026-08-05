@@ -11,7 +11,7 @@ export const FullScreenContainer = styled.div`
   position: fixed;
   inset: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   z-index: 9998;
   background: transparent;
@@ -46,10 +46,9 @@ export const SelectionBox = styled.div.attrs<RectProps>((props) => ({
   position: absolute;
   z-index: 10000;
   box-sizing: border-box;
-  border: 2px solid var(--primary);
-  background: color-mix(in oklab, var(--primary) 7%, transparent);
-  box-shadow: 0 0 0 1px var(--floating-border),
-    0 10px 28px -20px color-mix(in oklab, var(--primary) 80%, transparent);
+  border: 2px solid var(--floating-accent);
+  background: color-mix(in oklab, var(--floating-accent) 8%, transparent);
+  box-shadow: 0 0 0 1px var(--floating-border);
   pointer-events: none;
 
 `
@@ -59,11 +58,11 @@ export const SizeInfo = styled.div`
   position: absolute;
   z-index: 10001;
   padding: 6px 9px;
-  border: 1px solid var(--floating-border);
+  border: 1px solid color-mix(in oklab, var(--floating-accent) 24%, var(--floating-border));
   border-radius: 7px;
   color: var(--floating-foreground);
   background: var(--floating-surface-strong);
-  box-shadow: 0 8px 24px -16px var(--floating-surface-strong);
+  box-shadow: 0 8px 24px -18px rgba(0, 0, 0, 0.72);
   font-family: var(--font-measure);
   font-size: 11px;
   white-space: nowrap;

@@ -97,12 +97,12 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
   const connectionStatusText = CONNECTION_STATUS_TEXT[connectionTestStatus]
 
   return (
-    <div className={cn('lab-panel overflow-hidden', isActive && 'border-primary/45')}>
+    <div className={cn('overflow-hidden rounded-lg border border-border bg-card', isActive && 'border-primary/40')}>
       <div className="flex items-center gap-2 p-3 sm:p-4">
         <button
           aria-controls={contentId}
           aria-expanded={isExpanded}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/45"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45"
           onClick={() => onToggle(model.id)}
           type="button"
         >
@@ -129,7 +129,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
               </Badge>
             )}
             {isBuiltIn && (
-              <Badge className="border-status/45 bg-status/10 text-status" variant="outline">
+              <Badge className="border-border bg-muted/70 text-muted-foreground" variant="outline">
                 免费
               </Badge>
             )}
@@ -137,7 +137,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
               <Badge
                 className={
                   validation.isValid
-                    ? 'border-status/45 bg-status/10 text-status'
+                    ? 'border-border bg-muted/70 text-muted-foreground'
                     : 'border-destructive/40 bg-destructive/8 text-destructive'
                 }
                 variant="outline"
@@ -150,7 +150,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                 className={
                   connectionTestStatus === 'error'
                     ? 'border-destructive/40 bg-destructive/8 text-destructive'
-                    : 'border-status/45 bg-status/10 text-status'
+                    : 'border-border bg-muted/70 text-muted-foreground'
                 }
                 variant="outline"
               >
@@ -183,7 +183,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
               </Badge>
             )}
             {isBuiltIn && (
-              <Badge className="border-status/45 bg-status/10 text-status" variant="outline">
+              <Badge className="border-border bg-muted/70 text-muted-foreground" variant="outline">
                 免费
               </Badge>
             )}
@@ -191,7 +191,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
               <Badge
                 className={
                   validation.isValid
-                    ? 'border-status/45 bg-status/10 text-status'
+                    ? 'border-border bg-muted/70 text-muted-foreground'
                     : 'border-destructive/40 bg-destructive/8 text-destructive'
                 }
                 variant="outline"
@@ -204,7 +204,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                 className={
                   connectionTestStatus === 'error'
                     ? 'border-destructive/40 bg-destructive/8 text-destructive'
-                    : 'border-status/45 bg-status/10 text-status'
+                    : 'border-border bg-muted/70 text-muted-foreground'
                 }
                 variant="outline"
               >
@@ -332,7 +332,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                   className={
                     connectionTestStatus === 'error'
                       ? 'break-words text-destructive'
-                      : 'text-status'
+                      : 'text-muted-foreground'
                   }
                 >
                   {connectionTestMessage}

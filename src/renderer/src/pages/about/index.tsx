@@ -60,46 +60,53 @@ export default function AboutPage(): React.JSX.Element {
   }, [])
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-10 lg:py-10">
-      <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="flex min-h-72 flex-col justify-between rounded-2xl bg-foreground p-7 text-background">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <ScanLine size={24} />
+    <div className="mx-auto max-w-[1180px] px-5 py-5 lg:px-7 lg:py-6">
+      <header>
+        <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">关于</h1>
+        <p className="mt-1 text-sm text-muted-foreground">产品信息、版本与项目入口。</p>
+      </header>
+
+      <section className="lab-panel mt-5 max-w-3xl overflow-hidden">
+        <div className="flex items-center gap-4 border-b border-border px-5 py-5">
+          <div className="brand-aperture flex size-10 shrink-0 items-center justify-center rounded-lg">
+            <ScanLine size={20} />
           </div>
-          <div>
-            <h1 className="font-display text-5xl tracking-[-0.04em]">Bai_Ze</h1>
-            <p className="mt-3 max-w-sm text-sm leading-6 text-background/70">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-display text-2xl tracking-[-0.03em] text-foreground">Bai Ze</h2>
+              <p className="font-mono text-[11px] text-muted-foreground">
+                VERSION {appVersion || '--'}
+              </p>
+            </div>
+            <p className="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">
               从看懂到开口，让英语学习自然融入日常。截图翻译、句子分析、口语陪练，一处完成。
             </p>
-            <p className="mt-5 font-mono text-xs text-background/55">VERSION {appVersion || '—'}</p>
           </div>
-        </section>
+        </div>
 
-        <section className="lab-panel divide-y divide-border self-start overflow-hidden">
-          <div className="flex items-center justify-between gap-4 p-5">
+        <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
+          <div>
+            <p className="text-sm font-medium">检查更新</p>
+            <p className="mt-1 text-xs text-muted-foreground">获取最新功能与修复。</p>
+          </div>
+          <Button disabled={isUpdating} onClick={handleCheckUpdate} size="sm" variant="outline">
+            <RefreshCw size={15} className={isUpdating ? 'animate-spin' : ''} />
+            {isUpdating ? '检查中' : '检查'}
+          </Button>
+        </div>
+        <div className="flex items-center justify-between gap-4 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <Github className="text-muted-foreground" size={18} />
             <div>
-              <p className="text-sm font-medium">检查更新</p>
-              <p className="mt-1 text-xs text-muted-foreground">获取最新功能与修复。</p>
+              <p className="text-sm font-medium">开源仓库</p>
+              <p className="mt-1 text-xs text-muted-foreground">查看源码与提交问题。</p>
             </div>
-            <Button disabled={isUpdating} onClick={handleCheckUpdate} variant="outline">
-              <RefreshCw size={15} className={isUpdating ? 'animate-spin' : ''} />
-              {isUpdating ? '检查中' : '检查'}
-            </Button>
           </div>
-          <div className="flex items-center justify-between gap-4 p-5">
-            <div className="flex items-center gap-3">
-              <Github size={18} />
-              <div>
-                <p className="text-sm font-medium">开源仓库</p>
-                <p className="mt-1 text-xs text-muted-foreground">查看源码与提交问题。</p>
-              </div>
-            </div>
-            <Button aria-label="打开 GitHub 仓库" onClick={handleOpenRepository} size="icon" variant="ghost">
-              <ExternalLink size={16} />
-            </Button>
-          </div>
-        </section>
-      </div>
+          <Button aria-label="打开 GitHub 仓库" onClick={handleOpenRepository} size="icon" variant="ghost">
+            <ExternalLink size={16} />
+          </Button>
+        </div>
+      </section>
     </div>
   )
 }

@@ -18,16 +18,14 @@ export default function ConversationTranscript({
 
   /** 新消息出现时滚动至最新内容 */
   useEffect(() => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    transcriptEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
   }, [messages])
 
   if (messages.length === 0) {
     return (
       <div className="flex min-h-48 flex-col items-center justify-center px-6 py-12 text-center">
-        <div className="flex size-10 items-center justify-center rounded-xl border border-border bg-muted/55 text-primary">
-          <Sparkles size={18} />
-        </div>
-        <p className="mt-4 text-sm font-medium text-foreground">对话会从一句轻松的问候开始</p>
+        <Sparkles className="text-muted-foreground" size={18} />
+        <p className="mt-3 text-sm font-medium text-foreground">对话会从一句轻松的问候开始</p>
         <p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">
           AI 会用英语与你交谈，并在需要时给出更自然的表达建议。
         </p>
@@ -47,21 +45,11 @@ export default function ConversationTranscript({
           >
             <div
               className={cn(
-                'flex items-start gap-2 pt-0.5',
+                'flex items-start pt-0.5 text-xs font-medium text-muted-foreground',
                 isUserMessage ? 'justify-end pr-1' : 'pl-1'
               )}
             >
-              {isUserMessage ? (
-                <>
-                  <span className="measurement-label">我</span>
-                  <span className="mt-1 size-1.5 shrink-0 rounded-full bg-foreground/45" />
-                </>
-              ) : (
-                <>
-                  <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
-                  <span className="measurement-label">教练</span>
-                </>
-              )}
+              <span>{isUserMessage ? '我' : '教练'}</span>
             </div>
 
             <div
@@ -87,7 +75,7 @@ export default function ConversationTranscript({
               </div>
 
               {message.correction && (
-                <div className="mt-3 max-w-[85%] rounded-lg bg-accent/50 px-3 py-3 text-left">
+                <div className="mt-3 max-w-[85%] rounded-lg border border-primary/15 bg-primary/7 px-3 py-3 text-left">
                   <div className="flex items-center gap-2 text-xs font-medium text-primary">
                     <Sparkles size={14} />
                     更自然的表达

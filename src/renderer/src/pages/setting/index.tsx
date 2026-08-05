@@ -89,7 +89,7 @@ const SettingPage: React.FC = () => {
       return
     }
     modelConfigSection.scrollIntoView({
-      behavior: 'smooth',
+      behavior: 'auto',
       block: 'start'
     })
     modelConfigSection.focus({ preventScroll: true })
@@ -115,16 +115,16 @@ const SettingPage: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-6 py-8 lg:px-10 lg:py-10">
+    <div className="mx-auto max-w-[1180px] space-y-6 px-5 py-5 lg:px-7 lg:py-6">
       <div>
-        <h1 className="font-display text-4xl tracking-[-0.03em] text-foreground">设置</h1>
-        <p className="mt-2 text-sm text-muted-foreground">调整翻译偏好、界面外观与模型连接。</p>
+        <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">设置</h1>
+        <p className="mt-1 text-sm text-muted-foreground">调整翻译偏好、界面外观与模型连接。</p>
       </div>
 
-      <section className="space-y-4" aria-labelledby="general-settings-title">
+      <section className="space-y-3" aria-labelledby="general-settings-title">
         <div>
           <h2
-            className="text-lg font-semibold tracking-[-0.01em] text-foreground"
+            className="text-base font-semibold text-foreground"
             id="general-settings-title"
           >
             常规设置
@@ -135,8 +135,8 @@ const SettingPage: React.FC = () => {
         </div>
 
         <div className="lab-panel overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <Label className="text-base font-medium" htmlFor="target-language-select">
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <Label className="text-sm font-medium" htmlFor="target-language-select">
               截取翻译目标语言
             </Label>
             <div className="w-full sm:w-70">
@@ -155,8 +155,8 @@ const SettingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <Label className="text-base font-medium" htmlFor="active-model-select">
+          <div className="flex flex-col gap-3 border-b border-border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <Label className="text-sm font-medium" htmlFor="active-model-select">
               当前使用模型
             </Label>
             <div className="w-full sm:w-70">
@@ -187,8 +187,8 @@ const SettingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-5 py-4">
-            <Label className="text-base font-medium" htmlFor="autoLaunch">
+          <div className="flex items-center justify-between px-4 py-3.5">
+            <Label className="text-sm font-medium" htmlFor="autoLaunch">
               开机自启
             </Label>
             <Switch
@@ -200,10 +200,10 @@ const SettingPage: React.FC = () => {
         </div>
       </section>
 
-      <section aria-labelledby="appearance-title">
-        <div className="mb-4">
+      <section className="space-y-3" aria-labelledby="appearance-title">
+        <div>
           <h2
-            className="text-lg font-semibold tracking-[-0.01em] text-foreground"
+            className="text-base font-semibold text-foreground"
             id="appearance-title"
           >
             外观
@@ -212,7 +212,13 @@ const SettingPage: React.FC = () => {
             主题会同步应用到主窗口、截图选区与翻译浮层。
           </p>
         </div>
-        <ThemeSelector />
+        <div className="lab-panel flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground">界面主题</p>
+            <p className="mt-1 text-xs text-muted-foreground">选择适合当前环境光的显示方式。</p>
+          </div>
+          <ThemeSelector />
+        </div>
       </section>
 
       <ModelConfigurationSection

@@ -41,13 +41,13 @@ export default function HomePage(): React.JSX.Element {
   const hasInputText = Boolean(translationText.trim())
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-6 py-8 lg:px-10 lg:py-10">
+    <div className="mx-auto flex min-h-full w-full max-w-[1180px] flex-col px-5 py-5 lg:px-7 lg:py-6">
       <Header onScreenshot={onScreenshot} />
 
-      <section className="mt-7 grid min-h-0 flex-1 grid-cols-1 items-start gap-4 md:grid-cols-[minmax(250px,0.8fr)_minmax(330px,1.2fr)]">
-        <div className="lab-panel flex min-h-80 flex-col overflow-hidden transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 md:min-h-[calc(100vh-13rem)]">
+      <section className="lab-panel mt-5 grid min-h-0 flex-1 grid-cols-1 overflow-hidden min-[900px]:grid-cols-[minmax(250px,0.72fr)_minmax(360px,1fr)] lg:min-h-[calc(100dvh-8.75rem)]">
+        <div className="flex min-h-72 flex-col overflow-hidden border-b border-border transition-[box-shadow] focus-within:shadow-[inset_0_0_0_2px_color-mix(in_oklab,var(--ring)_45%,transparent)] min-[900px]:min-h-0 min-[900px]:border-r min-[900px]:border-b-0">
           <div className="flex h-12 items-center justify-between border-b border-border px-4">
-            <span className="measurement-label">原文样本</span>
+            <span className="text-sm font-medium text-foreground">原文</span>
             <div className="flex items-center gap-1">
               <Button
                 aria-label="复制输入文本"
@@ -76,7 +76,7 @@ export default function HomePage(): React.JSX.Element {
           </div>
           <Textarea
             aria-describedby="translation-shortcuts"
-            className="custom-scrollbar min-h-40 flex-1 resize-none rounded-none border-0 bg-transparent px-4 py-4 text-[15px] leading-7 shadow-none focus-visible:ring-0"
+            className="custom-scrollbar min-h-40 flex-1 resize-none rounded-none border-0 bg-transparent px-4 py-4 text-[15px] leading-7 focus-visible:ring-0"
             disabled={isLoading}
             onChange={handleInputTextChange}
             onKeyDown={handleKeyDown}
@@ -91,7 +91,7 @@ export default function HomePage(): React.JSX.Element {
               disabled={!hasInputText || isLoading}
               onClick={onEnglishChineseTranslation}
               size="sm"
-              variant="secondary"
+              variant="outline"
             >
               {isLoading ? '翻译中' : '翻译'}
             </Button>

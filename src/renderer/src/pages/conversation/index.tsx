@@ -38,9 +38,6 @@ const STATUS_VIEW_MAP: Record<
   error: { label: '需要处理', description: '查看下方提示后重试', icon: AlertCircle }
 }
 
-// 监听状态的音量刻度
-const VOICE_METER_BARS = [0.35, 0.58, 0.82, 1, 0.68, 0.46, 0.75, 0.52, 0.3]
-
 /** 渲染实时英语口语实验台 */
 export default function ConversationPage(): React.JSX.Element {
   // 实时对话状态与操作
@@ -76,11 +73,11 @@ export default function ConversationPage(): React.JSX.Element {
           : '随时可以开始')
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-6 py-8 lg:px-10 lg:py-10">
-      <header className="flex flex-col gap-5 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mx-auto flex min-h-full w-full max-w-[1180px] flex-col px-5 py-5 lg:px-7 lg:py-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-2xl">
-          <h2 className="font-display text-4xl tracking-[-0.03em] text-foreground">英语口语对话</h2>
-          <p className="mt-3 max-w-[62ch] text-sm leading-6 text-muted-foreground">
+          <h2 className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">英语口语对话</h2>
+          <p className="mt-1 max-w-[62ch] text-sm leading-6 text-muted-foreground">
             免手动轮流对话。本地识别你的英语，AI 自然接话并在需要时给出表达建议。
           </p>
         </div>
@@ -106,7 +103,7 @@ export default function ConversationPage(): React.JSX.Element {
           )}
           {!isActive && (
             <Button
-              className="h-11 cursor-pointer rounded-xl px-5 shadow-[0_10px_24px_-16px_var(--action-shadow)] active:translate-y-px"
+              className="h-10 cursor-pointer px-4"
               onClick={startConversation}
             >
               {hasMessages ? <RotateCcw size={17} /> : <Mic size={17} />}
@@ -116,10 +113,10 @@ export default function ConversationPage(): React.JSX.Element {
         </div>
       </header>
 
-      <section className="mt-7 grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(300px,0.82fr)_minmax(360px,1.18fr)]">
-        <div className="lab-panel flex flex-col overflow-hidden lg:sticky lg:top-8 lg:h-[calc(100vh-8rem)] lg:min-h-[34rem]">
+      <section className="lab-panel mt-5 grid min-h-[34rem] flex-1 overflow-hidden lg:grid-cols-[minmax(300px,0.72fr)_minmax(380px,1fr)] lg:min-h-[calc(100dvh-8.75rem)]">
+        <div className="flex min-h-[28rem] flex-col overflow-hidden border-b border-border lg:min-h-0 lg:border-r lg:border-b-0">
           <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border px-4">
-            <span className="measurement-label">实时对话</span>
+            <span className="text-sm font-medium text-foreground">实时对话</span>
             <Badge className="gap-1.5" variant={status === 'error' ? 'destructive' : 'secondary'}>
               <StatusIcon
                 className={cn(
@@ -135,49 +132,34 @@ export default function ConversationPage(): React.JSX.Element {
             {status === 'idle' ? (
               <button
                 aria-label={hasMessages ? '重新开始英语口语对话' : '开始英语口语对话'}
-                className="relative flex size-20 cursor-pointer items-center justify-center rounded-2xl border border-border bg-muted/45 text-primary transition-[background-color,border-color,transform] hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px lg:size-24"
+                className="relative flex size-18 cursor-pointer items-center justify-center rounded-xl border border-border bg-muted/45 text-foreground transition-[background-color,border-color,transform] hover:border-primary/35 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px lg:size-20"
                 onClick={startConversation}
                 title={hasMessages ? '重新开始' : '开始对话'}
                 type="button"
               >
-                <StatusIcon className="size-7 lg:size-8" strokeWidth={1.7} />
+                <StatusIcon className="size-7" strokeWidth={1.7} />
               </button>
             ) : (
               <div
                 aria-hidden="true"
                 className={cn(
-                  'relative flex size-20 items-center justify-center rounded-2xl border border-border bg-muted/45 text-primary transition-[background-color,border-color,transform] lg:size-24',
-                  status === 'listening' && 'border-primary/35 bg-accent'
+                  'relative flex size-18 items-center justify-center rounded-xl border border-border bg-muted/45 text-foreground transition-[background-color,border-color] lg:size-20',
+                  status === 'listening' && 'border-primary/35 bg-primary/8 text-primary'
                 )}
               >
-                {status === 'listening' ? (
-                  <div className="flex h-11 items-center gap-1" aria-hidden="true">
-                    {VOICE_METER_BARS.map((scale, index) => (
-                      <span
-                        className="w-1 rounded-sm bg-primary motion-safe:animate-pulse"
-                        key={index}
-                        style={{
-                          height: `${Math.round(scale * 42)}px`,
-                          animationDelay: `${index * 70}ms`
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <StatusIcon
-                    className={cn(
-                      'size-7 lg:size-8',
-                      (status === 'initializing' || status === 'thinking') && 'animate-spin'
-                    )}
-                    strokeWidth={1.7}
-                  />
-                )}
+                <StatusIcon
+                  className={cn(
+                    'size-7',
+                    (status === 'initializing' || status === 'thinking') && 'animate-spin'
+                  )}
+                  strokeWidth={1.7}
+                />
               </div>
             )}
 
             <p
               aria-live="polite"
-              className="mt-5 max-w-md text-balance text-lg font-medium leading-7 tracking-[-0.01em] text-foreground lg:mt-7 lg:text-xl lg:leading-8"
+              className="mt-5 max-w-md text-balance text-lg font-medium leading-7 tracking-[-0.01em] text-foreground lg:mt-6 lg:text-xl lg:leading-8"
             >
               {focalText}
             </p>
@@ -217,9 +199,9 @@ export default function ConversationPage(): React.JSX.Element {
           </div>
         </div>
 
-        <div className="lab-panel flex min-h-[34rem] flex-col overflow-hidden lg:h-[calc(100vh-8rem)]">
+        <div className="flex min-h-[34rem] flex-col overflow-hidden lg:min-h-0">
           <div className="flex h-12 items-center justify-between border-b border-border px-4">
-            <span className="measurement-label">对话记录</span>
+            <span className="text-sm font-medium text-foreground">对话记录</span>
             <span className="text-xs text-muted-foreground">{messages.length} 条消息</span>
           </div>
           <ConversationTranscript messages={messages} />

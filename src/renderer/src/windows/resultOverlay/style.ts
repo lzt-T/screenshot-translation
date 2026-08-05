@@ -14,10 +14,11 @@ interface OverlayContainerProps {
 export const OverlayContainer = styled.div<OverlayContainerProps>`
   position: relative;
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   box-sizing: border-box;
   padding: 5px;
+  border: 1px solid var(--floating-border);
   border-radius: 6px;
   background-color: ${({ $overlayMode }) =>
     $overlayMode === 'hide-original'
@@ -35,6 +36,7 @@ export const TranslatedTextOverlay = styled.div`
   padding: 4px 6px;
   border-radius: 4px;
   color: var(--floating-foreground);
+  font-family: var(--font-ui);
   font-size: 14px;
   line-height: 1.4;
   white-space: pre-wrap;
@@ -66,6 +68,9 @@ export const CopyButton = styled.button`
   cursor: pointer;
   font-size: 11px;
   white-space: nowrap;
+  border-radius: 4px;
+  outline: none;
+  transition: color 150ms ease, background-color 150ms ease;
 
   &:disabled {
     cursor: default;
@@ -74,5 +79,14 @@ export const CopyButton = styled.button`
 
   &:hover {
     color: var(--floating-accent);
+    background: color-mix(in oklab, var(--floating-accent) 10%, transparent);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--floating-accent) 60%, transparent);
   }
 `

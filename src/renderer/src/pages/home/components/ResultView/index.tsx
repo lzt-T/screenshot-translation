@@ -26,10 +26,10 @@ type ResultStatus = 'idle' | 'loading' | 'error' | 'success'
 
 /** 译文面板状态配置 */
 const RESULT_STATUS_CONFIG: Record<ResultStatus, { label: string; className: string }> = {
-  idle: { label: '等待输入', className: 'bg-accent text-muted-foreground' },
-  loading: { label: '翻译中', className: 'bg-primary/10 text-primary' },
-  error: { label: '翻译失败', className: 'bg-destructive/10 text-destructive' },
-  success: { label: '已完成', className: 'bg-primary/10 text-primary' }
+  idle: { label: '等待输入', className: 'border-border bg-muted/60 text-muted-foreground' },
+  loading: { label: '翻译中', className: 'border-primary/20 bg-primary/10 text-primary' },
+  error: { label: '翻译失败', className: 'border-destructive/20 bg-destructive/10 text-destructive' },
+  success: { label: '已完成', className: 'border-border bg-muted/60 text-muted-foreground' }
 }
 
 /** 单条句子翻译结果 */
@@ -194,12 +194,12 @@ export default function ResultView({
   return (
     <div
       aria-busy={isLoading}
-      className="lab-panel flex min-h-80 flex-col overflow-hidden md:min-h-[calc(100vh-13rem)]"
+      className="flex min-h-80 flex-col overflow-hidden md:min-h-0"
       role="region"
       aria-label="译文结果"
     >
       <div className="flex h-12 items-center justify-between border-b border-border px-4">
-        <span className="measurement-label">译文结果</span>
+        <span className="text-sm font-medium text-foreground">译文</span>
         <div className="flex items-center gap-2">
           {result && (
             <Button
@@ -217,7 +217,10 @@ export default function ResultView({
           )}
           <span
             aria-live="polite"
-            className={cn('rounded-md px-2 py-1 text-[11px] font-medium', statusConfig.className)}
+            className={cn(
+              'rounded-md border px-2 py-1 text-[11px] font-medium',
+              statusConfig.className
+            )}
             role="status"
           >
             {statusConfig.label}
@@ -226,20 +229,20 @@ export default function ResultView({
       </div>
 
       {!result && (
-        <div className="flex flex-1 items-center justify-center px-8 py-10">
+        <div className="flex flex-1 items-center justify-center px-8 py-12">
           <div className="max-w-xs text-center">
             <div
               className={cn(
-                'mx-auto mb-4 flex size-11 items-center justify-center rounded-xl bg-accent',
+                'mx-auto mb-3 flex size-7 items-center justify-center',
                 errorMessage ? 'text-destructive' : 'text-muted-foreground'
               )}
             >
               {errorMessage ? (
-                <CircleAlert size={20} />
+                <CircleAlert size={18} />
               ) : isLoading ? (
-                <Loader2 size={20} className="animate-spin text-primary" />
+                <Loader2 size={18} className="animate-spin text-primary" />
               ) : (
-                <ScanText size={20} />
+                <ScanText size={18} />
               )}
             </div>
             <p className="text-sm font-medium text-foreground">
@@ -265,7 +268,7 @@ export default function ResultView({
       )}
 
       {result && !isWord && (
-        <div className="divide-y divide-border animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="divide-y divide-border">
           {result.translation?.map((item, index) => {
             // 当前句子条目的操作文本
             const itemText = getSentenceItemText(result, item)
@@ -307,9 +310,9 @@ export default function ResultView({
       )}
 
       {result && isWord && result.exampleSentences && result.exampleSentences.length > 0 && (
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="flex items-center gap-2 border-b border-border bg-accent/45 px-4 py-3">
-            <BookOpen size={15} className="text-primary" />
+        <div>
+          <div className="flex items-center gap-2 border-b border-border bg-muted/45 px-4 py-3">
+            <BookOpen size={15} className="text-muted-foreground" />
             <span className="text-sm font-medium">例句观察</span>
           </div>
           <div className="divide-y divide-border">
@@ -326,7 +329,7 @@ export default function ResultView({
                     text={itemText}
                   />
                   {item.partOfSpeech && (
-                    <span className="measurement-label">
+                    <span className="text-xs font-medium text-muted-foreground">
                       {item.partOfSpeech} · {item.wordTranslation}
                     </span>
                   )}

@@ -42,9 +42,9 @@ export default function SentenceAnalysisView({
 }: SentenceAnalysisViewProps): React.JSX.Element {
   return (
     <section aria-busy={isLoading} aria-label="英文句子分析" className="border-t border-border">
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-accent/35 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/45 px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
-          <BookOpenCheck aria-hidden="true" className="shrink-0 text-primary" size={16} />
+          <BookOpenCheck aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">句子理解</p>
             {!analysis && !errorMessage && (
@@ -69,10 +69,10 @@ export default function SentenceAnalysisView({
       )}
 
       {!isLoading && analysis && (
-        <div className="divide-y divide-border animate-in fade-in duration-200">
+        <div className="divide-y divide-border">
           {analysis.sentences.map((sentence, sentenceIndex) => (
             <article className="px-5 py-5" key={`${sentence.sourceText}-${sentenceIndex}`}>
-              <p className="measurement-label">句子 {sentenceIndex + 1}</p>
+              <p className="text-xs font-medium text-muted-foreground">句子 {sentenceIndex + 1}</p>
               <p className="mt-2 break-words text-[15px] font-medium leading-7 text-foreground">
                 {sentence.sourceText}
               </p>
@@ -82,17 +82,17 @@ export default function SentenceAnalysisView({
 
               <div className="mt-5">
                 <div className="flex items-center gap-2">
-                  <Braces aria-hidden="true" className="text-primary" size={15} />
+                  <Braces aria-hidden="true" className="text-muted-foreground" size={15} />
                   <h3 className="text-sm font-medium text-foreground">句子结构</h3>
                 </div>
-                <div className="mt-2 divide-y divide-border border-y border-border">
+                <div className="mt-2 divide-y divide-border border-t border-border">
                   {sentence.chunks.map((chunk, chunkIndex) => (
                     <div className="py-3" key={`${chunk.text}-${chunkIndex}`}>
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                         <span className="break-words text-sm font-medium text-foreground">
                           {chunk.text}
                         </span>
-                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary">
+                        <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
                           {chunk.role}
                         </span>
                       </div>
@@ -105,7 +105,7 @@ export default function SentenceAnalysisView({
               {sentence.keyPhrases.length > 0 && (
                 <div className="mt-5">
                   <div className="flex items-center gap-2">
-                    <Puzzle aria-hidden="true" className="text-primary" size={15} />
+                    <Puzzle aria-hidden="true" className="text-muted-foreground" size={15} />
                     <h3 className="text-sm font-medium text-foreground">关键短语</h3>
                   </div>
                   <dl className="mt-2 space-y-2">

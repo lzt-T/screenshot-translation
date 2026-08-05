@@ -55,15 +55,15 @@ function App(): React.JSX.Element {
   }, [])
 
   return (
-    <div className="app-shell flex h-screen w-screen overflow-hidden bg-background text-foreground">
-      <aside className="lab-sidebar flex w-56 min-w-56 flex-col border-r border-border bg-sidebar px-4 py-5">
-        <div className="mb-7 flex items-center gap-3 px-2">
-          <div className="brand-aperture flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <ScanLine size={21} strokeWidth={1.8} />
+    <div className="app-shell flex h-dvh w-screen overflow-hidden bg-background text-foreground">
+      <aside className="lab-sidebar flex w-50 min-w-50 flex-col border-r border-border bg-sidebar px-3 py-4">
+        <div className="mb-6 flex items-center gap-2.5 px-2">
+          <div className="brand-aperture flex size-8 items-center justify-center rounded-lg">
+            <ScanLine size={17} strokeWidth={1.8} />
           </div>
           <div className="min-w-0">
-            <h1 className="font-display text-xl tracking-[-0.02em]">Bai_Ze</h1>
-            <p className="mt-0.5 whitespace-nowrap text-[9px] text-muted-foreground">
+            <h1 className="font-display text-lg tracking-[-0.02em]">Bai Ze</h1>
+            <p className="whitespace-nowrap text-[10px] text-muted-foreground">
               从看懂到开口
             </p>
           </div>
@@ -80,7 +80,7 @@ function App(): React.JSX.Element {
               <button
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
-                  'group flex h-10 w-full cursor-pointer items-center gap-3 rounded-lg px-3 text-sm font-medium transition-[background-color,color,transform] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/45',
+                  'group flex h-9 w-full cursor-pointer items-center gap-3 rounded-lg px-3 text-sm font-medium transition-[background-color,color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/55',
                   isActive
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                     : 'text-muted-foreground hover:bg-sidebar-accent/65 hover:text-foreground'
@@ -91,14 +91,13 @@ function App(): React.JSX.Element {
               >
                 <NavigationIcon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
                 <span>{item.label}</span>
-                {isActive && <span className="ml-auto size-1.5 rounded-full bg-primary" />}
               </button>
             )
           })}
         </nav>
 
-        <div className="border-t border-border pt-4">
-          <div className="mb-3 flex items-center justify-between px-2 text-[11px] text-muted-foreground">
+        <div className="border-t border-border pt-3">
+          <div className="mb-2.5 flex items-center justify-between px-2 text-[11px] text-muted-foreground">
             <span>截图快捷键</span>
             <kbd className="rounded-md border border-border bg-background px-2 py-1 font-mono text-[10px] text-foreground">
               F2
@@ -108,7 +107,7 @@ function App(): React.JSX.Element {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background">
         <SelectionTranslator>
           <Outlet />
         </SelectionTranslator>

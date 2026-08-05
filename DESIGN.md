@@ -1,21 +1,21 @@
 ---
 name: Bai_Ze
-description: 一套面向桌面 AI 英语学习的识别实验台视觉系统
+description: 一套面向桌面翻译与英语学习的冷静工作台视觉系统
 colors:
-  primary: "oklch(0.52 0.16 278)"
-  primary-dark: "oklch(0.68 0.15 278)"
-  workbench-light: "oklch(0.978 0.002 260)"
-  workbench-dark: "oklch(0.18 0.008 270)"
-  surface-light: "oklch(0.995 0.001 260)"
-  surface-dark: "oklch(0.225 0.012 270)"
-  ink-light: "oklch(0.24 0.015 270)"
-  ink-dark: "oklch(0.93 0.008 270)"
-  border-light: "oklch(0.865 0.006 265)"
-  border-dark: "oklch(0.35 0.015 270)"
+  primary: "#2F6F78"
+  primary-dark: "#72B8BE"
+  workbench-light: "#F4F6F6"
+  workbench-dark: "#171D20"
+  surface-light: "#FBFCFC"
+  surface-dark: "#20282C"
+  ink-light: "#1F2A2E"
+  ink-dark: "#EDF2F2"
+  border-light: "#D5DDDD"
+  border-dark: "#354247"
 typography:
   display:
     fontFamily: "Smiley Sans, Segoe UI, sans-serif"
-    fontSize: "2.25rem"
+    fontSize: "1.5rem"
     fontWeight: 400
     lineHeight: 1.1
     letterSpacing: "-0.03em"
@@ -43,7 +43,7 @@ components:
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.surface-light}"
-    rounded: "{rounded.surface}"
+    rounded: "{rounded.control}"
     padding: "0.6875rem 1.25rem"
     height: "44px"
   panel:
@@ -62,17 +62,17 @@ components:
 
 ## Overview
 
-**Creative North Star: "识别实验台"**
+**Creative North Star: "青石工作台"**
 
-Bai_Ze 把英语理解与表达视作连续的学习过程：取景符号负责聚焦，双语层负责比对，对话界面负责练习表达，测量标签负责标记状态。界面安静但不匿名，中性冷灰白与石墨灰构成工作台，识别靛紫以不同强调层级标记用户行动、聚焦与系统状态。
+Bai Ze 把英语理解与表达视作连续的桌面工作流：取景负责聚焦，双栏工作面负责比对，对话界面负责练习表达。界面以冷灰白、蓝调石墨和低饱和青石蓝构成，强调色只标记主操作、当前选择、焦点与必要处理状态。
 
-白泽不以神兽插画出现，而被抽象成识别、聚焦与洞察。密度服务高频桌面操作；装饰不得抢走截图、输入、译文和口语对话的注意力。
+白泽不以神兽插画出现，也不依赖实验室标签营造概念。密度服务高频桌面操作；装饰不得抢走截图、输入、译文和口语对话的注意力。
 
 **Key Characteristics:**
 
 - 中性冷灰白与石墨灰构成适应环境光的双主题工作面。
-- 识别靛紫的实色形态表示主操作，低强调形态表示处理或完成状态。
-- 取景孔径、精细标线和测量标签形成跨窗口识别语言。
+- 青石蓝实色只表示主操作，低强调形态表示当前选择、焦点或处理状态。
+- 取景边界、紧凑工具栏和连续工作面形成跨窗口识别语言。
 - 控件触感明确，圆角克制，依靠边界和色调分层而非浮夸阴影。
 
 ## Colors
@@ -81,7 +81,7 @@ Bai_Ze 把英语理解与表达视作连续的学习过程：取景符号负责�
 
 ### Primary
 
-- **识别靛紫信号色：** 浅色主题使用克制的 `#575AC2`，深色主题使用更明亮的 `#848CF3`；实色用于截图按钮、当前选择与关键焦点，低透明度底色与主色文字用于处理中和完成状态。
+- **青石蓝信号色：** 浅色主题使用 `#2F6F78`，深色主题使用 `#72B8BE`；实色用于截图按钮，低强调形态用于当前选择、焦点和处理中状态。
 
 ### Neutral
 
@@ -90,28 +90,29 @@ Bai_Ze 把英语理解与表达视作连续的学习过程：取景符号负责�
 - **样本表面：** 输入、译文和设置分组使用的内容层。
 - **精密边界：** 分隔、输入轮廓和选区结构使用低色度边界。
 
-**The Single Signal Rule.** 识别靛紫统一表示用户行动、选中、聚焦与系统状态；通过实色和低强调变体区分层级，页面不得引入无语义强调色。
+**The Single Signal Rule.** 青石蓝统一表示主操作、选中、聚焦与必要处理状态；完成和普通信息使用中性层级，页面不得引入无语义强调色。
 
 ## Typography
 
-**Display Font:** Smiley Sans（自托管，Segoe UI 回退）  
+**Brand Font:** Smiley Sans（自托管，Segoe UI 回退）
 **Body Font:** Segoe UI Variable Text / Microsoft YaHei UI  
 **Label/Mono Font:** Cascadia Mono / Consolas
 
-**Character:** 展示字具有窄体、轻微倾斜的观察感，仅用于品牌和页面大标题；正文保持桌面系统字体的效率与中文可读性，测量字体只承担快捷键、版本和层标签。
+**Character:** Smiley Sans 的窄体与轻微倾斜只用于品牌字标；页面标题和正文使用桌面系统字体，等宽字体只承担快捷键与版本信息。
 
 ### Hierarchy
 
-- **Display：** 36–48px、400，用于页面主标题和关于页品牌。
+- **Brand：** 18-24px、400，只用于侧栏与关于页品牌字标。
+- **Page Title：** 24-28px、600，用于页面主标题。
 - **Title：** 17–18px、600，用于分区名称和关键组件标题。
 - **Body：** 14–15px、400，行高约 1.6–1.75，用于操作说明和译文。
-- **Label：** 11px、0.08em 字距、英文大写，用于 Source Sample、Translation Layer 等测量标签。
+- **Label：** 12-13px、500，用于工作区标题与辅助状态。
 
-**The Display Ration Rule.** Smiley Sans 只用于品牌与一级标题，不用于正文、表单标签或长译文。
+**The Display Ration Rule.** Smiley Sans 只用于品牌字标，不用于页面标题、正文、表单标签或长译文。
 
 ## Layout
 
-主窗口使用固定 224px 左侧控制轨与可滚动内容区。默认桌面宽度下，首页输入与译文并列；较窄窗口回落为单列。内容最大宽度约 1024px，主页面使用 24–40px 外边距，区块以 28px 左右的节奏分隔。设置页按常规偏好、外观和模型配置顺序垂直组织。
+主窗口使用固定 200px 左侧导航与可滚动内容区。首页原文与译文属于一个连续工作面，宽度充足时按约 42% / 58% 并列，较窄窗口回落为单列。内容最大宽度约 1180px，主页面使用 20-28px 外边距。设置页按常规偏好、外观和模型配置顺序垂直组织。
 
 ## Elevation & Depth
 
@@ -127,13 +128,13 @@ Bai_Ze 把英语理解与表达视作连续的学习过程：取景符号负责�
 
 ### Buttons
 
-- 主按钮在浅色主题使用克制靛紫底、深色主题使用明亮靛紫底，并搭配高对比前景；44px 高、12px 圆角，按下时仅下移 1px。
+- 主按钮在浅色主题使用青石蓝底、深色主题使用浅青底，并搭配高对比前景；40px 高、8px 圆角，按下时仅下移 1px。
 - 次级按钮依靠边界和内容底色，幽灵按钮只在悬停时出现淡色表面。
 - 焦点统一使用三像素半透明主题环，不能只靠颜色变化。
 
 ### Cards / Containers
 
-- `lab-panel` 是主要内容表面：12px 圆角、1px 边界、无默认阴影。
+- `lab-panel` 是主要内容表面：10px 圆角、1px 边界、无默认阴影。
 - 设置常规项共享一个分隔表面；模型配置按真实配置对象分开，避免无意义嵌套卡片。
 
 ### Inputs / Fields
@@ -143,7 +144,7 @@ Bai_Ze 把英语理解与表达视作连续的学习过程：取景符号负责�
 
 ### Navigation
 
-- 左侧导航采用图标、文字和一个小型主色状态点；活动项使用中性侧栏强调面，不使用厚侧边线。
+- 左侧导航采用图标与文字；活动项只使用中性侧栏强调面和文字变化，不叠加状态圆点。
 - 截图选区和翻译浮层继承同一主色、边界、字体与焦点规则。
 - 翻译浮层操作使用无背景文字按钮，仅通过文字颜色变化提供悬停反馈。
 
@@ -158,6 +159,6 @@ Bai_Ze 把英语理解与表达视作连续的学习过程：取景符号负责�
 ### Don't:
 
 - **Don't** 把白泽替换成字面神兽插画或古典纹样背景。
-- **Don't** 用识别靛紫装饰普通内容，或让状态徽标使用与主按钮同等重量的实色背景。
+- **Don't** 用青石蓝装饰普通内容，或让状态徽标使用与主按钮同等重量的实色背景。
 - **Don't** 引入玻璃拟态、渐变文字、发光描边或默认 AI 仪表盘式灰蓝卡片。
 - **Don't** 在普通内容面板同时叠加边框和宽阴影。

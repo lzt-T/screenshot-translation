@@ -21,18 +21,18 @@ export default function LearningItemDetails({
   const exampleSentences = item.translationResult?.exampleSentences || []
 
   return (
-    <div className="border-t border-border bg-accent/20">
+    <div className="border-t border-border bg-muted/30">
       {exampleSentences.length > 0 && (
         <section className="px-5 py-5" aria-label="单词例句">
           <div className="flex items-center gap-2">
-            <BookOpen className="text-primary" size={15} />
+            <BookOpen className="text-muted-foreground" size={15} />
             <h3 className="text-sm font-medium">例句观察</h3>
           </div>
-          <div className="mt-3 divide-y divide-border border-y border-border">
+          <div className="mt-3 divide-y divide-border border-t border-border">
             {exampleSentences.map((example, index) => (
               <div className="py-3" key={`${example.en}-${index}`}>
                 {(example.partOfSpeech || example.wordTranslation) && (
-                  <p className="measurement-label">
+                  <p className="text-xs font-medium text-muted-foreground">
                     {[example.partOfSpeech, example.wordTranslation].filter(Boolean).join(' · ')}
                   </p>
                 )}

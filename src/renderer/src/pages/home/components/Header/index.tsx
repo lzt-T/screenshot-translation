@@ -15,10 +15,10 @@ interface HeaderProps {
  */
 export default function Header({ onScreenshot }: HeaderProps): React.JSX.Element {
   return (
-    <header className="flex w-full flex-col gap-6 border-b border-border pb-7 md:flex-row md:items-end md:justify-between">
+    <header className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="max-w-xl">
-        <h2 className="font-display text-4xl tracking-[-0.03em] text-foreground">截图翻译</h2>
-        <p className="mt-3 max-w-[58ch] text-sm leading-6 text-muted-foreground">
+        <h2 className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">截图翻译</h2>
+        <p className="mt-1 max-w-[58ch] text-sm leading-6 text-muted-foreground">
           按 F2 或点击「开始截图」，框选屏幕区域后自动识别并翻译。
         </p>
       </div>
@@ -31,11 +31,10 @@ export default function Header({ onScreenshot }: HeaderProps): React.JSX.Element
           </kbd>
         </div>
         <Button
-          className="h-11 cursor-pointer rounded-xl px-5 shadow-[0_10px_24px_-16px_var(--action-shadow)] active:translate-y-px"
+          className="h-10 cursor-pointer px-4"
           onClick={onScreenshot}
-          size="lg"
         >
-          <ScanLine size={18} />
+          <ScanLine size={17} />
           开始截图
         </Button>
       </div>

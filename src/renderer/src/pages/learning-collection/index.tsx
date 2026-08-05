@@ -87,11 +87,11 @@ export default function LearningCollectionPage(): React.JSX.Element {
   const hasActiveFilter = Boolean(query.trim()) || kindFilter !== 'all'
 
   return (
-    <div className="mx-auto min-h-full w-full max-w-5xl px-6 py-8 lg:px-10 lg:py-10">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mx-auto min-h-full w-full max-w-[1180px] px-5 py-5 lg:px-7 lg:py-6">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-4xl tracking-[-0.03em] text-foreground">学习收藏</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">学习收藏</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
             收拢值得再次理解和朗读的单词与句子。
           </p>
         </div>
@@ -100,38 +100,38 @@ export default function LearningCollectionPage(): React.JSX.Element {
         </p>
       </header>
 
-      <section className="lab-panel mt-7 flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
-        <label className="relative min-w-0 flex-1">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            size={15}
-          />
-          <span className="sr-only">搜索学习收藏</span>
-          <Input
-            className="pl-9"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜索原文或译文"
-            value={query}
-          />
-        </label>
-        <div className="flex items-center gap-1" aria-label="收藏类型筛选">
-          {FILTER_OPTIONS.map((option) => (
-            <Button
-              aria-pressed={kindFilter === option.value}
-              className="cursor-pointer"
-              key={option.value}
-              onClick={() => setKindFilter(option.value)}
-              size="sm"
-              variant={kindFilter === option.value ? 'secondary' : 'ghost'}
-            >
-              {option.label}
-            </Button>
-          ))}
+      <section className="lab-panel mt-5 overflow-hidden" aria-busy={isLoading}>
+        <div className="flex flex-col gap-3 border-b border-border bg-muted/30 p-3 sm:flex-row sm:items-center">
+          <label className="relative min-w-0 flex-1">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
+              size={15}
+            />
+            <span className="sr-only">搜索学习收藏</span>
+            <Input
+              className="pl-9"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="搜索原文或译文"
+              value={query}
+            />
+          </label>
+          <div className="flex items-center gap-1" aria-label="收藏类型筛选">
+            {FILTER_OPTIONS.map((option) => (
+              <Button
+                aria-pressed={kindFilter === option.value}
+                className="cursor-pointer"
+                key={option.value}
+                onClick={() => setKindFilter(option.value)}
+                size="sm"
+                variant={kindFilter === option.value ? 'secondary' : 'ghost'}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
         </div>
-      </section>
 
-      <section className="lab-panel mt-4 overflow-hidden" aria-busy={isLoading}>
         {isLoading && (
           <div className="flex min-h-56 items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="animate-spin text-primary" size={17} />
@@ -152,10 +152,12 @@ export default function LearningCollectionPage(): React.JSX.Element {
 
         {!isLoading && !errorMessage && items.length === 0 && (
           <div className="flex min-h-56 flex-col items-center justify-center px-6 text-center">
-            <div className="flex size-11 items-center justify-center rounded-xl bg-accent text-primary">
-              {hasActiveFilter ? <Search size={19} /> : <Bookmark size={19} />}
-            </div>
-            <p className="mt-4 text-sm font-medium">
+            {hasActiveFilter ? (
+              <Search className="text-muted-foreground" size={19} />
+            ) : (
+              <Bookmark className="text-muted-foreground" size={19} />
+            )}
+            <p className="mt-3 text-sm font-medium">
               {hasActiveFilter ? '没有匹配的收藏' : '还没有学习收藏'}
             </p>
             <p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">
@@ -182,10 +184,10 @@ export default function LearningCollectionPage(): React.JSX.Element {
                 <article key={item.id}>
                   <div className="group px-5 py-4 transition-colors hover:bg-accent/20">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
+                      <span className="rounded-md bg-muted px-2 py-1 text-[11px] font-medium text-foreground">
                         {KIND_LABELS[item.kind]}
                       </span>
-                      <span className="measurement-label">{SOURCE_LABELS[item.source]}</span>
+                      <span className="text-xs text-muted-foreground">{SOURCE_LABELS[item.source]}</span>
                       <time className="ml-auto text-xs text-muted-foreground">
                         {formatLearningTime(item.updatedAt)}
                       </time>

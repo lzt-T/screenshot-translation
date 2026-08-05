@@ -332,7 +332,7 @@ export default function SelectionTranslator({
         <Button
           aria-label="翻译选中的文本"
           className={cn(
-            'fixed z-[70] h-9 -translate-x-1/2 cursor-pointer rounded-lg px-3 shadow-[0_10px_24px_-14px_var(--action-shadow)]',
+            'fixed z-[70] h-9 -translate-x-1/2 cursor-pointer rounded-lg px-3',
             selectionCandidate.isBelowSelection ? '' : '-translate-y-full'
           )}
           onClick={handleTranslateClick}
@@ -354,13 +354,12 @@ export default function SelectionTranslator({
           <DialogPrimitive.Content
             aria-describedby="selection-translation-description"
             className={cn(
-              'fixed inset-y-0 right-0 z-[60] flex w-[min(360px,calc(100vw-16px))] flex-col bg-card text-card-foreground shadow-[-18px_0_44px_-30px_var(--foreground)] outline-none',
-              'data-[state=open]:animate-in data-[state=open]:slide-in-from-right-5 data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right-5 duration-200'
+              'fixed inset-y-0 right-0 z-[60] flex w-[min(360px,calc(100vw-16px))] flex-col border-l border-border bg-card text-card-foreground shadow-[-14px_0_36px_-32px_var(--foreground)] outline-none'
             )}
             onCloseAutoFocus={(event) => event.preventDefault()}
             onOpenAutoFocus={(event) => event.preventDefault()}
           >
-            <header className="flex min-h-16 items-center justify-between border-b border-border px-5">
+            <header className="flex min-h-14 items-center justify-between border-b border-border px-5">
               <div>
                 <DialogPrimitive.Title className="text-base font-semibold">
                   划词翻译
@@ -384,7 +383,7 @@ export default function SelectionTranslator({
             <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
               <section className="border-b border-border px-5 py-5">
                 <div className="flex min-h-8 items-center justify-between gap-3">
-                  <p className="measurement-label">选中原文</p>
+                  <p className="text-sm font-medium text-foreground">选中原文</p>
                   {sourceText && (
                     <Button
                       aria-label={isSpeakingSource ? '停止朗读原文' : '朗读原文'}
@@ -406,7 +405,7 @@ export default function SelectionTranslator({
 
               <section className="px-5 py-5" aria-live="polite">
                 <div className="flex min-h-8 items-center justify-between gap-3">
-                  <p className="measurement-label">直译结果</p>
+                  <p className="text-sm font-medium text-foreground">直译结果</p>
                   {translatedText && !isLoading && (
                     <div className="flex items-center gap-1">
                       <Button
@@ -473,7 +472,7 @@ export default function SelectionTranslator({
 
                 {translationResult && !isLoading && !errorMessage && (
                   <div className="pt-3">
-                    <div className="mb-3 flex items-center gap-2 text-xs text-primary">
+                    <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
                       <Check size={14} />
                       翻译完成
                     </div>

@@ -135,7 +135,7 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
   return (
     <section
       aria-labelledby="model-config-title"
-      className={`space-y-4 rounded-xl border border-transparent transition-[background-color,border-color,padding] duration-500 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/45 ${isHighlighted ? 'border-primary/60 bg-primary/6 p-3' : ''}`}
+      className={`space-y-3 rounded-lg border border-transparent transition-[background-color,border-color,padding] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 ${isHighlighted ? 'border-primary/45 bg-primary/6 p-3' : ''}`}
       id="model-config-section"
       ref={sectionRef}
       tabIndex={-1}
@@ -143,7 +143,7 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2
-            className="text-lg font-semibold tracking-[-0.01em] text-foreground"
+            className="text-base font-semibold text-foreground"
             id="model-config-title"
           >
             模型配置
@@ -163,11 +163,12 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
             onClick={() => setIsResetDialogOpen(true)}
             type="button"
             variant="outline"
+            size="sm"
           >
             <RotateCcw size={14} />
             重置配置
           </Button>
-          <Button className="cursor-pointer" onClick={handleAddModel} type="button">
+          <Button className="cursor-pointer" onClick={handleAddModel} size="sm" type="button">
             <Plus size={14} />
             新增自定义模型
           </Button>
@@ -178,7 +179,7 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
         Gemini 模型将直接连接 Google；其他模型请填写 API 根地址。
       </p>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {models.map((model) => (
           <ModelConfigCard
             isActive={model.id === activeModelId}

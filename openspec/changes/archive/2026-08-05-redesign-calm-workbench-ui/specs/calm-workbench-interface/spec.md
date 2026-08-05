@@ -1,0 +1,90 @@
+## Purpose
+
+为 Bai Ze 的主窗口、核心学习页面和临时翻译窗口提供一致、安静且适合高频桌面操作的视觉与交互契约，同时保持现有功能入口和用户工作流稳定。
+
+## ADDED Requirements
+
+### Requirement: Cohesive theme modes
+系统 SHALL 提供浅色、深色和跟随系统三种主题模式，并在同一主题下为应用外壳、内容工作面、弹出内容和临时窗口保持一致的视觉层级。
+
+#### Scenario: User selects a theme
+- **WHEN** 用户在设置中选择浅色、深色或跟随系统主题
+- **THEN** 所有可见的渲染界面使用对应主题，并在应用重启后保留该选择
+
+#### Scenario: System theme changes
+- **WHEN** 用户选择跟随系统且操作系统主题发生变化
+- **THEN** 所有正在显示的应用界面更新为匹配的主题，不出现混合主题区域
+
+### Requirement: Restrained semantic emphasis
+系统 SHALL 使用单一青石蓝强调色表达主操作、当前选择和键盘焦点，并 SHALL 通过中性色层级表达普通内容、次要操作和非关键状态。
+
+#### Scenario: Primary and secondary actions coexist
+- **WHEN** 页面同时显示主操作与次要操作
+- **THEN** 主操作具有唯一的高强调外观，次要操作不会使用相同的实色强调重量
+
+#### Scenario: Semantic error is displayed
+- **WHEN** 页面需要展示错误或破坏性操作
+- **THEN** 系统使用独立的语义错误样式，且不会把错误误表示为品牌强调状态
+
+### Requirement: Compact application shell
+系统 SHALL 使用稳定的侧栏导航和紧凑的页面标题区呈现现有导航入口，并 SHALL 仅使用一种主要视觉指示表达当前页面。
+
+#### Scenario: User navigates between pages
+- **WHEN** 用户进入翻译台、口语对话、学习收藏、设置或关于页面
+- **THEN** 对应导航项清晰显示为当前项，其他导航项保持低强调且所有现有标签与目标路由不变
+
+#### Scenario: Main window has limited width
+- **WHEN** 主窗口宽度不足以维持完整桌面布局
+- **THEN** 应用外壳和页面内容保持可操作，不产生被裁切的主要操作或不可访问的导航入口
+
+### Requirement: Unified translation workspace
+系统 SHALL 将原文输入和译文结果呈现为一个连续的翻译工作面，同时保留截图、文本输入、翻译、复制、朗读、收藏、重试和句子分析入口。
+
+#### Scenario: Translation workspace is idle
+- **WHEN** 用户尚未输入文本且没有翻译结果
+- **THEN** 工作面清晰区分原文和译文区域，并使用简洁说明呈现空状态而不与主操作竞争
+
+#### Scenario: Translation completes
+- **WHEN** 文本翻译成功并返回一个或多个结果
+- **THEN** 译文区域在原工作面内更新结果，并保留每项结果对应的既有操作能力
+
+#### Scenario: Translation fails
+- **WHEN** 翻译请求失败
+- **THEN** 译文区域显示可读的上下文错误和现有重试入口，原文内容保持不变
+
+### Requirement: Consistent core page workspaces
+系统 SHALL 在口语对话、学习收藏、设置和关于页面中使用一致的工具栏、内容表面、列表、空状态和反馈层级，同时保留各页面现有功能与信息架构。
+
+#### Scenario: User opens conversation workspace
+- **WHEN** 用户进入口语对话页面
+- **THEN** 会话控制与对话记录具有清晰的主次关系，开始、暂停、继续和结束对话的能力保持可用
+
+#### Scenario: User browses learning collection
+- **WHEN** 用户搜索、筛选或展开学习收藏条目
+- **THEN** 搜索、筛选、列表和详情保持在连续内容层级中，现有收藏操作保持可用
+
+#### Scenario: User changes a setting
+- **WHEN** 用户浏览常规设置、外观设置或模型配置
+- **THEN** 设置项以紧凑且可扫描的分组呈现，字段名称、字段顺序和保存行为保持不变
+
+### Requirement: Accessible interaction feedback
+系统 SHALL 为交互控件提供可见的悬停、按下、禁用和键盘焦点状态，并 SHALL 在用户偏好减少动态效果时移除非必要动画。
+
+#### Scenario: Keyboard user moves focus
+- **WHEN** 用户通过键盘在导航、按钮、输入和选择控件之间移动
+- **THEN** 当前焦点具有清晰且不只依赖颜色差异的可见指示
+
+#### Scenario: Reduced motion is enabled
+- **WHEN** 操作系统启用减少动态效果偏好
+- **THEN** 界面关闭非必要的进入、移动和循环动画，同时保留即时状态反馈
+
+### Requirement: Cross-window visual continuity
+系统 SHALL 让截图选区和翻译结果浮层继承主窗口的语义强调色、文字层级和交互反馈，同时维持完成各自任务所需的遮罩和透明表面。
+
+#### Scenario: User starts screenshot selection
+- **WHEN** 用户从主窗口启动截图
+- **THEN** 截图选区使用与当前主题一致的焦点和操作语言，选区边界在目标屏幕内容上保持清晰可辨
+
+#### Scenario: Translation overlay appears
+- **WHEN** 截图翻译结果浮层显示
+- **THEN** 浮层内容、操作和焦点状态与主窗口视觉语义一致，并在透明背景上保持可读
