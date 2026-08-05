@@ -45,7 +45,7 @@ export default function HomePage(): React.JSX.Element {
       <Header onScreenshot={onScreenshot} />
 
       <section className="lab-panel mt-5 grid min-h-0 flex-1 grid-cols-1 overflow-hidden min-[900px]:grid-cols-[minmax(250px,0.72fr)_minmax(360px,1fr)] lg:min-h-[calc(100dvh-8.75rem)]">
-        <div className="flex min-h-72 flex-col overflow-hidden border-b border-border transition-[box-shadow] focus-within:shadow-[inset_0_0_0_2px_color-mix(in_oklab,var(--ring)_45%,transparent)] min-[900px]:min-h-0 min-[900px]:border-r min-[900px]:border-b-0">
+        <div className="flex min-h-72 flex-col overflow-hidden border-b border-border min-[900px]:min-h-0 min-[900px]:border-r min-[900px]:border-b-0">
           <div className="flex h-12 items-center justify-between border-b border-border px-4">
             <span className="text-sm font-medium text-foreground">原文</span>
             <div className="flex items-center gap-1">
