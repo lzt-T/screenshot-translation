@@ -340,11 +340,6 @@ export default function useConversation() {
     void requestConversationReply(failedRequestRef.current, sessionIdRef.current)
   }, [ensureModelReady, requestConversationReply])
 
-  /** 页面挂载时后台预加载本地语音模型 */
-  useEffect(() => {
-    window.electron.ipcRenderer.send(SendEnum.SPEECH_PRELOAD)
-  }, [])
-
   /** 注册实时识别结果监听 */
   useEffect(() => {
     /** 处理识别就绪 */

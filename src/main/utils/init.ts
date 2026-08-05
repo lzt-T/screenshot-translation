@@ -12,8 +12,10 @@ import { registerSpeechIpcEvents } from '../ipc/speech'
 import { registerConversationIpcEvents } from '../ipc/conversation'
 import { registerRecognitionIpcEvents } from '../ipc/recognition'
 import { registerLearningIpcEvents } from '../ipc/learning'
+import { speechService } from '../speech/speech-service'
 
-export const init = () => {
+/** 初始化主进程快捷键、IPC 事件和后台服务 */
+export const init = (): void => {
   /**
    * 注册快捷键
    */
@@ -41,6 +43,9 @@ export const init = () => {
   registerConversationIpcEvents()
   registerRecognitionIpcEvents()
   registerLearningIpcEvents()
+
+  // 预热共享 TTS Worker 和模型，降低所有朗读入口的首次等待
+  speechService.preload()
 
   // 预热 OCR Worker，降低首次截图耗时
   void initializeOcrWorker().catch((error) => {

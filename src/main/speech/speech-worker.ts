@@ -39,6 +39,8 @@ const PUNCTUATION_NORMALIZATION_MAP: Readonly<Record<string, string>> = {
 }
 // 为界面与系统任务预留两个线程，并限制 TTS 最多使用四个线程
 const TTS_THREAD_COUNT = Math.min(4, Math.max(1, availableParallelism() - 2))
+// 音频设备冷启动前的静音缓冲时长
+const SPEECH_LEADING_SILENCE_SECONDS = 0.25
 // 当前有效请求编号
 let activeRequestId: number | null = null
 // 已取消的请求编号
@@ -134,8 +136,14 @@ function createWaveBuffer(samples: Float32Array, sampleRate: number): ArrayBuffe
   const headerLength = 44
   // 单个采样字节数
   const bytesPerSample = 2
+  // 按当前采样率计算的前置静音采样数
+  const leadingSilenceSampleCount = Math.round(sampleRate * SPEECH_LEADING_SILENCE_SECONDS)
+  // 包含前置静音的音频总采样数
+  const totalSampleCount = leadingSilenceSampleCount + samples.length
+  // WAV 音频数据区字节数
+  const audioDataLength = totalSampleCount * bytesPerSample
   // WAV 数据缓冲区
-  const waveBuffer = new ArrayBuffer(headerLength + samples.length * bytesPerSample)
+  const waveBuffer = new ArrayBuffer(headerLength + audioDataLength)
   // WAV 数据视图
   const waveView = new DataView(waveBuffer)
 
@@ -164,14 +172,18 @@ function createWaveBuffer(samples: Float32Array, sampleRate: number): ArrayBuffe
   waveView.setUint16(32, bytesPerSample, true)
   waveView.setUint16(34, 16, true)
   writeAscii(36, 'data')
-  waveView.setUint32(40, samples.length * bytesPerSample, true)
+  waveView.setUint32(40, audioDataLength, true)
 
   samples.forEach((sample, index) => {
     // 限制后的采样值
     const normalizedSample = Math.max(-1, Math.min(1, sample))
     // 16 位整数采样
     const integerSample = normalizedSample < 0 ? normalizedSample * 0x8000 : normalizedSample * 0x7fff
-    waveView.setInt16(headerLength + index * bytesPerSample, integerSample, true)
+    waveView.setInt16(
+      headerLength + (leadingSilenceSampleCount + index) * bytesPerSample,
+      integerSample,
+      true
+    )
   })
 
   return waveBuffer
