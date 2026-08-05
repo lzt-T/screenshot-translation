@@ -1,6 +1,6 @@
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { ChatOpenAI } from '@langchain/openai'
-import { ZodError, type ZodType } from 'zod'
+import { ZodError, type ZodType, type ZodTypeDef } from 'zod'
 import { TranslationModelProfile } from '../../../type/model'
 import { isGeminiModel } from '../../../utils/modelProfiles'
 
@@ -166,7 +166,7 @@ class LangchainGateway {
   private async invokeWithSchema<TData>(
     client: LangchainRunnableClient,
     prompt: string,
-    schema: ZodType<TData>,
+    schema: ZodType<TData, ZodTypeDef, unknown>,
     method: StructuredOutputMethod
   ): Promise<TData> {
     // 当前模型请求中止信号
@@ -236,7 +236,7 @@ class LangchainGateway {
   public async invokeStructured<TData>(
     profile: TranslationModelProfile,
     prompt: string,
-    schema: ZodType<TData>,
+    schema: ZodType<TData, ZodTypeDef, unknown>,
     options: LlmStructuredInvokeOptions = {}
   ): Promise<LlmStructuredInvokeResult<TData>> {
     // 最后一次错误

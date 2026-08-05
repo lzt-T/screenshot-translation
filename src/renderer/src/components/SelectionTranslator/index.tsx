@@ -281,7 +281,7 @@ export default function SelectionTranslator({
     event.preventDefault()
   }
 
-  /** 监听选择完成、滚动与窗口变化 */
+  /** 监听选择完成、清除、滚动与窗口变化 */
   useEffect(() => {
     /** 读取并更新当前选区 */
     function updateCurrentSelection(): void {
@@ -290,8 +290,14 @@ export default function SelectionTranslator({
       setSelectionCandidate(rootElement ? getSelectionCandidate(rootElement) : null)
     }
 
-    /** 鼠标选择完成后读取选区 */
-    function handlePointerUp(): void {
+    /**
+     * 鼠标选择完成后读取选区
+     * @param event 指针释放事件
+     */
+    function handlePointerUp(event: PointerEvent): void {
+      if (isIgnoredSelectionNode(event.target as Node)) {
+        return
+      }
       updateCurrentSelection()
     }
 
@@ -304,6 +310,15 @@ export default function SelectionTranslator({
       updateCurrentSelection()
     }
 
+    /** 浏览器选区折叠后隐藏浮动按钮 */
+    function handleSelectionChange(): void {
+      // 浏览器当前选区
+      const selection = window.getSelection()
+      if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+        setSelectionCandidate(null)
+      }
+    }
+
     /** 页面滚动或缩放后隐藏已失效的位置 */
     function handleViewportChange(): void {
       setSelectionCandidate(null)
@@ -311,12 +326,14 @@ export default function SelectionTranslator({
 
     document.addEventListener('pointerup', handlePointerUp)
     document.addEventListener('keyup', handleKeyUp)
+    document.addEventListener('selectionchange', handleSelectionChange)
     document.addEventListener('scroll', handleViewportChange, true)
     window.addEventListener('resize', handleViewportChange)
 
     return () => {
       document.removeEventListener('pointerup', handlePointerUp)
       document.removeEventListener('keyup', handleKeyUp)
+      document.removeEventListener('selectionchange', handleSelectionChange)
       document.removeEventListener('scroll', handleViewportChange, true)
       window.removeEventListener('resize', handleViewportChange)
     }
@@ -333,7 +350,9 @@ export default function SelectionTranslator({
           aria-label="翻译选中的文本"
           className={cn(
             'fixed z-[70] h-9 -translate-x-1/2 cursor-pointer rounded-lg px-3',
-            selectionCandidate.isBelowSelection ? '' : '-translate-y-full'
+            selectionCandidate.isBelowSelection
+              ? 'active:translate-y-0'
+              : '-translate-y-full active:-translate-y-full'
           )}
           onClick={handleTranslateClick}
           onPointerDown={handleFloatingButtonPointerDown}
@@ -354,7 +373,7 @@ export default function SelectionTranslator({
           <DialogPrimitive.Content
             aria-describedby="selection-translation-description"
             className={cn(
-              'fixed inset-y-0 right-0 z-[60] flex w-[min(360px,calc(100vw-16px))] flex-col border-l border-border bg-card text-card-foreground shadow-[-14px_0_36px_-32px_var(--foreground)] outline-none'
+              'fixed inset-y-0 right-0 z-[60] flex w-[min(360px,calc(100vw-16px))] flex-col border-l border-border bg-card text-card-foreground shadow-[-14px_0_36px_-32px_var(--foreground)] outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=open]:duration-200 data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=closed]:duration-150 motion-reduce:animate-none'
             )}
             onCloseAutoFocus={(event) => event.preventDefault()}
             onOpenAutoFocus={(event) => event.preventDefault()}

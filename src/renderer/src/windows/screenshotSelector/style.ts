@@ -14,8 +14,9 @@ export const FullScreenContainer = styled.div`
   height: 100dvh;
   overflow: hidden;
   z-index: 9998;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.01);
   cursor: crosshair;
+  touch-action: none;
   user-select: none;
 `
 

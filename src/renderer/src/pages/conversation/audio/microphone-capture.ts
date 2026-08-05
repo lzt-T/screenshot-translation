@@ -1,3 +1,5 @@
+import pcmCaptureProcessorUrl from './pcm-capture-processor.js?url&no-inline'
+
 /** 麦克风 PCM 数据回调 */
 export type AudioChunkHandler = (samples: Float32Array, sampleRate: number) => void
 
@@ -34,9 +36,7 @@ export class MicrophoneCapture {
     try {
       // 优先使用识别模型采样率的音频上下文
       const audioContext = new AudioContext({ sampleRate: 16000 })
-      // PCM Worklet 模块地址
-      const workletModuleUrl = new URL('./pcm-capture-processor.js', import.meta.url)
-      await audioContext.audioWorklet.addModule(workletModuleUrl)
+      await audioContext.audioWorklet.addModule(pcmCaptureProcessorUrl)
 
       // 麦克风音频源
       const sourceNode = audioContext.createMediaStreamSource(mediaStream)

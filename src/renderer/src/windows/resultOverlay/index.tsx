@@ -8,6 +8,7 @@ import {
   removeLearningItem,
   saveLearningItem
 } from '@renderer/services/learning-service'
+import type { OverlayMode } from './style'
 import { CopyButton, FooterContainer, OverlayContainer, TranslatedTextOverlay } from './style'
 
 /** 文本边界框 */
@@ -48,8 +49,17 @@ interface ResultData {
   msg?: string
 }
 
-/** 浮层原图显示模式 */
-type OverlayMode = 'show-original' | 'hide-original'
+// 每种原图显示模式的下一模式
+const NEXT_OVERLAY_MODE: Record<OverlayMode, OverlayMode> = {
+  'show-original': 'hide-original',
+  'hide-original': 'show-original'
+}
+
+// 每种原图显示模式的切换按钮文案
+const OVERLAY_MODE_BUTTON_LABELS: Record<OverlayMode, string> = {
+  'show-original': '隐藏原图',
+  'hide-original': '显示原图'
+}
 
 /**
  * 渲染原始截图翻译结果浮层
@@ -117,7 +127,7 @@ export default function ResultOverlay(): React.JSX.Element {
    * @returns {void} 无返回值
    */
   function toggleOverlayMode(): void {
-    setOverlayMode((mode) => (mode === 'show-original' ? 'hide-original' : 'show-original'))
+    setOverlayMode((mode) => NEXT_OVERLAY_MODE[mode])
   }
 
   /** 切换当前截图翻译的收藏状态 */
@@ -241,7 +251,7 @@ export default function ResultOverlay(): React.JSX.Element {
       ))}
       <FooterContainer>
         <CopyButton onClick={toggleOverlayMode} type="button">
-          {overlayMode === 'show-original' ? '隐藏原图' : '显示原图'}
+          {OVERLAY_MODE_BUTTON_LABELS[overlayMode]}
         </CopyButton>
         <CopyButton onClick={copyOriginalText} type="button">
           复制原文

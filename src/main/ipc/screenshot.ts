@@ -4,6 +4,7 @@ import { screenshotTranslationManager } from "../utils/screenshotTranslation"
 import { screenshotWindow } from "../windowClasses/screenshotWindow"
 import { resultWindow } from "../windowClasses/resultWindow"
 
+/** 注册截图相关的主进程事件 */
 export const registerScreenshotIpcEvents = () => {
 
   /** 开始截图 */
@@ -23,10 +24,7 @@ export const registerScreenshotIpcEvents = () => {
 
   /** 关闭截图窗口 */
   ipcMain.on(SendEnum.SCREENSHOT_CANCEL, () => {
-    if (screenshotWindow.window) {
-      screenshotWindow.window.close()
-      screenshotWindow.changeScreenshottingState(false)
-    }
+    screenshotWindow.cancelScreenshot()
   })
 
   /** 关闭结果窗口 */
@@ -34,10 +32,5 @@ export const registerScreenshotIpcEvents = () => {
     if (resultWindow) {
       resultWindow.closeWindow()
     }
-  })
-
-  /** 停止监听鼠标位置变化 */
-  ipcMain.on(SendEnum.START_SCREENSHOT, () => {
-    screenshotWindow.stopListenMousePositionChange()
   })
 }

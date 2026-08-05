@@ -9,20 +9,32 @@ interface Rect {
   height: number;
 }
 
+/** 空截图选区 */
+const EMPTY_SELECTION_RECT: Rect = { x: 0, y: 0, width: 0, height: 0 };
+
+/** 截图区域选择器 */
 const ScreenshotSelector: React.FC = () => {
+  // 是否正在绘制选区
   const [isDrawing, setIsDrawing] = useState(false);
-  const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [selectionRect, setSelectionRect] = useState<Rect>({ x: 0, y: 0, width: 0, height: 0 });
+  // 当前截图选区
+  const [selectionRect, setSelectionRect] = useState<Rect>(EMPTY_SELECTION_RECT);
+  // 当前截图窗口尺寸
   const [screenSize, setScreenSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   // 是否展示选区过小提示
   const [showSmallSelectionTip, setShowSmallSelectionTip] = useState(false);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  // 不触发渲染的实时绘制状态
+  const isDrawingRef = useRef(false);
+  // 本次绘制的起始坐标
+  const startPositionRef = useRef({ x: 0, y: 0 });
+  // 本次绘制的最新选区
+  const selectionRectRef = useRef<Rect>(EMPTY_SELECTION_RECT);
   // 选区过小提示定时器
   const smallTipTimerRef = useRef<number | null>(null);
 
   // 监听窗口大小变化
   useEffect(() => {
+    /** 同步截图窗口尺寸 */
     const handleResize = () => {
       setScreenSize({ width: window.innerWidth, height: window.innerHeight });
     };
@@ -31,41 +43,66 @@ const ScreenshotSelector: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 鼠标按下，开始绘制
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    window.electron.ipcRenderer.send(SendEnum.START_SCREENSHOT)
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-    console.log('[ScreenshotSelector] Mouse down at:', { clientX, clientY });
+  /** 重置当前绘制状态 */
+  const resetSelection = useCallback(() => {
+    isDrawingRef.current = false;
+    selectionRectRef.current = EMPTY_SELECTION_RECT;
+    setIsDrawing(false);
+    setSelectionRect(EMPTY_SELECTION_RECT);
+  }, []);
+
+  /** 捕获指针并开始绘制 */
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    // 本次绘制的起始坐标
+    const startPosition = { x: event.clientX, y: event.clientY };
+    // 本次绘制的初始选区
+    const initialRect = { ...startPosition, width: 0, height: 0 };
+    isDrawingRef.current = true;
+    startPositionRef.current = startPosition;
+    selectionRectRef.current = initialRect;
     setIsDrawing(true);
     setShowSmallSelectionTip(false);
-    setStartPos({ x: clientX, y: clientY });
-    setSelectionRect({ x: clientX, y: clientY, width: 0, height: 0 });
+    setSelectionRect(initialRect);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    console.log('[ScreenshotSelector] Pointer down at:', startPosition);
   };
 
-  // 鼠标移动，更新选区
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDrawing) return;
-    const currentX = e.clientX;
-    const currentY = e.clientY;
-    const width = Math.abs(currentX - startPos.x);
-    const height = Math.abs(currentY - startPos.y);
-    const left = Math.min(currentX, startPos.x);
-    const top = Math.min(currentY, startPos.y);
-    setSelectionRect({ x: left, y: top, width, height });
-  }, [isDrawing, startPos]);
+  /** 使用已捕获的指针更新选区 */
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDrawingRef.current) return;
+    // 本次绘制的起始坐标
+    const startPosition = startPositionRef.current;
+    // 当前指针横坐标
+    const currentX = event.clientX;
+    // 当前指针纵坐标
+    const currentY = event.clientY;
+    // 当前最新选区
+    const nextRect = {
+      x: Math.min(currentX, startPosition.x),
+      y: Math.min(currentY, startPosition.y),
+      width: Math.abs(currentX - startPosition.x),
+      height: Math.abs(currentY - startPosition.y)
+    };
+    selectionRectRef.current = nextRect;
+    setSelectionRect(nextRect);
+  };
 
-  // 鼠标松开，完成绘制
-  const handleMouseUp = useCallback(() => {
-    if (!isDrawing) return;
-    console.log('[ScreenshotSelector] Mouse up');
+  /** 释放已捕获的指针并完成绘制 */
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDrawingRef.current) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    console.log('[ScreenshotSelector] Pointer up');
+    isDrawingRef.current = false;
     setIsDrawing(false);
 
+    // 指针释放时的最终选区
     const finalRect = {
-        x: selectionRect.x,
-        y: selectionRect.y,
-        width: Math.max(0, selectionRect.width),
-        height: Math.max(0, selectionRect.height)
+      ...selectionRectRef.current,
+      width: Math.max(0, selectionRectRef.current.width),
+      height: Math.max(0, selectionRectRef.current.height)
     };
 
     if (finalRect.width > 5 && finalRect.height > 5) {
@@ -81,47 +118,37 @@ const ScreenshotSelector: React.FC = () => {
         setShowSmallSelectionTip(false);
       }, 1400);
     }
-    setSelectionRect({ x: 0, y: 0, width: 0, height: 0 }); // 重置选区
+    selectionRectRef.current = EMPTY_SELECTION_RECT;
+    setSelectionRect(EMPTY_SELECTION_RECT);
+  };
 
-  }, [isDrawing, selectionRect]);
+  /** 指针捕获意外取消时重置绘制 */
+  const handlePointerCancel = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    resetSelection();
+  };
 
   // 处理 Esc 键取消
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       console.log('[ScreenshotSelector] ESC pressed, cancelling screenshot');
-      if (isDrawing) {
-          setIsDrawing(false);
-          setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
-      }
+      resetSelection();
       console.log('取消截图');
 
       window.electron.ipcRenderer.send(SendEnum.SCREENSHOT_CANCEL)
     }
-  }, [isDrawing]);
+  }, [resetSelection]);
 
-  // 添加和移除全局事件监听器
+  // 添加和移除键盘监听器
   useEffect(() => {
-    const wasDrawing = isDrawing;
-    const upListener = handleMouseUp;
-    const moveListener = handleMouseMove;
-
-    if (wasDrawing) {
-      // 在 window 上监听以捕获容器外的事件
-      window.addEventListener('mousemove', moveListener);
-      window.addEventListener('mouseup', upListener);
-    }
-    // 键盘监听器始终激活
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      // 清理监听器
-      if (wasDrawing) {
-        window.removeEventListener('mousemove', moveListener);
-        window.removeEventListener('mouseup', upListener);
-      }
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isDrawing, handleMouseMove, handleMouseUp, handleKeyDown]);
+  }, [handleKeyDown]);
 
   // 卸载时清理定时器
   useEffect(() => {
@@ -140,7 +167,9 @@ const ScreenshotSelector: React.FC = () => {
     const BOX_WIDTH = 110;
     // 提示框预估高度
     const BOX_HEIGHT = 30;
+    // 提示框横坐标
     let left = selectionRect.x + selectionRect.width + PADDING;
+    // 提示框纵坐标
     let top = selectionRect.y + selectionRect.height + PADDING;
 
     if (left + BOX_WIDTH > screenSize.width) {
@@ -158,7 +187,9 @@ const ScreenshotSelector: React.FC = () => {
 
   // 渲染覆盖层
   const renderOverlay = () => {
+    // 当前截图窗口尺寸
     const { width: screenW, height: screenH } = screenSize;
+    // 当前截图选区尺寸
     const { x, y, width, height } = selectionRect;
     // 未绘制或选区无效时，显示完整覆盖层
     if (!isDrawing || width <= 0 || height <= 0) {
@@ -166,8 +197,11 @@ const ScreenshotSelector: React.FC = () => {
     }
     // 计算选区周围四个矩形块的尺寸
     const topRect =    { x: 0,    y: 0,           width: screenW,         height: Math.max(0, y) };
+    // 选区下方遮罩
     const bottomRect = { x: 0,    y: y + height,  width: screenW,         height: Math.max(0, screenH - (y + height)) };
+    // 选区左侧遮罩
     const leftRect =   { x: 0,    y: y,           width: Math.max(0, x),               height: height };
+    // 选区右侧遮罩
     const rightRect =  { x: x + width, y: y,      width: Math.max(0, screenW - (x + width)), height: height };
     return (
       <>
@@ -180,8 +214,12 @@ const ScreenshotSelector: React.FC = () => {
   };
 
   return (
-    // 容器捕获初始 mousedown
-    <FullScreenContainer ref={containerRef} onMouseDown={handleMouseDown}>
+    <FullScreenContainer
+      onPointerCancel={handlePointerCancel}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+    >
       <SizeInfo style={{ left: '50%', top: '18px', transform: 'translateX(-50%)' }}>
         拖拽选择区域 · 松开完成 · Esc 取消
       </SizeInfo>

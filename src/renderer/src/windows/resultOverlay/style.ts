@@ -4,10 +4,19 @@ import { getConfig } from '@src/utils/config'
 // 翻译浮层底栏高度
 const { RESULT_WINDOW_BAR_HEIGHT } = getConfig()
 
+/** 原图显示模式 */
+export type OverlayMode = 'show-original' | 'hide-original'
+
+// 各原图显示模式的结果区域背景
+const OVERLAY_BACKGROUND_COLORS: Record<OverlayMode, string> = {
+  'show-original': 'var(--floating-surface)',
+  'hide-original': 'var(--floating-surface-strong)'
+}
+
 /** 翻译浮层容器属性 */
 interface OverlayContainerProps {
   /* 原图显示模式 */
-  $overlayMode: 'show-original' | 'hide-original'
+  $overlayMode: OverlayMode
 }
 
 /** 翻译浮层容器 */
@@ -20,10 +29,7 @@ export const OverlayContainer = styled.div<OverlayContainerProps>`
   padding: 5px;
   border: 1px solid var(--floating-border);
   border-radius: 6px;
-  background-color: ${({ $overlayMode }) =>
-    $overlayMode === 'hide-original'
-      ? 'var(--floating-surface-strong)'
-      : 'var(--floating-surface)'};
+  background-color: ${({ $overlayMode }) => OVERLAY_BACKGROUND_COLORS[$overlayMode]};
   cursor: pointer;
   user-select: none;
   -webkit-app-region: drag;
@@ -54,7 +60,8 @@ export const FooterContainer = styled.div`
   height: ${RESULT_WINDOW_BAR_HEIGHT}px;
   gap: 4px;
   padding: 0 4px;
-  background: none;
+  border-radius: 6px 6px 0 0;
+  background: var(--floating-surface-strong);
   -webkit-app-region: no-drag;
 `
 

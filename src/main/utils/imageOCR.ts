@@ -81,6 +81,7 @@ function getFirstChar(text: string): string {
  * @returns {string} 尾字符
  */
 function getLastChar(text: string): string {
+  // 去除首尾空白后的文本
   const normalizedText = (text || '').trim()
   return normalizedText.charAt(normalizedText.length - 1)
 }
@@ -168,6 +169,7 @@ function createInitialDebugInfo(): MergeDebugInfo {
  */
 function sortTextBlocks(textBlocks: TextBlock[]): TextBlock[] {
   return [...textBlocks].sort((a, b) => {
+    // 两个文本块的垂直距离
     const yGap = a.boundingBox.y - b.boundingBox.y
     if (Math.abs(yGap) > 6) {
       return yGap
@@ -343,9 +345,13 @@ function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
   const verticalGap =
     nextBlock.boundingBox.y - (currentBlock.boundingBox.y + currentBlock.boundingBox.height)
 
+  // 当前文本块左边界
   const currentLeft = currentBlock.boundingBox.x
+  // 当前文本块右边界
   const currentRight = currentBlock.boundingBox.x + currentBlock.boundingBox.width
+  // 候选文本块左边界
   const nextLeft = nextBlock.boundingBox.x
+  // 候选文本块右边界
   const nextRight = nextBlock.boundingBox.x + nextBlock.boundingBox.width
 
   // 水平重叠判断（考虑容错）
@@ -355,10 +361,12 @@ function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
 
   // 当前聚合块的平均行高估算
   const currentSourceCount = Math.max(currentBlock.mergeDebug?.sourceCount || 1, 1)
+  // 当前聚合块的原始高度总和
   const sumSourceHeights = Math.max(
     currentBlock.mergeDebug?.sumSourceHeights || currentBlock.boundingBox.height,
     1
   )
+  // 当前聚合块的估算行高
   const estimatedCurrentLineHeight = sumSourceHeights / currentSourceCount
   // 候选块高度
   const nextBlockHeight = Math.max(nextBlock.boundingBox.height, 1)
@@ -388,9 +396,13 @@ function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
   const horizontalGap =
     nextBlock.boundingBox.x - (currentBlock.boundingBox.x + currentBlock.boundingBox.width)
 
+  // 当前文本块上边界
   const currentTop = currentBlock.boundingBox.y
+  // 当前文本块下边界
   const currentBottom = currentBlock.boundingBox.y + currentBlock.boundingBox.height
+  // 候选文本块上边界
   const nextTop = nextBlock.boundingBox.y
+  // 候选文本块下边界
   const nextBottom = nextBlock.boundingBox.y + nextBlock.boundingBox.height
 
   // 垂直重叠判断（考虑容错）
@@ -406,12 +418,13 @@ function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
     overlapsVertically
 
   if (!verticalCanMerge && !horizontalCanMerge) {
-    return { canMerge: false, mergeAxis: null as const }
+    return { canMerge: false, mergeAxis: null }
   }
 
   if (verticalCanMerge && horizontalCanMerge) {
     // 同时满足时用位移方向做决策，减少同一行文本被判成竖向合并
     const deltaX = Math.abs(nextBlock.boundingBox.x - currentBlock.boundingBox.x)
+    // 两个文本块的垂直位移
     const deltaY = Math.abs(nextBlock.boundingBox.y - currentBlock.boundingBox.y)
     return {
       canMerge: true,
@@ -434,9 +447,11 @@ function canMergeTextBlock(currentBlock: TextBlock, nextBlock: TextBlock) {
 function mergeBoundingBoxes(firstBox: BoundingBox, secondBox: BoundingBox): BoundingBox {
   // 并集左上角
   const mergedX = Math.min(firstBox.x, secondBox.x)
+  // 并集上边界
   const mergedY = Math.min(firstBox.y, secondBox.y)
   // 并集右下角
   const mergedRight = Math.max(firstBox.x + firstBox.width, secondBox.x + secondBox.width)
+  // 并集下边界
   const mergedBottom = Math.max(firstBox.y + firstBox.height, secondBox.y + secondBox.height)
 
   return {
@@ -563,6 +578,7 @@ function mergeAdjacentTextBlocks(textBlocks: TextBlock[]): TextBlock[] {
 
   for (let i = 0; i < normalizedBlocks.length; i++) {
     if (visited[i]) continue
+    // 当前合并簇的种子文本块
     const seedBlock = normalizedBlocks[i]
     if (!seedBlock.boundingBox || seedBlock.boundingBox.height <= 0) continue
 
@@ -581,6 +597,7 @@ function mergeAdjacentTextBlocks(textBlocks: TextBlock[]): TextBlock[] {
 
       for (let j = 0; j < normalizedBlocks.length; j++) {
         if (visited[j]) continue
+        // 当前待判断的候选文本块
         const candidateBlock = normalizedBlocks[j]
         if (!candidateBlock.boundingBox || candidateBlock.boundingBox.height <= 0) continue
 
@@ -590,10 +607,12 @@ function mergeAdjacentTextBlocks(textBlocks: TextBlock[]): TextBlock[] {
 
         // 融合文本与包围盒
         const mergedText = joinTextByLanguage(clusterBlock.text || '', candidateBlock.text || '')
+        // 合并后的包围盒
         const mergedBoundingBox = mergeBoundingBoxes(
           clusterBlock.boundingBox,
           candidateBlock.boundingBox
         )
+        // 合并后的调试信息
         const mergedDebug = mergeDebugInfo(
           clusterBlock.mergeDebug || createInitialDebugInfo(),
           candidateBlock.mergeDebug || createInitialDebugInfo(),

@@ -6,6 +6,7 @@ import { screenshotWindow } from './screenshotWindow'
 import { getConfig } from '../../utils/config'
 import { SendEnum } from '../../type/ipc-constants'
 
+// 结果窗口尺寸配置
 const { MIN_RESULT_WINDOW_WIDTH, MIN_RESULT_WINDOW_HEIGHT,
   RESULT_WINDOW_BAR_HEIGHT,
 } = getConfig()
@@ -14,9 +15,12 @@ export class ResultWindow {
   public window: BrowserWindow | null = null
   public resultData: any = null
 
+  /** 创建结果窗口管理器 */
   constructor() { }
 
+  /** 创建并加载截图翻译结果窗口 */
   public createWindow(): void {
+    // 当前截图所在显示器
     const display = screenshotWindow.currentDisplay;
     // 结果窗口高度：选区高度 + 底栏高度
     const resultWindowHeight = Math.round((screenshotWindow.lastBounds?.height || 0) + RESULT_WINDOW_BAR_HEIGHT)
@@ -26,12 +30,14 @@ export class ResultWindow {
       width: Math.max(Math.round(screenshotWindow.lastBounds?.width || 0), MIN_RESULT_WINDOW_WIDTH),
       height: Math.max(resultWindowHeight, MIN_RESULT_WINDOW_HEIGHT),
       frame: false,
+      transparent: true,
       backgroundColor: '#00000000',
       alwaysOnTop: true,
       resizable: false,
       movable: true,
       webPreferences: {
         contextIsolation: true,
+        sandbox: false,
         preload: join(__dirname, '../preload/index.js')
       }
     })
@@ -82,5 +88,6 @@ export class ResultWindow {
 
 }
 
+// 全局结果窗口管理器
 const resultWindow = new ResultWindow()
 export { resultWindow }

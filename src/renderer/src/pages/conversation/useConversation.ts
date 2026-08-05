@@ -317,8 +317,9 @@ export default function useConversation() {
     if (statusRef.current !== 'paused') {
       return
     }
+    updateStatus('initializing')
     void startListening(sessionIdRef.current)
-  }, [startListening])
+  }, [startListening, updateStatus])
 
   /** 结束当前对话并保留页面记录 */
   const endConversation = useCallback((): void => {

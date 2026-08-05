@@ -10,7 +10,7 @@ import {
   TranslateResponse
 } from "../../type/base"
 import { getTextType, getLanguageType, getTargetLanguage } from "../../utils/ai"
-import lemmatize = require('wink-lemmatizer')
+import lemmatize from 'wink-lemmatizer'
 
 // 英文单词提取规则
 const ENGLISH_WORD_PATTERN = /[a-z]+/gi

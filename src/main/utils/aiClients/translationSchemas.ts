@@ -138,7 +138,7 @@ export type EnglishChineseTranslation =
 /** 文本类型对应的英汉互译结构 */
 export const englishChineseTranslationSchemaMap: Record<
   TextType,
-  z.ZodType<EnglishChineseTranslation>
+  z.ZodType<EnglishChineseTranslation, z.ZodTypeDef, unknown>
 > = {
   [TextType.WORD]: wordEnglishChineseTranslationSchema,
   [TextType.SENTENCE]: sentenceEnglishChineseTranslationSchema
