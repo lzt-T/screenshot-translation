@@ -1,10 +1,8 @@
 import type { ConversationRequest } from '../type/conversation'
+import { MAX_RECENT_OPENING_COUNT } from './conversation-opening'
 
 // 模型可接收的最大上下文消息数
 const MAX_CONTEXT_MESSAGE_COUNT = 12
-
-// 提示词内最多保留的近期开场白数量
-const MAX_RECENT_OPENING_COUNT = 4
 
 /**
  * 构建英语口语教练提示词
@@ -29,9 +27,17 @@ export function getConversationPrompt(request: ConversationRequest): string {
   const recentOpeningsText = recentOpenings
     .map((opening, index) => `${index + 1}. ${opening}`)
     .join('\n')
+  // 当前开场使用的宽泛灵感
+  const openingInspiration = request.openingInspiration?.trim() || '自然选择一个轻量切入点'
+  // 重试时必须明确避开的冲突开场
+  const conflictingOpening = request.conflictingOpening?.trim() || ''
   // 新会话的开场要求
   const openingInstruction = request.isOpening
-    ? `这是新会话。像自然的聊天伙伴一样自主选择一个轻松、具体、容易回答的切入点，不必先寒暄，也不要按照固定话题类别轮换。避免询问用户今天过得怎么样，不要假设用户经历过某件事或具有某种偏好。以下是最近使用过的开场白，不要复用相同主题、句式或问题：\n${recentOpeningsText || '无'}\ncorrection 必须为 null。`
+    ? `这是新会话。围绕以下灵感自然发挥，不要把灵感说明直接复述给用户：${openingInspiration}
+生成简洁、自然、容易回答的开场，不要假设用户已经经历过某件事。
+以下是近期需要避开的开场，不要复用相同问题：
+${recentOpeningsText || '无'}
+${conflictingOpening ? `本次重试尤其不能复用：${conflictingOpening}\n` : ''}correction 必须为 null。`
     : ''
 
   return `

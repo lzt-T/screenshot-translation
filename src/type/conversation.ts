@@ -41,12 +41,35 @@ export interface ConversationMessage extends ConversationHistoryItem {
   correction?: ConversationCorrection | null
 }
 
+/** 新会话开场灵感键 */
+export type ConversationOpeningInspirationKey =
+  | 'choice'
+  | 'imagination'
+  | 'observation'
+  | 'recommendation'
+  | 'description'
+  | 'opinion'
+  | 'planning'
+  | 'problem-solving'
+
+/** 本地保存的新会话开场记录 */
+export interface ConversationOpeningRecord {
+  /** 最终采用的英文开场 */
+  text: string
+  /** 生成该开场时使用的灵感键 */
+  inspirationKey: ConversationOpeningInspirationKey
+}
+
 /** 口语教练请求 */
 export interface ConversationRequest {
   /** 是否请求生成开场白 */
   isOpening: boolean
+  /** 当前开场的宽泛生成灵感 */
+  openingInspiration?: string
   /** 最近使用过的开场白 */
   recentOpenings?: string[]
+  /** 当前重试必须避开的冲突开场 */
+  conflictingOpening?: string
   /** 最近的对话上下文 */
   history: ConversationHistoryItem[]
   /** 当前用户英文表达 */

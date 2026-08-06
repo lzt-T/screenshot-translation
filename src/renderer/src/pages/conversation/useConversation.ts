@@ -1,16 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import localForage from 'localforage'
 import { toast } from 'sonner'
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import type {
   ConversationCoachResponse,
+  ConversationHistoryItem,
   ConversationInputMode,
   ConversationMessage,
+  ConversationOpeningInspirationKey,
+  ConversationOpeningRecord,
   ConversationRequest,
   ConversationStatus,
   RecognitionWorkerResponse
 } from '@src/type/conversation'
 import { SendEnum } from '@src/type/ipc-constants'
+import {
+  CONVERSATION_OPENING_INSPIRATION_MAP,
+  isRepeatedConversationOpening,
+  MAX_RECENT_OPENING_COUNT,
+  parseConversationOpeningRecords,
+  RECENT_CONVERSATION_OPENINGS_STORAGE_KEY,
+  selectConversationOpeningInspiration
+} from '@src/utils/conversation-opening'
 import { speakText, stopSpeaking } from '@src/utils/speak'
 import { MicrophoneCapture } from './audio/microphone-capture'
 
@@ -18,14 +30,18 @@ import { MicrophoneCapture } from './audio/microphone-capture'
 interface FailedConversationRequest {
   /** 是否为开场请求 */
   isOpening: boolean
-  /** 当前请求需要避开的开场白 */
-  recentOpenings?: string[]
+  /** 当前开场使用的灵感键 */
+  openingInspirationKey?: ConversationOpeningInspirationKey
+  /** 当前请求参考的近期成功开场 */
+  recentOpeningRecords?: ConversationOpeningRecord[]
+  /** 当前重试必须避开的冲突开场 */
+  conflictingOpening?: string
+  /** 是否已经执行过开场去重重试 */
+  hasOpeningDeduplicationRetried?: boolean
   /** 当前用户表达 */
   userText?: string
 }
 
-// 页面内保留的最大开场白数量
-const MAX_RECENT_OPENING_COUNT = 4
 // 会话运行期间禁止切换输入模式的状态
 const ACTIVE_CONVERSATION_STATUSES = new Set<ConversationStatus>([
   'initializing',
@@ -60,6 +76,46 @@ function formatRecognizedEnglish(text: string): string {
   return sentenceCaseText.replace(/\bi(?=(?:['’](?:m|ve|ll|d))?\b)/gu, 'I')
 }
 
+/**
+ * 将页面请求信息转换为主进程口语教练请求
+ * @param requestInfo 当前页面请求信息
+ * @param history 最近的对话上下文
+ * @returns 主进程使用的结构化请求
+ */
+function createConversationRequest(
+  requestInfo: FailedConversationRequest,
+  history: ConversationHistoryItem[]
+): ConversationRequest {
+  // 当前开场使用的灵感指导
+  const openingInspiration = requestInfo.openingInspirationKey
+    ? CONVERSATION_OPENING_INSPIRATION_MAP[requestInfo.openingInspirationKey]
+    : undefined
+  // 需要提供给模型避让的近期开场文本
+  const recentOpenings = requestInfo.recentOpeningRecords?.map((record) => record.text)
+  return {
+    isOpening: requestInfo.isOpening,
+    openingInspiration,
+    recentOpenings,
+    conflictingOpening: requestInfo.conflictingOpening,
+    history,
+    userText: requestInfo.userText
+  }
+}
+
+/**
+ * 调用主进程生成单次口语教练回复
+ * @param request 结构化口语教练请求
+ * @returns AI 口语教练响应
+ */
+async function invokeConversationCoach(
+  request: ConversationRequest
+): Promise<ConversationCoachResponse> {
+  return (await window.electron.ipcRenderer.invoke(
+    SendEnum.CONVERSATION_REPLY,
+    request
+  )) as ConversationCoachResponse
+}
+
 /** 管理英语语音与打字对话流程 */
 export default function useConversation() {
   // 页面路由方法
@@ -90,8 +146,8 @@ export default function useConversation() {
   const microphoneCaptureRef = useRef<MicrophoneCapture | null>(null)
   // 等待重试的请求
   const failedRequestRef = useRef<FailedConversationRequest | null>(null)
-  // 当前页面最近成功生成的开场白
-  const recentOpeningsRef = useRef<string[]>([])
+  // 已读取的近期成功开场记录
+  const recentOpeningRecordsRef = useRef<ConversationOpeningRecord[] | null>(null)
 
   statusRef.current = status
   messagesRef.current = messages
@@ -180,6 +236,39 @@ export default function useConversation() {
     },
     []
   )
+
+  /** 读取并缓存近期成功开场记录 */
+  const getRecentOpeningRecords = useCallback(async (): Promise<ConversationOpeningRecord[]> => {
+    if (recentOpeningRecordsRef.current) {
+      return recentOpeningRecordsRef.current
+    }
+
+    try {
+      // 本地存储中的原始开场记录
+      const storedRecords = await localForage.getItem(
+        RECENT_CONVERSATION_OPENINGS_STORAGE_KEY
+      )
+      // 清理后的有效近期记录
+      const recentRecords = parseConversationOpeningRecords(storedRecords)
+      recentOpeningRecordsRef.current = recentRecords
+      return recentRecords
+    } catch {
+      recentOpeningRecordsRef.current = []
+      return []
+    }
+  }, [])
+
+  /** 将最终采用的开场追加到本地近期记录 */
+  const saveConversationOpeningRecord = useCallback((record: ConversationOpeningRecord): void => {
+    // 追加后按上限截取的近期记录
+    const recentRecords = [...(recentOpeningRecordsRef.current ?? []), record].slice(
+      -MAX_RECENT_OPENING_COUNT
+    )
+    recentOpeningRecordsRef.current = recentRecords
+    void localForage
+      .setItem(RECENT_CONVERSATION_OPENINGS_STORAGE_KEY, recentRecords)
+      .catch(() => undefined)
+  }, [])
 
   /**
    * 启动一轮麦克风监听
@@ -303,22 +392,45 @@ export default function useConversation() {
 
       // 发送给模型的最近上下文
       const history = messagesRef.current.slice(-12).map(({ role, text }) => ({ role, text }))
-      // 结构化口语教练请求
-      const request: ConversationRequest = {
-        isOpening: requestInfo.isOpening,
-        recentOpenings: requestInfo.recentOpenings,
-        history,
-        userText: requestInfo.userText
-      }
+      // 当前实际执行和失败重试使用的请求信息
+      let resolvedRequestInfo = requestInfo
 
       try {
         // AI 口语教练响应
-        const response = (await window.electron.ipcRenderer.invoke(
-          SendEnum.CONVERSATION_REPLY,
-          request
-        )) as ConversationCoachResponse
+        let response = await invokeConversationCoach(
+          createConversationRequest(resolvedRequestInfo, history)
+        )
         if (sessionId !== sessionIdRef.current) {
           return
+        }
+
+        // 首次开场是否与近期成功开场明显重复
+        const shouldRetryOpening =
+          resolvedRequestInfo.isOpening &&
+          !resolvedRequestInfo.hasOpeningDeduplicationRetried &&
+          isRepeatedConversationOpening(
+            response.reply,
+            resolvedRequestInfo.recentOpeningRecords ?? []
+          )
+        if (shouldRetryOpening) {
+          // 本次去重重试使用的新灵感键
+          const retryInspirationKey = selectConversationOpeningInspiration(
+            resolvedRequestInfo.recentOpeningRecords ?? [],
+            resolvedRequestInfo.openingInspirationKey
+          )
+          resolvedRequestInfo = {
+            ...resolvedRequestInfo,
+            openingInspirationKey: retryInspirationKey,
+            conflictingOpening: response.reply,
+            hasOpeningDeduplicationRetried: true
+          }
+          failedRequestRef.current = resolvedRequestInfo
+          response = await invokeConversationCoach(
+            createConversationRequest(resolvedRequestInfo, history)
+          )
+          if (sessionId !== sessionIdRef.current) {
+            return
+          }
         }
 
         if (requestInfo.userText) {
@@ -333,10 +445,11 @@ export default function useConversation() {
           })
         }
 
-        if (requestInfo.isOpening) {
-          recentOpeningsRef.current = [...recentOpeningsRef.current, response.reply].slice(
-            -MAX_RECENT_OPENING_COUNT
-          )
+        if (resolvedRequestInfo.isOpening && resolvedRequestInfo.openingInspirationKey) {
+          saveConversationOpeningRecord({
+            text: response.reply,
+            inspirationKey: resolvedRequestInfo.openingInspirationKey
+          })
         }
 
         // 新增的 AI 回复消息
@@ -375,7 +488,15 @@ export default function useConversation() {
         setErrorMessage(message)
       }
     },
-    [inputMode, speakReply, speakTextReply, stopListening, updateMessages, updateStatus]
+    [
+      inputMode,
+      saveConversationOpeningRecord,
+      speakReply,
+      speakTextReply,
+      stopListening,
+      updateMessages,
+      updateStatus
+    ]
   )
 
   /** 开始一段新的自由对话 */
@@ -390,13 +511,29 @@ export default function useConversation() {
       stopListening()
     }
     stopSpeaking()
+    failedRequestRef.current = null
     updateMessages([])
     setLiveTranscript('')
     setErrorMessage('')
-    // 当前请求需要避开的最近开场白快照
-    const recentOpenings = [...recentOpeningsRef.current]
-    void requestConversationReply({ isOpening: true, recentOpenings }, sessionId)
-  }, [ensureModelReady, inputMode, requestConversationReply, stopListening, updateMessages])
+    void getRecentOpeningRecords().then((recentOpeningRecords) => {
+      if (sessionId !== sessionIdRef.current) {
+        return
+      }
+      // 当前新会话随机选择的开场灵感键
+      const openingInspirationKey = selectConversationOpeningInspiration(recentOpeningRecords)
+      void requestConversationReply(
+        { isOpening: true, openingInspirationKey, recentOpeningRecords },
+        sessionId
+      )
+    })
+  }, [
+    ensureModelReady,
+    getRecentOpeningRecords,
+    inputMode,
+    requestConversationReply,
+    stopListening,
+    updateMessages
+  ])
 
   /** 提交打字模式中的用户英文表达 */
   const submitTextMessage = useCallback(
