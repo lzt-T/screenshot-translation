@@ -10,7 +10,7 @@ import useLocalForage from '@renderer/hooks/useLocalForage'
 /** 导航项目配置 */
 const NAVIGATION_ITEMS = [
   { path: '/home', label: '翻译台', icon: Home },
-  { path: '/conversation', label: '口语对话', icon: MessageCircleMore },
+  { path: '/conversation', label: '对话练习', icon: MessageCircleMore },
   { path: '/collection', label: '学习收藏', icon: LibraryBig },
   { path: '/setting', label: '设置', icon: Settings },
   { path: '/about', label: '关于', icon: Package }
@@ -108,7 +108,9 @@ function App(): React.JSX.Element {
       </aside>
 
       <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background">
-        <SelectionTranslator>
+        <SelectionTranslator
+          className={cn(activePath === '/conversation' && 'lg:h-full lg:min-h-0')}
+        >
           <Outlet />
         </SelectionTranslator>
       </main>

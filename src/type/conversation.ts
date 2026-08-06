@@ -3,10 +3,14 @@ export type ConversationStatus =
   | 'idle'
   | 'initializing'
   | 'listening'
+  | 'awaiting-input'
   | 'thinking'
   | 'speaking'
   | 'paused'
   | 'error'
+
+/** 对话输入模式 */
+export type ConversationInputMode = 'voice' | 'text'
 
 /** 对话角色 */
 export type ConversationRole = 'user' | 'assistant'

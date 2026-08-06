@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import type {
   ConversationCoachResponse,
+  ConversationInputMode,
   ConversationMessage,
   ConversationRequest,
   ConversationStatus,
@@ -25,6 +26,15 @@ interface FailedConversationRequest {
 
 // 页面内保留的最大开场白数量
 const MAX_RECENT_OPENING_COUNT = 4
+// 会话运行期间禁止切换输入模式的状态
+const ACTIVE_CONVERSATION_STATUSES = new Set<ConversationStatus>([
+  'initializing',
+  'listening',
+  'awaiting-input',
+  'thinking',
+  'speaking',
+  'paused'
+])
 
 /** 将识别模型输出整理为适合界面展示的英文文本 */
 function formatRecognizedEnglish(text: string): string {
@@ -50,7 +60,7 @@ function formatRecognizedEnglish(text: string): string {
   return sentenceCaseText.replace(/\bi(?=(?:['’](?:m|ve|ll|d))?\b)/gu, 'I')
 }
 
-/** 管理实时英语口语对话流程 */
+/** 管理英语语音与打字对话流程 */
 export default function useConversation() {
   // 页面路由方法
   const navigate = useNavigate()
@@ -58,6 +68,10 @@ export default function useConversation() {
   const { isInit, storeSetting } = useLocalForage()
   // 当前对话状态
   const [status, setStatus] = useState<ConversationStatus>('idle')
+  // 当前对话输入模式
+  const [inputMode, setInputMode] = useState<ConversationInputMode>('voice')
+  // 文字模式是否朗读 AI 回复
+  const [isTextReplySpeechEnabled, setIsTextReplySpeechEnabled] = useState(false)
   // 页面内对话消息
   const [messages, setMessages] = useState<ConversationMessage[]>([])
   // 当前增量识别文本
@@ -66,6 +80,8 @@ export default function useConversation() {
   const [errorMessage, setErrorMessage] = useState('')
   // 最新对话状态引用
   const statusRef = useRef<ConversationStatus>('idle')
+  // 最新文字回复朗读偏好
+  const isTextReplySpeechEnabledRef = useRef(false)
   // 最新消息引用
   const messagesRef = useRef<ConversationMessage[]>([])
   // 当前会话编号
@@ -95,6 +111,33 @@ export default function useConversation() {
     microphoneCaptureRef.current?.stop()
     window.electron.ipcRenderer.send(SendEnum.RECOGNITION_STOP)
   }, [])
+
+  /** 切换空闲会话的输入模式 */
+  const changeInputMode = useCallback(
+    (nextInputMode: ConversationInputMode): boolean => {
+      if (nextInputMode === inputMode) {
+        return true
+      }
+      if (ACTIVE_CONVERSATION_STATUSES.has(statusRef.current)) {
+        toast.info('请先结束当前对话，再切换练习方式')
+        return false
+      }
+
+      failedRequestRef.current = null
+      setLiveTranscript('')
+      setErrorMessage('')
+      updateStatus('idle')
+      setInputMode(nextInputMode)
+      return true
+    },
+    [inputMode, updateStatus]
+  )
+
+  /** 切换文字模式的 AI 回复朗读偏好 */
+  const changeTextReplySpeech = (isEnabled: boolean): void => {
+    isTextReplySpeechEnabledRef.current = isEnabled
+    setIsTextReplySpeechEnabled(isEnabled)
+  }
 
   /** 检查当前 AI 模型是否可用于对话 */
   const ensureModelReady = useCallback((): boolean => {
@@ -211,6 +254,39 @@ export default function useConversation() {
   )
 
   /**
+   * 在文字模式朗读 AI 回复后等待输入
+   * @param text 英文回复
+   * @param sessionId 目标会话编号
+   * @returns 无返回值
+   */
+  const speakTextReply = useCallback(
+    (text: string, sessionId: number): void => {
+      if (sessionId !== sessionIdRef.current) {
+        return
+      }
+      updateStatus('speaking')
+      void speakText(
+        text,
+        /** 朗读完成后恢复文字输入 */
+        () => {
+          if (sessionId === sessionIdRef.current) {
+            updateStatus('awaiting-input')
+          }
+        },
+        /** 朗读失败后提示并恢复文字输入 */
+        (error) => {
+          if (sessionId !== sessionIdRef.current) {
+            return
+          }
+          toast.error(error.message)
+          updateStatus('awaiting-input')
+        }
+      )
+    },
+    [updateStatus]
+  )
+
+  /**
    * 请求 AI 生成下一轮回复
    * @param requestInfo 当前请求信息
    * @param sessionId 目标会话编号
@@ -218,7 +294,9 @@ export default function useConversation() {
    */
   const requestConversationReply = useCallback(
     async (requestInfo: FailedConversationRequest, sessionId: number): Promise<void> => {
-      stopListening()
+      if (inputMode === 'voice') {
+        stopListening()
+      }
       updateStatus('thinking')
       setErrorMessage('')
       failedRequestRef.current = requestInfo
@@ -270,7 +348,23 @@ export default function useConversation() {
         }
         updateMessages((previousMessages) => [...previousMessages, assistantMessage])
         failedRequestRef.current = null
-        speakReply(response.reply, sessionId)
+        // 文字模式朗读偏好对应的后续行为
+        const textReplyContinuationMap = {
+          /** 开启时朗读回复并等待下一次文字输入 */
+          read: () => speakTextReply(response.reply, sessionId),
+          /** 关闭时直接等待下一次文字输入 */
+          silent: () => updateStatus('awaiting-input')
+        }
+        // 当前文字回复处理策略
+        const textReplyStrategy = isTextReplySpeechEnabledRef.current ? 'read' : 'silent'
+        // 输入模式对应的 AI 回复后续行为
+        const replyContinuationMap: Record<ConversationInputMode, () => void> = {
+          /** 语音模式朗读回复并恢复监听 */
+          voice: () => speakReply(response.reply, sessionId),
+          /** 文字模式按当前偏好朗读或静音 */
+          text: textReplyContinuationMap[textReplyStrategy]
+        }
+        replyContinuationMap[inputMode]()
       } catch (error) {
         if (sessionId !== sessionIdRef.current) {
           return
@@ -281,7 +375,7 @@ export default function useConversation() {
         setErrorMessage(message)
       }
     },
-    [speakReply, stopListening, updateMessages, updateStatus]
+    [inputMode, speakReply, speakTextReply, stopListening, updateMessages, updateStatus]
   )
 
   /** 开始一段新的自由对话 */
@@ -292,7 +386,9 @@ export default function useConversation() {
     sessionIdRef.current += 1
     // 新会话编号
     const sessionId = sessionIdRef.current
-    stopListening()
+    if (inputMode === 'voice') {
+      stopListening()
+    }
     stopSpeaking()
     updateMessages([])
     setLiveTranscript('')
@@ -300,7 +396,29 @@ export default function useConversation() {
     // 当前请求需要避开的最近开场白快照
     const recentOpenings = [...recentOpeningsRef.current]
     void requestConversationReply({ isOpening: true, recentOpenings }, sessionId)
-  }, [ensureModelReady, requestConversationReply, stopListening, updateMessages])
+  }, [ensureModelReady, inputMode, requestConversationReply, stopListening, updateMessages])
+
+  /** 提交打字模式中的用户英文表达 */
+  const submitTextMessage = useCallback(
+    (text: string): boolean => {
+      // 清理首尾空白后的用户输入
+      const userText = text.trim()
+      if (inputMode !== 'text' || statusRef.current !== 'awaiting-input' || !userText) {
+        return false
+      }
+
+      // 当前文字用户消息
+      const userMessage: ConversationMessage = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        text: userText
+      }
+      updateMessages((previousMessages) => [...previousMessages, userMessage])
+      void requestConversationReply({ isOpening: false, userText }, sessionIdRef.current)
+      return true
+    },
+    [inputMode, requestConversationReply, updateMessages]
+  )
 
   /** 暂停当前监听 */
   const pauseConversation = useCallback((): void => {
@@ -324,13 +442,15 @@ export default function useConversation() {
   /** 结束当前对话并保留页面记录 */
   const endConversation = useCallback((): void => {
     sessionIdRef.current += 1
-    stopListening()
+    if (inputMode === 'voice') {
+      stopListening()
+    }
     stopSpeaking()
     failedRequestRef.current = null
     setLiveTranscript('')
     setErrorMessage('')
     updateStatus('idle')
-  }, [stopListening, updateStatus])
+  }, [inputMode, stopListening, updateStatus])
 
   /** 重试最近一次失败的 AI 回复 */
   const retryReply = useCallback((): void => {
@@ -409,11 +529,17 @@ export default function useConversation() {
 
   return {
     status,
+    inputMode,
+    isTextReplySpeechEnabled,
     messages,
     liveTranscript,
     errorMessage,
+    isConversationActive: ACTIVE_CONVERSATION_STATUSES.has(status),
     canRetryReply: Boolean(failedRequestRef.current),
+    changeInputMode,
+    changeTextReplySpeech,
     startConversation,
+    submitTextMessage,
     pauseConversation,
     resumeConversation,
     endConversation,
