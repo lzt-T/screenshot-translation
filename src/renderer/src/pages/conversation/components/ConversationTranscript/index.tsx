@@ -1,17 +1,73 @@
 import { useEffect, useRef } from 'react'
-import { Check, Sparkles } from 'lucide-react'
+import { Check, Sparkles, Volume2, VolumeX } from 'lucide-react'
 import type { ConversationMessage } from '@src/type/conversation'
+import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
 
 /** 对话记录属性 */
 interface ConversationTranscriptProps {
   /** 当前会话消息 */
   messages: ConversationMessage[]
+  /** 当前是否允许手动朗读 */
+  canPlaySpeech: boolean
+  /** 当前手动朗读目标 */
+  speakingTarget: string | null
+  /** 切换手动朗读回调 */
+  onToggleSpeech: (target: string, text: string) => void
+}
+
+/** 单条英文朗读按钮属性 */
+interface SpeechButtonProps {
+  /** 朗读目标标识 */
+  target: string
+  /** 待朗读英文 */
+  text: string
+  /** 当前是否允许手动朗读 */
+  canPlay: boolean
+  /** 当前手动朗读目标 */
+  speakingTarget: string | null
+  /** 朗读内容名称 */
+  label: string
+  /** 切换手动朗读回调 */
+  onToggle: (target: string, text: string) => void
+}
+
+/** 渲染单条英文的朗读控制 */
+function SpeechButton({
+  target,
+  text,
+  canPlay,
+  speakingTarget,
+  label,
+  onToggle
+}: SpeechButtonProps): React.JSX.Element {
+  // 当前英文是否正在朗读
+  const isSpeaking = speakingTarget === target
+  // 当前按钮操作说明
+  const actionLabel = isSpeaking ? `停止朗读${label}` : `朗读${label}`
+  return (
+    <Button
+      aria-label={actionLabel}
+      aria-pressed={isSpeaking}
+      className="size-7 shrink-0 cursor-pointer"
+      disabled={!canPlay && !isSpeaking}
+      onClick={() => onToggle(target, text)}
+      size="icon"
+      title={actionLabel}
+      type="button"
+      variant="ghost"
+    >
+      {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+    </Button>
+  )
 }
 
 /** 渲染按时间排列的英语对话与纠错记录 */
 export default function ConversationTranscript({
-  messages
+  messages,
+  canPlaySpeech,
+  speakingTarget,
+  onToggleSpeech
 }: ConversationTranscriptProps): React.JSX.Element {
   // 对话记录滚动容器
   const transcriptRef = useRef<HTMLDivElement | null>(null)
@@ -46,6 +102,10 @@ export default function ConversationTranscript({
       {messages.map((message) => {
         // 当前消息是否来自用户
         const isUserMessage = message.role === 'user'
+        // 消息正文朗读目标
+        const messageSpeechTarget = `${message.id}:message`
+        // 表达建议朗读目标
+        const correctionSpeechTarget = `${message.id}:correction`
         return (
           <article
             className="flex flex-col gap-2 border-b border-border px-4 py-4 sm:px-5"
@@ -68,10 +128,20 @@ export default function ConversationTranscript({
             >
               <div
                 className={cn(
-                  'max-w-[85%] rounded-lg px-3 py-2 text-left',
+                  'relative max-w-[85%] rounded-lg py-2 pl-3 pr-10 text-left',
                   isUserMessage ? 'bg-muted' : 'bg-muted/45'
                 )}
               >
+                <div className="absolute right-2 top-2">
+                  <SpeechButton
+                    canPlay={canPlaySpeech}
+                    label={isUserMessage ? '我的英文' : '教练英文'}
+                    onToggle={onToggleSpeech}
+                    speakingTarget={speakingTarget}
+                    target={messageSpeechTarget}
+                    text={message.text}
+                  />
+                </div>
                 <p className="whitespace-pre-wrap text-[15px] leading-7 text-foreground">
                   {message.text}
                 </p>
@@ -83,7 +153,17 @@ export default function ConversationTranscript({
               </div>
 
               {message.correction && (
-                <div className="mt-3 max-w-[85%] rounded-lg border border-primary/15 bg-primary/7 px-3 py-3 text-left">
+                <div className="relative mt-3 max-w-[85%] rounded-lg border border-primary/15 bg-primary/7 py-3 pl-3 pr-10 text-left">
+                  <div className="absolute right-2 top-2">
+                    <SpeechButton
+                      canPlay={canPlaySpeech}
+                      label="更自然的表达"
+                      onToggle={onToggleSpeech}
+                      speakingTarget={speakingTarget}
+                      target={correctionSpeechTarget}
+                      text={message.correction.suggestedText}
+                    />
+                  </div>
                   <div className="flex items-center gap-2 text-xs font-medium text-primary">
                     <Sparkles size={14} />
                     更自然的表达

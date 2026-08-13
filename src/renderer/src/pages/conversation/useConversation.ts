@@ -52,6 +52,15 @@ const ACTIVE_CONVERSATION_STATUSES = new Set<ConversationStatus>([
   'paused'
 ])
 
+// 允许手动朗读历史英文的稳定状态
+const MANUAL_SPEECH_STATUSES = new Set<ConversationStatus>([
+  'idle',
+  'listening',
+  'awaiting-input',
+  'paused',
+  'error'
+])
+
 /** 将识别模型输出整理为适合界面展示的英文文本 */
 function formatRecognizedEnglish(text: string): string {
   // 清理首尾空白与连续空格后的文本
@@ -134,6 +143,8 @@ export default function useConversation() {
   const [liveTranscript, setLiveTranscript] = useState('')
   // 当前可展示错误
   const [errorMessage, setErrorMessage] = useState('')
+  // 当前手动朗读目标
+  const [manualSpeechTarget, setManualSpeechTarget] = useState<string | null>(null)
   // 最新对话状态引用
   const statusRef = useRef<ConversationStatus>('idle')
   // 最新文字回复朗读偏好
@@ -148,6 +159,10 @@ export default function useConversation() {
   const failedRequestRef = useRef<FailedConversationRequest | null>(null)
   // 已读取的近期成功开场记录
   const recentOpeningRecordsRef = useRef<ConversationOpeningRecord[] | null>(null)
+  // 手动朗读开始前的页面状态
+  const manualSpeechRestoreStatusRef = useRef<ConversationStatus | null>(null)
+  // 最新手动朗读请求编号
+  const manualSpeechRequestIdRef = useRef(0)
 
   statusRef.current = status
   messagesRef.current = messages
@@ -310,6 +325,69 @@ export default function useConversation() {
     },
     [updateStatus]
   )
+
+  /** 恢复手动朗读前的页面状态 */
+  function restoreManualSpeechStatus(): void {
+    // 需要恢复的页面状态
+    const restoreStatus = manualSpeechRestoreStatusRef.current
+    manualSpeechRestoreStatusRef.current = null
+    setManualSpeechTarget(null)
+    if (restoreStatus === 'listening') {
+      void startListening(sessionIdRef.current)
+      return
+    }
+    if (restoreStatus) {
+      updateStatus(restoreStatus)
+    }
+  }
+
+  /**
+   * 切换指定历史英文的手动朗读
+   * @param target 朗读目标标识
+   * @param text 待朗读英文
+   * @returns 无返回值
+   */
+  function toggleManualSpeech(target: string, text: string): void {
+    if (manualSpeechTarget === target) {
+      manualSpeechRequestIdRef.current += 1
+      stopSpeaking()
+      restoreManualSpeechStatus()
+      return
+    }
+    if (!text.trim() || (!manualSpeechTarget && !MANUAL_SPEECH_STATUSES.has(statusRef.current))) {
+      return
+    }
+
+    // 当前手动朗读请求编号
+    const requestId = manualSpeechRequestIdRef.current + 1
+    manualSpeechRequestIdRef.current = requestId
+    if (!manualSpeechTarget) {
+      manualSpeechRestoreStatusRef.current = statusRef.current
+      if (statusRef.current === 'listening') {
+        stopListening()
+        setLiveTranscript('')
+      }
+    }
+    setManualSpeechTarget(target)
+    updateStatus('speaking')
+    void speakText(
+      text,
+      /** 朗读完成后恢复原状态 */
+      () => {
+        if (requestId === manualSpeechRequestIdRef.current) {
+          restoreManualSpeechStatus()
+        }
+      },
+      /** 朗读失败后提示并恢复原状态 */
+      (error) => {
+        if (requestId !== manualSpeechRequestIdRef.current) {
+          return
+        }
+        toast.error(error.message)
+        restoreManualSpeechStatus()
+      }
+    )
+  }
 
   /**
    * 朗读 AI 回复并恢复监听
@@ -505,6 +583,9 @@ export default function useConversation() {
       return
     }
     sessionIdRef.current += 1
+    manualSpeechRequestIdRef.current += 1
+    manualSpeechRestoreStatusRef.current = null
+    setManualSpeechTarget(null)
     // 新会话编号
     const sessionId = sessionIdRef.current
     if (inputMode === 'voice') {
@@ -579,6 +660,9 @@ export default function useConversation() {
   /** 结束当前对话并保留页面记录 */
   const endConversation = useCallback((): void => {
     sessionIdRef.current += 1
+    manualSpeechRequestIdRef.current += 1
+    manualSpeechRestoreStatusRef.current = null
+    setManualSpeechTarget(null)
     if (inputMode === 'voice') {
       stopListening()
     }
@@ -594,6 +678,10 @@ export default function useConversation() {
     if (!failedRequestRef.current || !ensureModelReady()) {
       return
     }
+    manualSpeechRequestIdRef.current += 1
+    manualSpeechRestoreStatusRef.current = null
+    setManualSpeechTarget(null)
+    stopSpeaking()
     void requestConversationReply(failedRequestRef.current, sessionIdRef.current)
   }, [ensureModelReady, requestConversationReply])
 
@@ -669,12 +757,16 @@ export default function useConversation() {
     inputMode,
     isTextReplySpeechEnabled,
     messages,
+    manualSpeechTarget,
     liveTranscript,
     errorMessage,
     isConversationActive: ACTIVE_CONVERSATION_STATUSES.has(status),
     canRetryReply: Boolean(failedRequestRef.current),
+    canPlayMessageSpeech:
+      Boolean(manualSpeechTarget) || MANUAL_SPEECH_STATUSES.has(status),
     changeInputMode,
     changeTextReplySpeech,
+    toggleManualSpeech,
     startConversation,
     submitTextMessage,
     pauseConversation,

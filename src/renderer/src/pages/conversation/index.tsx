@@ -43,7 +43,7 @@ const STATUS_VIEW_MAP: Record<
     icon: Keyboard
   },
   thinking: { label: '正在思考', description: '正在组织自然回复和表达建议', icon: LoaderCircle },
-  speaking: { label: '正在朗读', description: '朗读结束后会自动恢复聆听', icon: Volume2 },
+  speaking: { label: '正在朗读', description: '朗读结束后会恢复之前的对话状态', icon: Volume2 },
   paused: { label: '已暂停', description: '继续后会重新打开麦克风', icon: Pause },
   error: { label: '需要处理', description: '查看下方提示后重试', icon: AlertCircle }
 }
@@ -87,12 +87,15 @@ export default function ConversationPage(): React.JSX.Element {
     inputMode,
     isTextReplySpeechEnabled,
     messages,
+    manualSpeechTarget,
     liveTranscript,
     errorMessage,
     isConversationActive,
     canRetryReply,
+    canPlayMessageSpeech,
     changeInputMode,
     changeTextReplySpeech,
+    toggleManualSpeech,
     startConversation,
     submitTextMessage,
     pauseConversation,
@@ -116,10 +119,12 @@ export default function ConversationPage(): React.JSX.Element {
   const canSendText = canTypeMessage && Boolean(draftText.trim())
   // 语音工作区的当前主显示文本
   const voiceFocalText =
-    liveTranscript ||
-    (status === 'speaking'
-      ? messages.at(-1)?.text || '正在朗读…'
-      : VOICE_FOCAL_TEXT_MAP[status] || '随时可以开始')
+    manualSpeechTarget
+      ? '正在播放所选英文…'
+      : liveTranscript ||
+        (status === 'speaking'
+          ? messages.at(-1)?.text || '正在朗读…'
+          : VOICE_FOCAL_TEXT_MAP[status] || '随时可以开始')
   /** 切换当前对话输入模式 */
   const handleInputModeChange = (nextInputMode: ConversationInputMode): void => {
     if (changeInputMode(nextInputMode)) {
@@ -251,7 +256,12 @@ export default function ConversationPage(): React.JSX.Element {
           </div>
         </div>
 
-        <ConversationTranscript messages={messages} />
+        <ConversationTranscript
+          canPlaySpeech={canPlayMessageSpeech}
+          messages={messages}
+          onToggleSpeech={toggleManualSpeech}
+          speakingTarget={manualSpeechTarget}
+        />
 
         <div className="shrink-0 border-t border-border bg-card px-4 py-3 sm:px-5">
           {inputMode === 'voice' ? (
