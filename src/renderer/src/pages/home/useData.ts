@@ -2,16 +2,16 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { SendEnum } from '@src/type/ipc-constants'
 import { toast } from 'sonner'
 import { speakText, stopSpeaking } from '@src/utils/speak'
-import {
-  Language,
-  TextType,
-  TranslateResponse
-} from '@src/type/base'
+import { TranslateResponse } from '@src/type/base'
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import useSentenceAnalysis from '@renderer/hooks/useSentenceAnalysis'
 import { useNavigate } from 'react-router-dom'
 import { TranslationModelProfile } from '@src/type/model'
-import { createTextLearningItemInput } from '@src/utils/learning'
+import {
+  canAnalyzeSentenceLearning,
+  createTextLearningItemInput,
+  getPrimaryAnalysisTranslation
+} from '@src/utils/learning'
 import {
   findLearningItem,
   removeLearningItem,
@@ -54,10 +54,8 @@ export default function useData() {
   const isSpeakingInput = speakingTarget === 'input'
   // 正在朗读的译文条目索引
   const speakingResultIndex = typeof speakingTarget === 'number' ? speakingTarget : null
-  // 当前结果是否允许句子分析
-  const canAnalyzeSentence =
-    translationResult?.sourceLanguage === Language.EN &&
-    translationResult.textType === TextType.SENTENCE
+  // 当前结果是否允许句子学习分析
+  const canAnalyzeSentence = canAnalyzeSentenceLearning(translationResult)
   // 句子分析状态和操作
   const {
     sentenceAnalysis,
@@ -223,7 +221,7 @@ export default function useData() {
     toggleSpeech(index, text)
   }
 
-  /** 发起当前英文句子的结构分析 */
+  /** 发起当前句子的学习分析 */
   const onAnalyzeSentence = (): void => {
     if (!canAnalyzeSentence || !translationResult || isSentenceAnalysisLoading) {
       return
@@ -232,10 +230,13 @@ export default function useData() {
       return
     }
 
-    // 首条可用中文译文
-    const primaryTranslation =
-      translationResult.translation.find((item) => item.zh?.trim())?.zh?.trim() || ''
-    void analyzeSentence(translationResult.sourceWords, primaryTranslation)
+    // 首条可用主译文
+    const primaryTranslation = getPrimaryAnalysisTranslation(translationResult)
+    void analyzeSentence(
+      translationResult.sourceLanguage,
+      translationResult.sourceWords,
+      primaryTranslation
+    )
   }
 
   /** 切换当前翻译结果的收藏状态 */

@@ -91,10 +91,37 @@ export interface SentenceAnalysis {
   sentences: SentenceAnalysisItem[]
 }
 
-/** 英文句子分析请求 */
-export interface SentenceAnalysisRequest {
-  /* 待分析英文原文 */
+/** 中文译英关键表达 */
+export interface TranslationInsightExpression {
+  /* 英文表达 */
+  expression: string
+  /* 中文说明 */
+  explanation: string
+}
+
+/** 中文译英翻译要点 */
+export interface TranslationInsights {
+  /* 分析类型 */
+  type: 'translation-insights'
+  /* 中文原文 */
   sourceText: string
-  /* 已展示的中文译文 */
-  translation: string
+  /* 英文主译文 */
+  translatedText: string
+  /* 英文表达思路 */
+  expressionStrategy: string
+  /* 值得学习的关键表达 */
+  keyExpressions: TranslationInsightExpression[]
+}
+
+/** 可收藏的句子学习分析 */
+export type LearningAnalysis = SentenceAnalysis | TranslationInsights
+
+/** 句子学习分析请求 */
+export interface SentenceAnalysisRequest {
+  /* 原文语言 */
+  sourceLanguage: Language
+  /* 待分析原文 */
+  sourceText: string
+  /* 已展示的主译文 */
+  translatedText: string
 }

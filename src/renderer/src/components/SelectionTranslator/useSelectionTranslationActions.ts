@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import type { SentenceAnalysis, TranslateResponse } from '@src/type/base'
+import type { LearningAnalysis, TranslateResponse } from '@src/type/base'
 import { createTextLearningItemInput } from '@src/utils/learning'
 import { speakText, stopSpeaking } from '@src/utils/speak'
 import {
@@ -20,8 +20,8 @@ interface UseSelectionTranslationActionsOptions {
   sourceText: string
   /* 抽屉展示的译文 */
   translatedText: string
-  /* 当前句子分析结果 */
-  sentenceAnalysis: SentenceAnalysis | null
+  /* 当前句子学习分析结果 */
+  sentenceAnalysis: LearningAnalysis | null
 }
 
 /** 管理划词翻译收藏与朗读流程 */

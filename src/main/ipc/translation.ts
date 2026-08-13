@@ -150,25 +150,29 @@ export const registerTranslationIpcEvents = () => {
     }
   })
 
-  /** 英文句子分析 */
+  /** 句子学习分析 */
   ipcMain.handle(
     SendEnum.SENTENCE_ANALYSIS,
     async (_event, request: SentenceAnalysisRequest) => {
       try {
+        // 当前实际原文语言
+        const sourceLanguage = getLanguageType(request.sourceText)
         if (
-          getLanguageType(request.sourceText) !== Language.EN ||
+          sourceLanguage !== request.sourceLanguage ||
+          ![Language.EN, Language.ZH].includes(sourceLanguage) ||
           getTextType(request.sourceText) !== TextType.SENTENCE
         ) {
-          throw new Error('仅支持分析英文句子')
+          throw new Error('仅支持分析中文或英文句子')
         }
 
         // 结构化分析调用结果
-        const analysisResult = await aiManage.analyzeEnglishSentences(
+        const analysisResult = await aiManage.analyzeSentenceLearning(
+          request.sourceLanguage,
           request.sourceText,
-          request.translation
+          request.translatedText
         )
         if (!analysisResult.success || !analysisResult.data) {
-          throw new Error(analysisResult.msg || '英文句子分析失败')
+          throw new Error(analysisResult.msg || '句子学习分析失败')
         }
 
         return analysisResult.data

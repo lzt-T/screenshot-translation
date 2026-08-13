@@ -1,5 +1,32 @@
-import { Language, TextType, type SentenceAnalysis, type TranslateResponse } from '../type/base'
+import { Language, TextType, type LearningAnalysis, type TranslateResponse } from '../type/base'
 import type { SaveLearningItemInput } from '../type/learning'
+
+/** 主译文提取策略 */
+const PRIMARY_ANALYSIS_TRANSLATION_RESOLVERS: Record<Language, (result: TranslateResponse) => string> = {
+  [Language.ZH]: (result) => result.translation.find((item) => item.en?.trim())?.en?.trim() || '',
+  [Language.EN]: (result) => result.translation.find((item) => item.zh?.trim())?.zh?.trim() || '',
+  [Language.ZH_AND_EN]: () => ''
+}
+
+/**
+ * 判断翻译结果是否支持句子学习分析
+ * @param result 完整翻译结果
+ * @returns 是否支持句子学习分析
+ */
+export function canAnalyzeSentenceLearning(result: TranslateResponse | null): boolean {
+  return Boolean(
+    result && result.textType === TextType.SENTENCE && result.sourceLanguage !== Language.ZH_AND_EN
+  )
+}
+
+/**
+ * 获取句子学习分析使用的首条主译文
+ * @param result 完整翻译结果
+ * @returns 首条可用主译文
+ */
+export function getPrimaryAnalysisTranslation(result: TranslateResponse): string {
+  return PRIMARY_ANALYSIS_TRANSLATION_RESOLVERS[result.sourceLanguage](result)
+}
 
 /**
  * 提取翻译结果中的目标语言文本
@@ -34,12 +61,12 @@ export function getTranslatedText(result: TranslateResponse): string {
 /**
  * 将文本翻译结果转换为收藏参数
  * @param result 完整翻译结果
- * @param sentenceAnalysis 可选句子分析
+ * @param sentenceAnalysis 可选句子学习分析
  * @returns 文本学习收藏参数
  */
 export function createTextLearningItemInput(
   result: TranslateResponse,
-  sentenceAnalysis: SentenceAnalysis | null
+  sentenceAnalysis: LearningAnalysis | null
 ): SaveLearningItemInput {
   return {
     kind: result.textType === TextType.WORD ? 'word' : 'sentence',

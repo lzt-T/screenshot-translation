@@ -1,6 +1,7 @@
 import React from 'react'
 import { BookOpen } from 'lucide-react'
 import type { LearningItem } from '@src/type/learning'
+import { Language } from '@src/type/base'
 import SentenceAnalysisView from '@renderer/components/SentenceAnalysisView'
 
 /** 收藏记录详情属性 */
@@ -50,6 +51,7 @@ export default function LearningItemDetails({
           errorMessage=""
           isLoading={false}
           onAnalyze={() => undefined}
+          sourceLanguage={item.translationResult?.sourceLanguage || Language.EN}
         />
       )}
     </div>

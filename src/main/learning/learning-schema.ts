@@ -1,6 +1,6 @@
 import { desc, sql } from 'drizzle-orm'
 import { check, index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import type { SentenceAnalysis, TranslateResponse } from '../../type/base'
+import type { LearningAnalysis, TranslateResponse } from '../../type/base'
 import type { LearningItemKind, LearningItemSource } from '../../type/learning'
 
 // Drizzle 学习收藏表结构
@@ -14,7 +14,7 @@ export const learningItems = sqliteTable(
     originalText: text('original_text').notNull(),
     translatedText: text('translated_text').notNull(),
     translationResult: text('translation_result_json', { mode: 'json' }).$type<TranslateResponse>(),
-    sentenceAnalysis: text('sentence_analysis_json', { mode: 'json' }).$type<SentenceAnalysis>(),
+    sentenceAnalysis: text('sentence_analysis_json', { mode: 'json' }).$type<LearningAnalysis>(),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull()
   },

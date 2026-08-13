@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { SentenceAnalysis, TextType } from '../../../type/base'
+import { SentenceAnalysis, TextType, TranslationInsights } from '../../../type/base'
 
 /** 句子翻译项 */
 export const sentenceTranslationItemSchema = z
@@ -127,6 +127,28 @@ const sentenceAnalysisItemSchema = z.object({
 export const sentenceAnalysisSchema: z.ZodType<SentenceAnalysis> = z.object({
   // 逐句分析列表
   sentences: z.array(sentenceAnalysisItemSchema).min(1).describe('按原文顺序排列的全部句子分析')
+})
+
+/** 中文译英关键表达结构 */
+const translationInsightExpressionSchema = z.object({
+  // 英文表达
+  expression: z.string().min(1).describe('英文主译文中值得复用的表达'),
+  // 中文说明
+  explanation: z.string().min(1).describe('表达在当前语境中的简体中文说明')
+})
+
+/** 中文译英翻译要点结构 */
+export const translationInsightsSchema: z.ZodType<TranslationInsights> = z.object({
+  // 分析类型
+  type: z.literal('translation-insights'),
+  // 中文原文
+  sourceText: z.string().min(1).describe('原样保留的中文原文'),
+  // 英文主译文
+  translatedText: z.string().min(1).describe('原样保留的英文主译文'),
+  // 表达思路
+  expressionStrategy: z.string().min(1).describe('英文组织方式的简体中文说明'),
+  // 关键表达
+  keyExpressions: z.array(translationInsightExpressionSchema).describe('值得学习的英文表达')
 })
 
 export type TextTranslation = z.infer<typeof textTranslationSchema>

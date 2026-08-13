@@ -1,4 +1,4 @@
-import type { SentenceAnalysis, TranslateResponse } from './base'
+import type { LearningAnalysis, TranslateResponse } from './base'
 
 /** 学习内容类型 */
 export type LearningItemKind = 'word' | 'sentence'
@@ -22,8 +22,8 @@ export interface LearningItemIdentity {
 export interface SaveLearningItemInput extends LearningItemIdentity {
   /* 完整翻译结果 */
   translationResult?: TranslateResponse | null
-  /* 英文句子分析 */
-  sentenceAnalysis?: SentenceAnalysis | null
+  /* 可选句子学习分析 */
+  sentenceAnalysis?: LearningAnalysis | null
 }
 
 /** 学习收藏记录 */
@@ -32,8 +32,8 @@ export interface LearningItem extends LearningItemIdentity {
   id: string
   /* 完整翻译结果 */
   translationResult: TranslateResponse | null
-  /* 英文句子分析 */
-  sentenceAnalysis: SentenceAnalysis | null
+  /* 句子学习分析 */
+  sentenceAnalysis: LearningAnalysis | null
   /* 首次收藏时间 */
   createdAt: number
   /* 最近更新时间 */

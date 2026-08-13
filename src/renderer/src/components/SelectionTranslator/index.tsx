@@ -17,9 +17,13 @@ import SentenceAnalysisView from '@renderer/components/SentenceAnalysisView'
 import { cn } from '@renderer/lib/utils'
 import useSelectionTranslationActions from '@renderer/components/SelectionTranslator/useSelectionTranslationActions'
 import useSentenceAnalysis from '@renderer/hooks/useSentenceAnalysis'
-import { Language, TextType, TranslateResponse } from '@src/type/base'
+import { Language, TranslateResponse } from '@src/type/base'
 import { SendEnum } from '@src/type/ipc-constants'
 import { copyText } from '@src/utils/copy'
+import {
+  canAnalyzeSentenceLearning,
+  getPrimaryAnalysisTranslation
+} from '@src/utils/learning'
 
 /** 不参与划词翻译的交互元素 */
 const IGNORED_SELECTION_SELECTOR =
@@ -190,10 +194,8 @@ export default function SelectionTranslator({
   const translationDirection = translationResult
     ? `${LANGUAGE_LABELS[translationResult.sourceLanguage]} → ${LANGUAGE_LABELS[translationResult.targetLanguage]}`
     : '自动识别语言'
-  // 当前结果是否允许句子分析
-  const canAnalyzeSentence =
-    translationResult?.sourceLanguage === Language.EN &&
-    translationResult.textType === TextType.SENTENCE
+  // 当前结果是否允许句子学习分析
+  const canAnalyzeSentence = canAnalyzeSentenceLearning(translationResult)
   // 句子分析状态和操作
   const {
     sentenceAnalysis,
@@ -283,16 +285,19 @@ export default function SelectionTranslator({
     }
   }
 
-  /** 发起当前划词英文句子的结构分析 */
+  /** 发起当前划词句子的学习分析 */
   function handleAnalyzeSentence(): void {
     if (!canAnalyzeSentence || !translationResult || isSentenceAnalysisLoading) {
       return
     }
 
-    // 首条可用中文译文
-    const primaryTranslation =
-      translationResult.translation.find((item) => item.zh?.trim())?.zh?.trim() || ''
-    void analyzeSentence(translationResult.sourceWords, primaryTranslation)
+    // 首条可用主译文
+    const primaryTranslation = getPrimaryAnalysisTranslation(translationResult)
+    void analyzeSentence(
+      translationResult.sourceLanguage,
+      translationResult.sourceWords,
+      primaryTranslation
+    )
   }
 
   /**
@@ -541,6 +546,7 @@ export default function SelectionTranslator({
                   errorMessage={sentenceAnalysisError}
                   isLoading={isSentenceAnalysisLoading}
                   onAnalyze={handleAnalyzeSentence}
+                  sourceLanguage={translationResult?.sourceLanguage || Language.EN}
                 />
               )}
             </div>

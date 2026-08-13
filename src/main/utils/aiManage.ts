@@ -1,4 +1,4 @@
-import { Language, SentenceAnalysis } from '../../type/base'
+import { Language, LearningAnalysis, SentenceAnalysis, TranslationInsights } from '../../type/base'
 import {
   getTextType,
   getTranslatePrompt,
@@ -15,6 +15,7 @@ import {
   type TextTranslation,
   englishChineseTranslationSchemaMap,
   sentenceAnalysisSchema,
+  translationInsightsSchema,
   screenshotTranslationSchema,
   textTranslationSchema
 } from './aiClients/translationSchemas'
@@ -392,6 +393,81 @@ class AiManage {
       }
       throw error
     }
+  }
+
+  /**
+   * 分析中文译英的表达要点
+   * @param sourceText 中文原文
+   * @param translatedText 已展示的英文主译文
+   * @returns 翻译要点结果
+   */
+  public async analyzeChineseTranslation(
+    sourceText: string,
+    translatedText: string
+  ): Promise<TranslationResult<TranslationInsights>> {
+    // 运行时模型配置
+    const runtimeProfile = this.getRuntimeModelProfile()
+    if (!runtimeProfile) {
+      return { success: false, data: null, msg: '未找到可用模型配置' }
+    }
+    if (!runtimeProfile.apiKey) {
+      return {
+        success: false,
+        data: null,
+        msg: `${runtimeProfile.model} 模型的 API Key 未配置`
+      }
+    }
+
+    try {
+      // 中文译英翻译要点提示词
+      const prompt = promptManage.getTranslationInsightsPrompt(sourceText, translatedText)
+      // 结构化翻译要点结果
+      const invokeResult = await langchainGateway.invokeStructured(
+        runtimeProfile,
+        prompt,
+        translationInsightsSchema
+      )
+      return {
+        success: invokeResult.success,
+        data: invokeResult.data
+          ? { ...invokeResult.data, sourceText, translatedText }
+          : null,
+        msg: invokeResult.msg
+      }
+    } catch (error) {
+      if (this.isStructuredOutputValidationError(error)) {
+        console.error('中文译英翻译要点结构化输出解析失败', error)
+        return this.createStructuredFailResult()
+      }
+      throw error
+    }
+  }
+
+  /**
+   * 根据源语言生成句子学习分析
+   * @param sourceLanguage 原文语言
+   * @param sourceText 待分析原文
+   * @param translatedText 已展示的主译文
+   * @returns 句子学习分析结果
+   */
+  public analyzeSentenceLearning(
+    sourceLanguage: Language,
+    sourceText: string,
+    translatedText: string
+  ): Promise<TranslationResult<LearningAnalysis>> {
+    // 源语言对应的学习分析策略
+    const analysisStrategyMap: Partial<
+      Record<Language, () => Promise<TranslationResult<LearningAnalysis>>>
+    > = {
+      [Language.EN]: () => this.analyzeEnglishSentences(sourceText, translatedText),
+      [Language.ZH]: () => this.analyzeChineseTranslation(sourceText, translatedText)
+    }
+    // 当前源语言对应的分析策略
+    const analyze = analysisStrategyMap[sourceLanguage]
+    if (!analyze) {
+      return Promise.resolve({ success: false, data: null, msg: '不支持当前语言的学习分析' })
+    }
+    return analyze()
   }
 
   /**

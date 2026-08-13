@@ -1,12 +1,14 @@
 import React from 'react'
-import { BookOpenCheck, Braces, Loader2, Puzzle } from 'lucide-react'
-import { SentenceAnalysis } from '@src/type/base'
+import { BookOpenCheck, Braces, Lightbulb, Loader2, Puzzle } from 'lucide-react'
+import { Language, LearningAnalysis, TranslationInsights } from '@src/type/base'
 import { Button } from '@renderer/components/ui/button'
 
 /** 句子分析展示属性 */
 interface SentenceAnalysisViewProps {
   /* 句子分析结果 */
-  analysis: SentenceAnalysis | null
+  analysis: LearningAnalysis | null
+  /* 原文语言 */
+  sourceLanguage: Language
   /* 是否正在分析 */
   isLoading: boolean
   /* 分析错误信息 */
@@ -30,32 +32,53 @@ function SentenceAnalysisLoading(): React.JSX.Element {
 }
 
 /**
- * 渲染英文句子分析结果
+ * 判断分析结果是否为中文译英翻译要点
+ * @param analysis 句子学习分析
+ * @returns 是否为翻译要点
+ */
+function isTranslationInsights(analysis: LearningAnalysis): analysis is TranslationInsights {
+  return 'type' in analysis && analysis.type === 'translation-insights'
+}
+
+/**
+ * 渲染句子理解或中文译英翻译要点
  * @param {SentenceAnalysisViewProps} props 组件属性
  * @returns {React.JSX.Element} 句子分析节点
  */
 export default function SentenceAnalysisView({
   analysis,
+  sourceLanguage,
   isLoading,
   errorMessage,
   onAnalyze
 }: SentenceAnalysisViewProps): React.JSX.Element {
+  // 当前是否展示中文译英翻译要点
+  const showsTranslationInsights = sourceLanguage === Language.ZH
+  // 分析区域标题
+  const title = showsTranslationInsights ? '翻译要点' : '句子理解'
+  // 分析区域说明
+  const description = showsTranslationInsights
+    ? '理解表达思路和关键英文搭配'
+    : '拆解结构、关键短语和语法'
+  // 分析操作文案
+  const actionLabel = showsTranslationInsights ? '查看要点' : '分析句子'
+
   return (
-    <section aria-busy={isLoading} aria-label="英文句子分析" className="border-t border-border">
+    <section aria-busy={isLoading} aria-label={title} className="border-t border-border">
       <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/45 px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <BookOpenCheck aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground">句子理解</p>
+            <p className="text-sm font-medium text-foreground">{title}</p>
             {!analysis && !errorMessage && (
-              <p className="mt-0.5 text-xs text-muted-foreground">拆解结构、关键短语和语法</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
             )}
           </div>
         </div>
         {!analysis && (
           <Button disabled={isLoading} onClick={onAnalyze} size="sm" variant="outline">
             {isLoading && <Loader2 aria-hidden="true" className="animate-spin" size={14} />}
-            {isLoading ? '分析中' : errorMessage ? '重新分析' : '分析句子'}
+            {isLoading ? '分析中' : errorMessage ? '重新分析' : actionLabel}
           </Button>
         )}
       </div>
@@ -68,7 +91,43 @@ export default function SentenceAnalysisView({
         </p>
       )}
 
-      {!isLoading && analysis && (
+      {!isLoading && analysis && isTranslationInsights(analysis) && (
+        <article className="px-5 py-5">
+          <p className="break-words text-[15px] font-medium leading-7 text-foreground">
+            {analysis.translatedText}
+          </p>
+          <div className="mt-5">
+            <div className="flex items-center gap-2">
+              <Lightbulb aria-hidden="true" className="text-muted-foreground" size={15} />
+              <h3 className="text-sm font-medium text-foreground">表达思路</h3>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {analysis.expressionStrategy}
+            </p>
+          </div>
+
+          {analysis.keyExpressions.length > 0 && (
+            <div className="mt-5">
+              <div className="flex items-center gap-2">
+                <Puzzle aria-hidden="true" className="text-muted-foreground" size={15} />
+                <h3 className="text-sm font-medium text-foreground">关键表达</h3>
+              </div>
+              <dl className="mt-2 divide-y divide-border border-t border-border">
+                {analysis.keyExpressions.map((item, index) => (
+                  <div className="py-3" key={`${item.expression}-${index}`}>
+                    <dt className="text-sm font-medium text-foreground">{item.expression}</dt>
+                    <dd className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {item.explanation}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+        </article>
+      )}
+
+      {!isLoading && analysis && !isTranslationInsights(analysis) && (
         <div className="divide-y divide-border">
           {analysis.sentences.map((sentence, sentenceIndex) => (
             <article className="px-5 py-5" key={`${sentence.sourceText}-${sentenceIndex}`}>

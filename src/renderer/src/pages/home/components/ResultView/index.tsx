@@ -13,7 +13,7 @@ import {
 import {
   ExampleSentence,
   Language,
-  SentenceAnalysis,
+  LearningAnalysis,
   TextType,
   TranslateResponse
 } from '@src/type/base'
@@ -138,10 +138,10 @@ interface ResultViewProps {
   onCopyItem: (text: string) => void
   /* 朗读条目回调 */
   onSpeakItem: (index: number, text: string) => void
-  /* 是否允许分析英文句子 */
+  /* 是否允许句子学习分析 */
   canAnalyzeSentence: boolean
   /* 句子分析结果 */
-  sentenceAnalysis: SentenceAnalysis | null
+  sentenceAnalysis: LearningAnalysis | null
   /* 是否正在分析句子 */
   isSentenceAnalysisLoading: boolean
   /* 句子分析错误信息 */
@@ -311,6 +311,7 @@ export default function ResultView({
             errorMessage={sentenceAnalysisError}
             isLoading={isSentenceAnalysisLoading}
             onAnalyze={onAnalyzeSentence}
+            sourceLanguage={result?.sourceLanguage || Language.EN}
           />
         )}
 

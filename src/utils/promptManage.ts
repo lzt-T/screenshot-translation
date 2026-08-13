@@ -67,6 +67,26 @@ JSON 结构示例：{"sentences":[{"sourceText":"Original English sentence.","st
   }
 
   /**
+   * 获取中文译英翻译要点提示词
+   * @param sourceText 中文原文
+   * @param translatedText 已展示的英文主译文
+   * @returns 中文译英翻译要点提示词
+   */
+  public getTranslationInsightsPrompt(sourceText: string, translatedText: string) {
+    return `
+分析以下中文原文及其英文译文，帮助中文用户学习如何自然地组织英文表达。
+sourceText 和 translatedText 必须原样返回；expressionStrategy 用简体中文简洁说明英文如何调整语序、确定主干或组织信息。
+keyExpressions 只列出译文中真正值得复用的英文搭配或句型，并用简体中文解释其在当前语境中的用法；没有合适内容时返回空数组。
+不要重新翻译，不要比较其他译法，不要讲解中文语法，也不要扩展文化背景、相似例句或无关语言学内容。
+仅返回一个可被 JSON.parse 直接解析的 JSON 对象，不要使用 Markdown 代码块，不要添加解释。
+JSON 结构示例：{"type":"translation-insights","sourceText":"中文原文","translatedText":"English translation.","expressionStrategy":"英文表达思路","keyExpressions":[{"expression":"English expression","explanation":"当前语境中的中文说明"}]}
+
+中文原文：${sourceText}
+英文主译文：${translatedText}
+`
+  }
+
+  /**
    * 根据文本类型获取翻译提示词
    * @param {string} text 待翻译文本
    * @returns {string} 翻译提示词
