@@ -93,26 +93,8 @@ export interface SentenceAnalysis {
 
 /** 英文句子分析请求 */
 export interface SentenceAnalysisRequest {
-  /* 渲染进程请求编号 */
-  requestId: number
   /* 待分析英文原文 */
   sourceText: string
   /* 已展示的中文译文 */
   translation: string
-}
-
-/** 英文句子分析成功响应 */
-export interface SentenceAnalysisSuccessResponse {
-  /* 渲染进程请求编号 */
-  requestId: number
-  /* 句子分析结果 */
-  analysis: SentenceAnalysis
-}
-
-/** 英文句子分析失败响应 */
-export interface SentenceAnalysisFailureResponse {
-  /* 渲染进程请求编号 */
-  requestId: number
-  /* 可展示的失败信息 */
-  message: string
 }

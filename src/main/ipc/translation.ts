@@ -151,9 +151,9 @@ export const registerTranslationIpcEvents = () => {
   })
 
   /** 英文句子分析 */
-  ipcMain.on(
+  ipcMain.handle(
     SendEnum.SENTENCE_ANALYSIS,
-    async (event, request: SentenceAnalysisRequest) => {
+    async (_event, request: SentenceAnalysisRequest) => {
       try {
         if (
           getLanguageType(request.sourceText) !== Language.EN ||
@@ -171,15 +171,9 @@ export const registerTranslationIpcEvents = () => {
           throw new Error(analysisResult.msg || '英文句子分析失败')
         }
 
-        event.reply(SendEnum.SENTENCE_ANALYSIS_SUCCESS, {
-          requestId: request.requestId,
-          analysis: analysisResult.data
-        })
+        return analysisResult.data
       } catch (error) {
-        event.reply(SendEnum.SENTENCE_ANALYSIS_FAIL, {
-          requestId: request.requestId,
-          message: getErrorMessage(error)
-        })
+        throw new Error(getErrorMessage(error))
       }
     }
   )

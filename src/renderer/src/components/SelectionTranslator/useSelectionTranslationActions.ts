@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import type { TranslateResponse } from '@src/type/base'
+import type { SentenceAnalysis, TranslateResponse } from '@src/type/base'
 import { createTextLearningItemInput } from '@src/utils/learning'
 import { speakText, stopSpeaking } from '@src/utils/speak'
 import {
@@ -20,13 +20,16 @@ interface UseSelectionTranslationActionsOptions {
   sourceText: string
   /* 抽屉展示的译文 */
   translatedText: string
+  /* 当前句子分析结果 */
+  sentenceAnalysis: SentenceAnalysis | null
 }
 
 /** 管理划词翻译收藏与朗读流程 */
 export default function useSelectionTranslationActions({
   translationResult,
   sourceText,
-  translatedText
+  translatedText,
+  sentenceAnalysis
 }: UseSelectionTranslationActionsOptions) {
   // 当前收藏记录 ID
   const [bookmarkedItemId, setBookmarkedItemId] = useState<string | null>(null)
@@ -101,7 +104,7 @@ export default function useSelectionTranslationActions({
       }
 
       // 当前划词翻译收藏参数
-      const input = createTextLearningItemInput(translationResult, null)
+      const input = createTextLearningItemInput(translationResult, sentenceAnalysis)
       // 保存后的收藏记录
       const savedItem = await saveLearningItem(input)
       if (requestId !== activeBookmarkRequestId.current) {
@@ -156,6 +159,19 @@ export default function useSelectionTranslationActions({
         }
       })
   }, [sourceText, translatedText, translationResult])
+
+  /** 已收藏句子的分析完成后更新收藏快照 */
+  useEffect(() => {
+    if (!translationResult || !sentenceAnalysis || !bookmarkedItemId) {
+      return
+    }
+
+    // 包含最新分析的收藏参数
+    const input = createTextLearningItemInput(translationResult, sentenceAnalysis)
+    void saveLearningItem(input)
+      .then((savedItem) => setBookmarkedItemId(savedItem.id))
+      .catch(() => toast.error('句子分析已完成，但收藏更新失败'))
+  }, [bookmarkedItemId, sentenceAnalysis, translationResult])
 
   /** 组件卸载时停止本地朗读 */
   useEffect(() => {

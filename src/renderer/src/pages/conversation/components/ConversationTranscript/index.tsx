@@ -13,17 +13,21 @@ interface ConversationTranscriptProps {
 export default function ConversationTranscript({
   messages
 }: ConversationTranscriptProps): React.JSX.Element {
-  // 对话记录底部锚点
-  const transcriptEndRef = useRef<HTMLDivElement | null>(null)
+  // 对话记录滚动容器
+  const transcriptRef = useRef<HTMLDivElement | null>(null)
 
   /** 新消息出现时滚动至最新内容 */
   useEffect(() => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
+    // 当前对话记录滚动容器
+    const transcriptElement = transcriptRef.current
+    if (transcriptElement) {
+      transcriptElement.scrollTop = transcriptElement.scrollHeight
+    }
   }, [messages])
 
   if (messages.length === 0) {
     return (
-      <div className="flex min-h-48 flex-col items-center justify-center px-6 py-12 text-center">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-12 text-center">
         <Sparkles className="text-muted-foreground" size={18} />
         <p className="mt-3 text-sm font-medium text-foreground">对话会从一句轻松的问候开始</p>
         <p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">
@@ -34,7 +38,11 @@ export default function ConversationTranscript({
   }
 
   return (
-    <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto" aria-label="当前对话记录">
+    <div
+      aria-label="当前对话记录"
+      className="custom-scrollbar min-h-0 flex-1 overflow-y-auto"
+      ref={transcriptRef}
+    >
       {messages.map((message) => {
         // 当前消息是否来自用户
         const isUserMessage = message.role === 'user'
@@ -99,7 +107,6 @@ export default function ConversationTranscript({
           </article>
         )
       })}
-      <div ref={transcriptEndRef} />
     </div>
   )
 }

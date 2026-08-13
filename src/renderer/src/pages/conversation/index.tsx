@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
   Keyboard,
@@ -51,10 +51,10 @@ const STATUS_VIEW_MAP: Record<
 /** 输入模式展示配置 */
 const INPUT_MODE_VIEW_MAP: Record<
   ConversationInputMode,
-  { label: string; panelTitle: string; icon: typeof Mic }
+  { label: string; icon: typeof Mic }
 > = {
-  voice: { label: '语音练习', panelTitle: '语音练习', icon: Mic },
-  text: { label: '文字练习', panelTitle: '文字练习', icon: Keyboard }
+  voice: { label: '语音练习', icon: Mic },
+  text: { label: '文字练习', icon: Keyboard }
 }
 
 /** 语音工作区的固定状态主文案 */
@@ -102,17 +102,12 @@ export default function ConversationPage(): React.JSX.Element {
   } = useConversation()
   // 文字模式的当前输入草稿
   const [draftText, setDraftText] = useState('')
+  // 文字对话输入框
+  const textInputRef = useRef<HTMLTextAreaElement | null>(null)
   // 当前状态展示配置
   const statusView = STATUS_VIEW_MAP[status]
   // 当前状态图标
   const StatusIcon = statusView.icon
-  // 当前输入模式展示配置
-  const inputModeView = INPUT_MODE_VIEW_MAP[inputMode]
-  // 匹配当前模式的状态说明
-  const statusDescription =
-    inputMode === 'text' && status === 'speaking'
-      ? '朗读结束后即可继续输入'
-      : statusView.description
   // 是否存在本次会话记录
   const hasMessages = messages.length > 0
   // 文字输入区是否可以接收新消息
@@ -125,7 +120,6 @@ export default function ConversationPage(): React.JSX.Element {
     (status === 'speaking'
       ? messages.at(-1)?.text || '正在朗读…'
       : VOICE_FOCAL_TEXT_MAP[status] || '随时可以开始')
-
   /** 切换当前对话输入模式 */
   const handleInputModeChange = (nextInputMode: ConversationInputMode): void => {
     if (changeInputMode(nextInputMode)) {
@@ -160,9 +154,32 @@ export default function ConversationPage(): React.JSX.Element {
     event.preventDefault()
     handleTextSubmit()
   }
+  // 语音模式主操作配置
+  const voiceActionMap: Partial<
+    Record<ConversationStatus, { label: string; icon: typeof Mic; action: () => void }>
+  > = {
+    idle: {
+      label: hasMessages ? '重新开始' : '开始练习',
+      icon: hasMessages ? RotateCcw : Mic,
+      action: handleStartConversation
+    },
+    listening: { label: '暂停', icon: Pause, action: pauseConversation },
+    paused: { label: '继续', icon: Play, action: resumeConversation }
+  }
+  // 当前语音模式主操作
+  const voiceAction = voiceActionMap[status]
+  // 当前语音模式主操作图标
+  const VoiceActionIcon = voiceAction?.icon
+
+  /** 文字输入恢复可用后自动定位输入焦点 */
+  useEffect(() => {
+    if (canTypeMessage) {
+      textInputRef.current?.focus({ preventScroll: true })
+    }
+  }, [canTypeMessage])
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-[1180px] flex-col px-5 py-5 lg:h-full lg:min-h-0 lg:overflow-hidden lg:px-7 lg:py-6">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-[1180px] flex-col overflow-hidden px-5 py-5 lg:px-7 lg:py-6">
       <header className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-2xl">
           <h2 className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">英语对话练习</h2>
@@ -171,79 +188,57 @@ export default function ConversationPage(): React.JSX.Element {
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          {status === 'paused' && (
-            <Button className="cursor-pointer" onClick={resumeConversation} variant="secondary">
-              <Play size={15} />
-              继续
-            </Button>
-          )}
-          {status === 'listening' && (
-            <Button className="cursor-pointer" onClick={pauseConversation} variant="secondary">
-              <Pause size={15} />
-              暂停
-            </Button>
-          )}
-          {isConversationActive && (
-            <Button className="cursor-pointer" onClick={handleEndConversation} variant="outline">
-              <Square size={14} />
-              结束
-            </Button>
-          )}
-          {!isConversationActive && (
-            <Button
-              className="h-10 cursor-pointer px-4"
-              onClick={handleStartConversation}
-            >
-              {hasMessages ? (
-                <RotateCcw size={17} />
-              ) : (
-                <inputModeView.icon size={17} />
-              )}
-              {hasMessages ? '重新开始' : '开始练习'}
-            </Button>
-          )}
-        </div>
+        {isConversationActive && (
+          <Button className="cursor-pointer" onClick={handleEndConversation} variant="outline">
+            <Square size={14} />
+            结束
+          </Button>
+        )}
       </header>
 
-      <div
-        aria-label="练习方式"
-        className="mt-4 flex w-fit shrink-0 items-center gap-1 rounded-lg border border-border bg-card p-1"
-        role="group"
-      >
-        {(Object.entries(INPUT_MODE_VIEW_MAP) as [ConversationInputMode, typeof inputModeView][]).map(
-          ([mode, modeView]) => {
-            // 当前模式选项是否已选中
-            const isSelected = inputMode === mode
-            // 当前模式图标
-            const ModeIcon = modeView.icon
-            return (
-              <Button
-                aria-disabled={isConversationActive}
-                aria-pressed={isSelected}
-                className={cn(
-                  'h-8 cursor-pointer px-3 text-xs',
-                  isSelected && 'bg-primary/10 text-primary hover:bg-primary/12',
-                  isConversationActive && !isSelected && 'opacity-55'
-                )}
-                key={mode}
-                onClick={() => handleInputModeChange(mode)}
-                title={isConversationActive ? '请先结束当前对话，再切换练习方式' : undefined}
-                type="button"
-                variant="ghost"
-              >
-                <ModeIcon size={14} />
-                {modeView.label}
-              </Button>
-            )
-          }
-        )}
-      </div>
+      <section className="lab-panel mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-4">
+          <div
+            aria-label="练习方式"
+            className="flex items-center gap-1"
+            role="group"
+          >
+            {(Object.entries(INPUT_MODE_VIEW_MAP) as [
+              ConversationInputMode,
+              (typeof INPUT_MODE_VIEW_MAP)[ConversationInputMode]
+            ][]).map(
+              ([mode, modeView]) => {
+                // 当前模式选项是否已选中
+                const isSelected = inputMode === mode
+                // 当前模式图标
+                const ModeIcon = modeView.icon
+                return (
+                  <Button
+                    aria-disabled={isConversationActive}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      'h-8 cursor-pointer px-3 text-xs',
+                      isSelected && 'bg-primary/10 text-primary hover:bg-primary/12',
+                      isConversationActive && !isSelected && 'opacity-55'
+                    )}
+                    key={mode}
+                    onClick={() => handleInputModeChange(mode)}
+                    title={isConversationActive ? '请先结束当前对话，再切换练习方式' : undefined}
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ModeIcon size={14} />
+                    {modeView.label}
+                  </Button>
+                )
+              }
+            )}
+          </div>
 
-      <section className="lab-panel mt-4 grid min-h-[34rem] flex-1 overflow-hidden lg:min-h-0 lg:grid-cols-[minmax(300px,0.72fr)_minmax(380px,1fr)]">
-        <div className="flex min-h-[28rem] flex-col overflow-hidden border-b border-border lg:min-h-0 lg:border-r lg:border-b-0">
-          <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border px-4">
-            <span className="text-sm font-medium text-foreground">{inputModeView.panelTitle}</span>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-xs text-muted-foreground sm:inline">
+              {messages.length} 条消息
+            </span>
             <Badge className="gap-1.5" variant={status === 'error' ? 'destructive' : 'secondary'}>
               <StatusIcon
                 className={cn(
@@ -254,152 +249,117 @@ export default function ConversationPage(): React.JSX.Element {
               {statusView.label}
             </Badge>
           </div>
-
-          <div className="flex flex-1 flex-col items-center justify-center px-6 py-6 text-center lg:py-8">
-            {inputMode === 'voice' ? (
-              <>
-                <div
-                  aria-hidden="true"
-                  className={cn(
-                    'relative flex size-18 items-center justify-center rounded-xl border border-border bg-muted/45 text-foreground transition-[background-color,border-color] lg:size-20',
-                    status === 'listening' && 'border-primary/35 bg-primary/8 text-primary'
-                  )}
-                >
-                  <StatusIcon
-                    className={cn(
-                      'size-7',
-                      (status === 'initializing' || status === 'thinking') && 'animate-spin'
-                    )}
-                    strokeWidth={1.7}
-                  />
-                </div>
-
-                <p
-                  aria-live="polite"
-                  className="mt-5 max-w-md text-balance text-lg font-medium leading-7 tracking-[-0.01em] text-foreground lg:mt-6 lg:text-xl lg:leading-8"
-                >
-                  {voiceFocalText}
-                </p>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground lg:mt-3">
-                  {statusView.description}
-                </p>
-              </>
-            ) : (
-              <div className="flex w-full max-w-md flex-col text-left">
-                <div className="flex items-center gap-3">
-                  <div
-                    aria-hidden="true"
-                    className={cn(
-                      'flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/45 text-muted-foreground',
-                      canTypeMessage && 'border-primary/30 bg-primary/8 text-primary'
-                    )}
-                  >
-                    <StatusIcon
-                      className={cn(
-                        (status === 'initializing' || status === 'thinking') && 'animate-spin'
-                      )}
-                      size={18}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <p aria-live="polite" className="text-base font-medium text-foreground">
-                      {TEXT_FOCAL_TEXT_MAP[status]}
-                    </p>
-                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                      {statusDescription}
-                    </p>
-                  </div>
-                </div>
-
-                <Textarea
-                  aria-describedby="text-conversation-shortcuts"
-                  aria-label="英文对话输入"
-                  className="mt-5 min-h-32 resize-none bg-card leading-6"
-                  disabled={!canTypeMessage}
-                  onChange={(event) => setDraftText(event.target.value)}
-                  onKeyDown={handleTextKeyDown}
-                  placeholder={canTypeMessage ? '输入你的英文回复…' : '开始练习后即可输入英文'}
-                  value={draftText}
-                />
-                <div className="mt-3 flex items-center justify-between gap-4">
-                  <p
-                    className="text-xs leading-5 text-muted-foreground"
-                    id="text-conversation-shortcuts"
-                  >
-                    Enter 发送 · Shift + Enter 换行
-                  </p>
-                  <Button
-                    className="cursor-pointer"
-                    disabled={!canSendText}
-                    onClick={handleTextSubmit}
-                    type="button"
-                  >
-                    <SendHorizontal size={15} />
-                    发送
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {errorMessage && (
-              <div className="mt-6 w-full rounded-lg bg-destructive/10 px-4 py-3 text-left text-sm leading-6 text-destructive">
-                <p>{errorMessage}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {canRetryReply && (
-                    <Button
-                      className="cursor-pointer"
-                      onClick={retryReply}
-                      size="sm"
-                      variant="outline"
-                    >
-                      重试回复
-                    </Button>
-                  )}
-                  <Button
-                    className="cursor-pointer"
-                    onClick={handleStartConversation}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    重新开始
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="border-t border-border px-4 py-2.5 text-xs leading-5 text-muted-foreground lg:py-3">
-            {inputMode === 'voice' ? (
-              'AI 朗读时会暂停收音，避免扬声器声音被再次识别。'
-            ) : (
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <label
-                    className="cursor-pointer font-medium text-foreground"
-                    htmlFor="text-reply-speech"
-                  >
-                    朗读 AI 回复
-                  </label>
-                  <p id="text-reply-speech-description">开启后，AI 回复会自动朗读。</p>
-                </div>
-                <Switch
-                  aria-describedby="text-reply-speech-description"
-                  checked={isTextReplySpeechEnabled}
-                  className="cursor-pointer"
-                  id="text-reply-speech"
-                  onCheckedChange={changeTextReplySpeech}
-                />
-              </div>
-            )}
-          </div>
         </div>
 
-        <div className="flex min-h-[34rem] flex-col overflow-hidden lg:min-h-0">
-          <div className="flex h-12 items-center justify-between border-b border-border px-4">
-            <span className="text-sm font-medium text-foreground">对话记录</span>
-            <span className="text-xs text-muted-foreground">{messages.length} 条消息</span>
-          </div>
-          <ConversationTranscript messages={messages} />
+        <ConversationTranscript messages={messages} />
+
+        <div className="shrink-0 border-t border-border bg-card px-4 py-3 sm:px-5">
+          {inputMode === 'voice' ? (
+            <div className="flex items-center gap-3">
+              <div
+                aria-hidden="true"
+                className={cn(
+                  'flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/45 text-muted-foreground',
+                  status === 'listening' && 'border-primary/30 bg-primary/8 text-primary'
+                )}
+              >
+                <StatusIcon
+                  className={cn(
+                    (status === 'initializing' || status === 'thinking') && 'animate-spin'
+                  )}
+                  size={18}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p aria-live="polite" className="truncate text-sm font-medium text-foreground">
+                  {voiceFocalText}
+                </p>
+                <p className="truncate text-xs leading-5 text-muted-foreground">
+                  {statusView.description}
+                </p>
+              </div>
+              {voiceAction && (
+                <Button className="shrink-0 cursor-pointer" onClick={voiceAction.action}>
+                  {VoiceActionIcon && <VoiceActionIcon size={15} />}
+                  {voiceAction.label}
+                </Button>
+              )}
+              {!voiceAction && status !== 'error' && (
+                <Button className="shrink-0" disabled>
+                  <StatusIcon size={15} />
+                  {statusView.label}
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div>
+              <Textarea
+                aria-describedby="text-conversation-shortcuts"
+                aria-label="英文对话输入"
+                className="min-h-20 resize-none bg-background leading-6"
+                disabled={!canTypeMessage}
+                onChange={(event) => setDraftText(event.target.value)}
+                onKeyDown={handleTextKeyDown}
+                placeholder={canTypeMessage ? '输入你的英文回复…' : TEXT_FOCAL_TEXT_MAP[status]}
+                ref={textInputRef}
+                value={draftText}
+              />
+              <div className="mt-2 flex items-center justify-between gap-4 text-xs leading-5 text-muted-foreground">
+                <p className="min-w-0" id="text-conversation-shortcuts">
+                  Enter 发送 · Shift + Enter 换行
+                </p>
+                <div className="flex shrink-0 items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer" htmlFor="text-reply-speech">
+                      朗读 AI 回复
+                    </label>
+                    <Switch
+                      aria-label="朗读 AI 回复"
+                      checked={isTextReplySpeechEnabled}
+                      className="cursor-pointer"
+                      id="text-reply-speech"
+                      onCheckedChange={changeTextReplySpeech}
+                    />
+                  </div>
+                  {!isConversationActive ? (
+                    <Button className="cursor-pointer" onClick={handleStartConversation}>
+                      {hasMessages ? <RotateCcw size={15} /> : <Keyboard size={15} />}
+                      {hasMessages ? '重新开始' : '开始练习'}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="cursor-pointer"
+                      disabled={!canSendText}
+                      onClick={handleTextSubmit}
+                      type="button"
+                    >
+                      <SendHorizontal size={15} />
+                      发送
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="mr-auto">{errorMessage}</p>
+              {canRetryReply && (
+                <Button className="cursor-pointer" onClick={retryReply} size="sm" variant="outline">
+                  重试回复
+                </Button>
+              )}
+              <Button
+                className="cursor-pointer"
+                onClick={handleStartConversation}
+                size="sm"
+                variant="ghost"
+              >
+                重新开始
+              </Button>
+            </div>
+          )}
         </div>
       </section>
     </div>

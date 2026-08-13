@@ -41,10 +41,10 @@ export default function HomePage(): React.JSX.Element {
   const hasInputText = Boolean(translationText.trim())
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-[1180px] flex-col px-5 py-5 lg:px-7 lg:py-6">
+    <div className="mx-auto flex min-h-full w-full max-w-[1180px] flex-col px-5 py-5 min-[900px]:h-full min-[900px]:min-h-0 min-[900px]:overflow-hidden lg:px-7 lg:py-6">
       <Header onScreenshot={onScreenshot} />
 
-      <section className="lab-panel mt-5 grid min-h-0 flex-1 grid-cols-1 overflow-hidden min-[900px]:grid-cols-[minmax(250px,0.72fr)_minmax(360px,1fr)] lg:min-h-[calc(100dvh-8.75rem)]">
+      <section className="lab-panel mt-5 grid flex-1 grid-cols-1 overflow-hidden min-[900px]:min-h-0 min-[900px]:grid-cols-[minmax(250px,0.72fr)_minmax(360px,1fr)]">
         <div className="flex min-h-72 flex-col overflow-hidden border-b border-border min-[900px]:min-h-0 min-[900px]:border-r min-[900px]:border-b-0">
           <div className="flex h-12 items-center justify-between border-b border-border px-4">
             <span className="text-sm font-medium text-foreground">原文</span>

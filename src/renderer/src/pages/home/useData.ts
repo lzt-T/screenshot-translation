@@ -4,14 +4,11 @@ import { toast } from 'sonner'
 import { speakText, stopSpeaking } from '@src/utils/speak'
 import {
   Language,
-  SentenceAnalysis,
-  SentenceAnalysisFailureResponse,
-  SentenceAnalysisRequest,
-  SentenceAnalysisSuccessResponse,
   TextType,
   TranslateResponse
 } from '@src/type/base'
 import useLocalForage from '@renderer/hooks/useLocalForage'
+import useSentenceAnalysis from '@renderer/hooks/useSentenceAnalysis'
 import { useNavigate } from 'react-router-dom'
 import { TranslationModelProfile } from '@src/type/model'
 import { createTextLearningItemInput } from '@src/utils/learning'
@@ -41,18 +38,10 @@ export default function useData() {
   const [translationText, setTranslationText] = useState('')
   // 翻译错误信息
   const [translationError, setTranslationError] = useState('')
-  // 句子分析结果
-  const [sentenceAnalysis, setSentenceAnalysis] = useState<SentenceAnalysis | null>(null)
-  // 是否正在分析句子
-  const [isSentenceAnalysisLoading, setIsSentenceAnalysisLoading] = useState(false)
-  // 句子分析错误信息
-  const [sentenceAnalysisError, setSentenceAnalysisError] = useState('')
   /** 上一次翻译文本 */
   const lastTranslationText = useRef('')
   /** 翻译是否成功 */
   const translateSuccess = useRef(false)
-  /** 当前有效的句子分析请求编号 */
-  const activeSentenceAnalysisRequestId = useRef(0)
   /** 翻译结果 */
   const [translationResult, setTranslationResult] = useState<TranslateResponse | null>(null)
   // 已收藏记录 ID
@@ -69,6 +58,14 @@ export default function useData() {
   const canAnalyzeSentence =
     translationResult?.sourceLanguage === Language.EN &&
     translationResult.textType === TextType.SENTENCE
+  // 句子分析状态和操作
+  const {
+    sentenceAnalysis,
+    isSentenceAnalysisLoading,
+    sentenceAnalysisError,
+    analyzeSentence,
+    resetSentenceAnalysis
+  } = useSentenceAnalysis()
 
   /**
    * 跳转到设置页并聚焦模型配置区域
@@ -121,14 +118,6 @@ export default function useData() {
     }
     return true
   }, [getActiveModel, goToSettingPage, isInit])
-
-  /** 清空句子分析并使未完成请求失效 */
-  const resetSentenceAnalysis = (): void => {
-    activeSentenceAnalysisRequestId.current += 1
-    setSentenceAnalysis(null)
-    setIsSentenceAnalysisLoading(false)
-    setSentenceAnalysisError('')
-  }
 
   /** 处理输入文本变化 */
   const handleInputTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -246,25 +235,7 @@ export default function useData() {
     // 首条可用中文译文
     const primaryTranslation =
       translationResult.translation.find((item) => item.zh?.trim())?.zh?.trim() || ''
-    if (!primaryTranslation) {
-      setSentenceAnalysisError('缺少可供参考的中文译文，请重新翻译后再试')
-      return
-    }
-
-    // 本次分析请求编号
-    const requestId = activeSentenceAnalysisRequestId.current + 1
-    // 句子分析请求参数
-    const request: SentenceAnalysisRequest = {
-      requestId,
-      sourceText: translationResult.sourceWords,
-      translation: primaryTranslation
-    }
-
-    activeSentenceAnalysisRequestId.current = requestId
-    setSentenceAnalysis(null)
-    setSentenceAnalysisError('')
-    setIsSentenceAnalysisLoading(true)
-    window.electron.ipcRenderer.send(SendEnum.SENTENCE_ANALYSIS, request)
+    void analyzeSentence(translationResult.sourceWords, primaryTranslation)
   }
 
   /** 切换当前翻译结果的收藏状态 */
@@ -340,8 +311,6 @@ export default function useData() {
     // 移除可能存在的旧监听器
     window.electron.ipcRenderer.removeAllListeners(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS)
     window.electron.ipcRenderer.removeAllListeners(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL)
-    window.electron.ipcRenderer.removeAllListeners(SendEnum.SENTENCE_ANALYSIS_SUCCESS)
-    window.electron.ipcRenderer.removeAllListeners(SendEnum.SENTENCE_ANALYSIS_FAIL)
 
     // 成功处理函数
     const handleSuccess = (_event, result: TranslateResponse) => {
@@ -366,41 +335,9 @@ export default function useData() {
       translateSuccess.current = false
     }
 
-    /** 处理句子分析成功响应 */
-    const handleSentenceAnalysisSuccess = (
-      _event,
-      response: SentenceAnalysisSuccessResponse
-    ): void => {
-      if (response.requestId !== activeSentenceAnalysisRequestId.current) {
-        return
-      }
-      setIsSentenceAnalysisLoading(false)
-      setSentenceAnalysisError('')
-      setSentenceAnalysis(response.analysis)
-    }
-
-    /** 处理句子分析失败响应 */
-    const handleSentenceAnalysisFail = (
-      _event,
-      response: SentenceAnalysisFailureResponse
-    ): void => {
-      if (response.requestId !== activeSentenceAnalysisRequestId.current) {
-        return
-      }
-      setIsSentenceAnalysisLoading(false)
-      setSentenceAnalysisError(response.message || '句子分析失败，请稍后重试')
-    }
-
     // 注册监听器
     window.electron.ipcRenderer.on(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS, handleSuccess)
     window.electron.ipcRenderer.on(SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL, handleFail)
-    window.electron.ipcRenderer.on(
-      SendEnum.SENTENCE_ANALYSIS_SUCCESS,
-      handleSentenceAnalysisSuccess
-    )
-    window.electron.ipcRenderer.on(SendEnum.SENTENCE_ANALYSIS_FAIL, handleSentenceAnalysisFail)
-
-
     // 清理函数，组件卸载时移除监听器
     return () => {
       window.electron.ipcRenderer.removeAllListeners(
@@ -409,8 +346,7 @@ export default function useData() {
       window.electron.ipcRenderer.removeAllListeners(
         SendEnum.ENGLISH_CHINESE_TRANSLATION_FAIL
       )
-      window.electron.ipcRenderer.removeAllListeners(SendEnum.SENTENCE_ANALYSIS_SUCCESS)
-      window.electron.ipcRenderer.removeAllListeners(SendEnum.SENTENCE_ANALYSIS_FAIL)
+      resetSentenceAnalysis()
       // 确保离开页面时停止本地语音
       stopSpeaking()
     }

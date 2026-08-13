@@ -107,9 +107,21 @@ function App(): React.JSX.Element {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background">
+      <main
+        className={cn(
+          'min-w-0 flex-1 overflow-x-hidden bg-background',
+          activePath === '/conversation'
+            ? 'overflow-y-hidden'
+            : activePath === '/home'
+              ? 'overflow-y-auto min-[900px]:overflow-y-hidden'
+              : 'overflow-y-auto'
+        )}
+      >
         <SelectionTranslator
-          className={cn(activePath === '/conversation' && 'lg:h-full lg:min-h-0')}
+          className={cn(
+            activePath === '/conversation' && 'h-full min-h-0',
+            activePath === '/home' && 'min-[900px]:h-full min-[900px]:min-h-0'
+          )}
         >
           <Outlet />
         </SelectionTranslator>

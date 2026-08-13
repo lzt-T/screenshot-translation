@@ -13,9 +13,11 @@ import {
   X
 } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import SentenceAnalysisView from '@renderer/components/SentenceAnalysisView'
 import { cn } from '@renderer/lib/utils'
 import useSelectionTranslationActions from '@renderer/components/SelectionTranslator/useSelectionTranslationActions'
-import { Language, TranslateResponse } from '@src/type/base'
+import useSentenceAnalysis from '@renderer/hooks/useSentenceAnalysis'
+import { Language, TextType, TranslateResponse } from '@src/type/base'
 import { SendEnum } from '@src/type/ipc-constants'
 import { copyText } from '@src/utils/copy'
 
@@ -188,6 +190,18 @@ export default function SelectionTranslator({
   const translationDirection = translationResult
     ? `${LANGUAGE_LABELS[translationResult.sourceLanguage]} → ${LANGUAGE_LABELS[translationResult.targetLanguage]}`
     : '自动识别语言'
+  // 当前结果是否允许句子分析
+  const canAnalyzeSentence =
+    translationResult?.sourceLanguage === Language.EN &&
+    translationResult.textType === TextType.SENTENCE
+  // 句子分析状态和操作
+  const {
+    sentenceAnalysis,
+    isSentenceAnalysisLoading,
+    sentenceAnalysisError,
+    analyzeSentence,
+    resetSentenceAnalysis
+  } = useSentenceAnalysis()
   // 收藏与朗读状态和操作
   const {
     isBookmarked,
@@ -197,7 +211,12 @@ export default function SelectionTranslator({
     stopSpeech,
     toggleSpeech,
     toggleBookmark
-  } = useSelectionTranslationActions({ translationResult, sourceText, translatedText })
+  } = useSelectionTranslationActions({
+    translationResult,
+    sourceText,
+    translatedText,
+    sentenceAnalysis
+  })
 
   /** 隐藏选区浮动按钮 */
   function dismissSelectionCandidate(): void {
@@ -214,6 +233,7 @@ export default function SelectionTranslator({
     const requestId = activeRequestId.current + 1
     activeRequestId.current = requestId
     stopSpeech()
+    resetSentenceAnalysis()
     setSourceText(text)
     setTranslationResult(null)
     setErrorMessage('')
@@ -263,6 +283,18 @@ export default function SelectionTranslator({
     }
   }
 
+  /** 发起当前划词英文句子的结构分析 */
+  function handleAnalyzeSentence(): void {
+    if (!canAnalyzeSentence || !translationResult || isSentenceAnalysisLoading) {
+      return
+    }
+
+    // 首条可用中文译文
+    const primaryTranslation =
+      translationResult.translation.find((item) => item.zh?.trim())?.zh?.trim() || ''
+    void analyzeSentence(translationResult.sourceWords, primaryTranslation)
+  }
+
   /**
    * 响应抽屉开关变化
    * @param isOpen 下一开关状态
@@ -273,6 +305,7 @@ export default function SelectionTranslator({
       activeRequestId.current += 1
       setIsLoading(false)
       stopSpeech()
+      resetSentenceAnalysis()
     }
   }
 
@@ -501,6 +534,15 @@ export default function SelectionTranslator({
                   </div>
                 )}
               </section>
+
+              {canAnalyzeSentence && (
+                <SentenceAnalysisView
+                  analysis={sentenceAnalysis}
+                  errorMessage={sentenceAnalysisError}
+                  isLoading={isSentenceAnalysisLoading}
+                  onAnalyze={handleAnalyzeSentence}
+                />
+              )}
             </div>
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>

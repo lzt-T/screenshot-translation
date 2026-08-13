@@ -228,99 +228,60 @@ export default function ResultView({
         </div>
       </div>
 
-      {!result && (
-        <div className="flex flex-1 items-center justify-center px-8 py-12">
-          <div className="max-w-xs text-center">
-            <div
-              className={cn(
-                'mx-auto mb-3 flex size-7 items-center justify-center',
-                errorMessage ? 'text-destructive' : 'text-muted-foreground'
-              )}
-            >
-              {errorMessage ? (
-                <CircleAlert size={18} />
-              ) : isLoading ? (
-                <Loader2 size={18} className="animate-spin text-primary" />
-              ) : (
-                <ScanText size={18} />
-              )}
-            </div>
-            <p className="text-sm font-medium text-foreground">
-              {errorMessage ? '本次翻译未完成' : isLoading ? '正在识别与翻译' : '译文将在这里显现'}
-            </p>
-            <p
-              className="mt-2 break-words text-xs leading-5 text-muted-foreground"
-              role={errorMessage ? 'alert' : undefined}
-            >
-              {errorMessage
-                ? errorMessage
-                : isLoading
-                  ? '请稍候，处理完成后会保留原有段落结构。'
-                  : '从截图开始，或在左侧输入文字。'}
-            </p>
-            {errorMessage && (
-              <Button className="mt-4" onClick={onRetry} size="sm" variant="outline">
-                重新翻译
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {result && !isWord && (
-        <div className="divide-y divide-border">
-          {result.translation?.map((item, index) => {
-            // 当前句子条目的操作文本
-            const itemText = getSentenceItemText(result, item)
-            return (
+      <div className="custom-scrollbar min-[900px]:min-h-0 min-[900px]:flex-1 min-[900px]:overflow-y-auto">
+        {!result && (
+          <div className="flex min-h-68 items-center justify-center px-8 py-12 min-[900px]:h-full min-[900px]:min-h-0">
+            <div className="max-w-xs text-center">
               <div
-                className="group relative px-5 py-4 pr-24 transition-colors hover:bg-accent/35"
-                key={index}
+                className={cn(
+                  'mx-auto mb-3 flex size-7 items-center justify-center',
+                  errorMessage ? 'text-destructive' : 'text-muted-foreground'
+                )}
               >
-                <ResultItemActions
-                  index={index}
-                  isSpeaking={speakingItemIndex === index}
-                  onCopy={onCopyItem}
-                  onSpeak={onSpeakItem}
-                  text={itemText}
-                />
-                {result.sourceLanguage === Language.ZH_AND_EN ? (
-                  <div className="space-y-2">
-                    <p className="break-words text-[15px] leading-7 text-foreground">{item.en}</p>
-                    <p className="break-words text-sm leading-6 text-muted-foreground">{item.zh}</p>
-                  </div>
+                {errorMessage ? (
+                  <CircleAlert size={18} />
+                ) : isLoading ? (
+                  <Loader2 size={18} className="animate-spin text-primary" />
                 ) : (
-                  <p className="break-words text-[15px] leading-7 text-foreground">
-                    {result.sourceLanguage === Language.ZH ? item.en : item.zh}
-                  </p>
+                  <ScanText size={18} />
                 )}
               </div>
-            )
-          })}
-        </div>
-      )}
-
-      {canAnalyzeSentence && (
-        <SentenceAnalysisView
-          analysis={sentenceAnalysis}
-          errorMessage={sentenceAnalysisError}
-          isLoading={isSentenceAnalysisLoading}
-          onAnalyze={onAnalyzeSentence}
-        />
-      )}
-
-      {result && isWord && result.exampleSentences && result.exampleSentences.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 border-b border-border bg-muted/45 px-4 py-3">
-            <BookOpen size={15} className="text-muted-foreground" />
-            <span className="text-sm font-medium">例句观察</span>
+              <p className="text-sm font-medium text-foreground">
+                {errorMessage
+                  ? '本次翻译未完成'
+                  : isLoading
+                    ? '正在识别与翻译'
+                    : '译文将在这里显现'}
+              </p>
+              <p
+                className="mt-2 break-words text-xs leading-5 text-muted-foreground"
+                role={errorMessage ? 'alert' : undefined}
+              >
+                {errorMessage
+                  ? errorMessage
+                  : isLoading
+                    ? '请稍候，处理完成后会保留原有段落结构。'
+                    : '从截图开始，或在左侧输入文字。'}
+              </p>
+              {errorMessage && (
+                <Button className="mt-4" onClick={onRetry} size="sm" variant="outline">
+                  重新翻译
+                </Button>
+              )}
+            </div>
           </div>
+        )}
+
+        {result && !isWord && (
           <div className="divide-y divide-border">
-            {result.exampleSentences.map((item, index) => {
-              // 当前例句条目的操作文本
-              const itemText = getWordItemText(item)
+            {result.translation?.map((item, index) => {
+              // 当前句子条目的操作文本
+              const itemText = getSentenceItemText(result, item)
               return (
-                <div className="group relative px-5 py-4 pr-24 hover:bg-accent/30" key={index}>
+                <div
+                  className="group relative px-5 py-4 pr-24 transition-colors hover:bg-accent/35"
+                  key={index}
+                >
                   <ResultItemActions
                     index={index}
                     isSpeaking={speakingItemIndex === index}
@@ -328,26 +289,71 @@ export default function ResultView({
                     onSpeak={onSpeakItem}
                     text={itemText}
                   />
-                  {item.partOfSpeech && (
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {item.partOfSpeech} · {item.wordTranslation}
-                    </span>
+                  {result.sourceLanguage === Language.ZH_AND_EN ? (
+                    <div className="space-y-2">
+                      <p className="break-words text-[15px] leading-7 text-foreground">{item.en}</p>
+                      <p className="break-words text-sm leading-6 text-muted-foreground">{item.zh}</p>
+                    </div>
+                  ) : (
+                    <p className="break-words text-[15px] leading-7 text-foreground">
+                      {result.sourceLanguage === Language.ZH ? item.en : item.zh}
+                    </p>
                   )}
-                  <p
-                    className={cn(
-                      'text-[15px] leading-7 text-foreground',
-                      item.partOfSpeech && 'mt-2'
-                    )}
-                  >
-                    {item.en}
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.zh}</p>
                 </div>
               )
             })}
           </div>
-        </div>
-      )}
+        )}
+
+        {canAnalyzeSentence && (
+          <SentenceAnalysisView
+            analysis={sentenceAnalysis}
+            errorMessage={sentenceAnalysisError}
+            isLoading={isSentenceAnalysisLoading}
+            onAnalyze={onAnalyzeSentence}
+          />
+        )}
+
+        {result && isWord && result.exampleSentences && result.exampleSentences.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 border-b border-border bg-muted/45 px-4 py-3">
+              <BookOpen size={15} className="text-muted-foreground" />
+              <span className="text-sm font-medium">例句观察</span>
+            </div>
+            <div className="divide-y divide-border">
+              {result.exampleSentences.map((item, index) => {
+                // 当前例句条目的操作文本
+                const itemText = getWordItemText(item)
+                return (
+                  <div className="group relative px-5 py-4 pr-24 hover:bg-accent/30" key={index}>
+                    <ResultItemActions
+                      index={index}
+                      isSpeaking={speakingItemIndex === index}
+                      onCopy={onCopyItem}
+                      onSpeak={onSpeakItem}
+                      text={itemText}
+                    />
+                    {item.partOfSpeech && (
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {item.partOfSpeech} · {item.wordTranslation}
+                      </span>
+                    )}
+                    <p
+                      className={cn(
+                        'text-[15px] leading-7 text-foreground',
+                        item.partOfSpeech && 'mt-2'
+                      )}
+                    >
+                      {item.en}
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.zh}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
