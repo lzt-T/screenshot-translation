@@ -1,3 +1,4 @@
-provider: generic
-url: https://www.xjoker.top/auto-updates
+provider: github
+owner: lzt-T
+repo: screenshot-translation
 updaterCacheDirName: screenshot-translation-updater

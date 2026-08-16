@@ -52,7 +52,9 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://www.xjoker.top/auto-updates
+  provider: github
+  owner: lzt-T
+  repo: screenshot-translation
+  releaseType: release
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
