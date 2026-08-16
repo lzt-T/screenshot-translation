@@ -51,7 +51,20 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build application
-        run: pnpm exec electron-vite build
+        shell: pwsh
+        env:
+          MAIN_VITE_GML_FREE_API_KEY: ${{ secrets.MAIN_VITE_GML_FREE_API_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:MAIN_VITE_GML_FREE_API_KEY)) {
+            throw 'MAIN_VITE_GML_FREE_API_KEY secret is not configured'
+          }
+
+          pnpm exec electron-vite build
+
+          $mainBundle = Get-Content 'out/main/index.js' -Raw
+          if (-not $mainBundle.Contains($env:MAIN_VITE_GML_FREE_API_KEY)) {
+            throw 'MAIN_VITE_GML_FREE_API_KEY was not injected into the main bundle'
+          }
 
       - name: Build Windows installer
         run: pnpm exec electron-builder --win nsis --x64 --publish never
