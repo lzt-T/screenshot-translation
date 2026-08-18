@@ -56,19 +56,19 @@ export enum SendEnum {
   SPEECH_CANCEL = 'SPEECH_CANCEL',
   /** 生成口语教练回复 */
   CONVERSATION_REPLY = 'CONVERSATION_REPLY',
-  /** 启动实时英文识别 */
+  /** 启动本地英文识别 */
   RECOGNITION_START = 'RECOGNITION_START',
-  /** 发送实时英文识别音频 */
+  /** 发送本地英文识别音频 */
   RECOGNITION_AUDIO = 'RECOGNITION_AUDIO',
-  /** 停止实时英文识别 */
+  /** 停止本地英文识别 */
   RECOGNITION_STOP = 'RECOGNITION_STOP',
-  /** 实时英文识别已就绪 */
+  /** 本地英文识别已就绪 */
   RECOGNITION_READY = 'RECOGNITION_READY',
-  /** 实时英文识别部分结果 */
-  RECOGNITION_PARTIAL = 'RECOGNITION_PARTIAL',
-  /** 实时英文识别最终结果 */
+  /** Whisper 开始处理完整语音 */
+  RECOGNITION_PROCESSING = 'RECOGNITION_PROCESSING',
+  /** 本地英文识别最终结果 */
   RECOGNITION_FINAL = 'RECOGNITION_FINAL',
-  /** 实时英文识别失败 */
+  /** 本地英文识别失败 */
   RECOGNITION_ERROR = 'RECOGNITION_ERROR',
   /** 查询学习收藏 */
   LEARNING_ITEM_LIST = 'LEARNING_ITEM_LIST',

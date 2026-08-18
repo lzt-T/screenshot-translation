@@ -46,6 +46,7 @@ interface FailedConversationRequest {
 const ACTIVE_CONVERSATION_STATUSES = new Set<ConversationStatus>([
   'initializing',
   'listening',
+  'recognizing',
   'awaiting-input',
   'thinking',
   'speaking',
@@ -63,26 +64,7 @@ const MANUAL_SPEECH_STATUSES = new Set<ConversationStatus>([
 
 /** 将识别模型输出整理为适合界面展示的英文文本 */
 function formatRecognizedEnglish(text: string): string {
-  // 清理首尾空白与连续空格后的文本
-  const normalizedText = text.trim().replace(/\s+/gu, ' ')
-  // 文本中的英文字母
-  const englishLetters = normalizedText.match(/[a-z]/giu)
-  // 英文字母是否全部为大写
-  const isAllUppercase = englishLetters?.every((letter) => letter === letter.toUpperCase()) ?? false
-  if (!normalizedText || !isAllUppercase) {
-    return normalizedText
-  }
-
-  // 全小写的识别文本
-  const lowercaseText = normalizedText.toLocaleLowerCase('en-US')
-  // 第一个英文字母的位置
-  const firstLetterIndex = lowercaseText.search(/[a-z]/u)
-  // 句首字母大写后的文本
-  const sentenceCaseText =
-    lowercaseText.slice(0, firstLetterIndex) +
-    lowercaseText.charAt(firstLetterIndex).toUpperCase() +
-    lowercaseText.slice(firstLetterIndex + 1)
-  return sentenceCaseText.replace(/\bi(?=(?:['’](?:m|ve|ll|d))?\b)/gu, 'I')
+  return text.trim().replace(/\s+/gu, ' ')
 }
 
 /**
@@ -139,8 +121,6 @@ export default function useConversation() {
   const [isTextReplySpeechEnabled, setIsTextReplySpeechEnabled] = useState(false)
   // 页面内对话消息
   const [messages, setMessages] = useState<ConversationMessage[]>([])
-  // 当前增量识别文本
-  const [liveTranscript, setLiveTranscript] = useState('')
   // 当前可展示错误
   const [errorMessage, setErrorMessage] = useState('')
   // 当前手动朗读目标
@@ -195,7 +175,6 @@ export default function useConversation() {
       }
 
       failedRequestRef.current = null
-      setLiveTranscript('')
       setErrorMessage('')
       updateStatus('idle')
       setInputMode(nextInputMode)
@@ -296,7 +275,6 @@ export default function useConversation() {
         return
       }
       updateStatus('initializing')
-      setLiveTranscript('')
       setErrorMessage('')
 
       try {
@@ -365,7 +343,6 @@ export default function useConversation() {
       manualSpeechRestoreStatusRef.current = statusRef.current
       if (statusRef.current === 'listening') {
         stopListening()
-        setLiveTranscript('')
       }
     }
     setManualSpeechTarget(target)
@@ -594,7 +571,6 @@ export default function useConversation() {
     stopSpeaking()
     failedRequestRef.current = null
     updateMessages([])
-    setLiveTranscript('')
     setErrorMessage('')
     void getRecentOpeningRecords().then((recentOpeningRecords) => {
       if (sessionId !== sessionIdRef.current) {
@@ -644,7 +620,6 @@ export default function useConversation() {
       return
     }
     stopListening()
-    setLiveTranscript('')
     updateStatus('paused')
   }, [stopListening, updateStatus])
 
@@ -668,7 +643,6 @@ export default function useConversation() {
     }
     stopSpeaking()
     failedRequestRef.current = null
-    setLiveTranscript('')
     setErrorMessage('')
     updateStatus('idle')
   }, [inputMode, stopListening, updateStatus])
@@ -685,7 +659,7 @@ export default function useConversation() {
     void requestConversationReply(failedRequestRef.current, sessionIdRef.current)
   }, [ensureModelReady, requestConversationReply])
 
-  /** 注册实时识别结果监听 */
+  /** 注册本地识别结果监听 */
   useEffect(() => {
     /** 处理识别就绪 */
     const handleReady = (): void => {
@@ -693,20 +667,23 @@ export default function useConversation() {
         updateStatus('listening')
       }
     }
-    /** 处理部分识别结果 */
-    const handlePartial = (_event, response: RecognitionWorkerResponse): void => {
-      if (response.type === 'partial' && statusRef.current === 'listening') {
-        setLiveTranscript(formatRecognizedEnglish(response.text))
+    /** 处理 Whisper 推理开始 */
+    const handleProcessing = (_event, response: RecognitionWorkerResponse): void => {
+      if (response.type !== 'processing' || statusRef.current !== 'listening') {
+        return
       }
+      microphoneCaptureRef.current?.stop()
+      updateStatus('recognizing')
     }
     /** 处理最终识别结果 */
     const handleFinal = (_event, response: RecognitionWorkerResponse): void => {
-      if (response.type !== 'final' || statusRef.current !== 'listening') {
+      if (response.type !== 'final' || statusRef.current !== 'recognizing') {
         return
       }
       // 清理后的用户英文表达
       const userText = formatRecognizedEnglish(response.text)
       if (!userText) {
+        void startListening(sessionIdRef.current)
         return
       }
       // 当前用户消息
@@ -715,7 +692,6 @@ export default function useConversation() {
         role: 'user',
         text: userText
       }
-      setLiveTranscript('')
       updateMessages((previousMessages) => [...previousMessages, userMessage])
       void requestConversationReply({ isOpening: false, userText }, sessionIdRef.current)
     }
@@ -730,17 +706,17 @@ export default function useConversation() {
     }
 
     window.electron.ipcRenderer.on(SendEnum.RECOGNITION_READY, handleReady)
-    window.electron.ipcRenderer.on(SendEnum.RECOGNITION_PARTIAL, handlePartial)
+    window.electron.ipcRenderer.on(SendEnum.RECOGNITION_PROCESSING, handleProcessing)
     window.electron.ipcRenderer.on(SendEnum.RECOGNITION_FINAL, handleFinal)
     window.electron.ipcRenderer.on(SendEnum.RECOGNITION_ERROR, handleRecognitionError)
 
     return () => {
       window.electron.ipcRenderer.removeAllListeners(SendEnum.RECOGNITION_READY)
-      window.electron.ipcRenderer.removeAllListeners(SendEnum.RECOGNITION_PARTIAL)
+      window.electron.ipcRenderer.removeAllListeners(SendEnum.RECOGNITION_PROCESSING)
       window.electron.ipcRenderer.removeAllListeners(SendEnum.RECOGNITION_FINAL)
       window.electron.ipcRenderer.removeAllListeners(SendEnum.RECOGNITION_ERROR)
     }
-  }, [requestConversationReply, stopListening, updateMessages, updateStatus])
+  }, [requestConversationReply, startListening, stopListening, updateMessages, updateStatus])
 
   /** 页面卸载时释放所有会话资源 */
   useEffect(() => {
@@ -758,7 +734,6 @@ export default function useConversation() {
     isTextReplySpeechEnabled,
     messages,
     manualSpeechTarget,
-    liveTranscript,
     errorMessage,
     isConversationActive: ACTIVE_CONVERSATION_STATUSES.has(status),
     canRetryReply: Boolean(failedRequestRef.current),

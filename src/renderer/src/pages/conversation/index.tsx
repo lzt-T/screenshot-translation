@@ -37,6 +37,11 @@ const STATUS_VIEW_MAP: Record<
     icon: LoaderCircle
   },
   listening: { label: '正在聆听', description: '直接说英语，停顿后会自动发送', icon: Mic },
+  recognizing: {
+    label: '正在识别',
+    description: '正在整理你刚才说的英语',
+    icon: LoaderCircle
+  },
   'awaiting-input': {
     label: '等待输入',
     description: '输入英文后发送，AI 会自然接话',
@@ -62,6 +67,7 @@ const VOICE_FOCAL_TEXT_MAP: Partial<Record<ConversationStatus, string>> = {
   idle: '随时可以开始',
   initializing: '正在准备…',
   listening: '正在聆听…',
+  recognizing: '正在识别…',
   thinking: '正在思考…',
   paused: '对话已暂停',
   error: '暂时无法继续'
@@ -72,6 +78,7 @@ const TEXT_FOCAL_TEXT_MAP: Record<ConversationStatus, string> = {
   idle: '准备好后开始',
   initializing: '正在准备…',
   listening: '等待输入',
+  recognizing: '正在识别…',
   'awaiting-input': '轮到你了',
   thinking: '正在组织回复…',
   speaking: '正在朗读…',
@@ -88,7 +95,6 @@ export default function ConversationPage(): React.JSX.Element {
     isTextReplySpeechEnabled,
     messages,
     manualSpeechTarget,
-    liveTranscript,
     errorMessage,
     isConversationActive,
     canRetryReply,
@@ -121,10 +127,9 @@ export default function ConversationPage(): React.JSX.Element {
   const voiceFocalText =
     manualSpeechTarget
       ? '正在播放所选英文…'
-      : liveTranscript ||
-        (status === 'speaking'
-          ? messages.at(-1)?.text || '正在朗读…'
-          : VOICE_FOCAL_TEXT_MAP[status] || '随时可以开始')
+      : status === 'speaking'
+        ? messages.at(-1)?.text || '正在朗读…'
+        : VOICE_FOCAL_TEXT_MAP[status] || '随时可以开始'
   /** 切换当前对话输入模式 */
   const handleInputModeChange = (nextInputMode: ConversationInputMode): void => {
     if (changeInputMode(nextInputMode)) {
@@ -247,7 +252,10 @@ export default function ConversationPage(): React.JSX.Element {
             <Badge className="gap-1.5" variant={status === 'error' ? 'destructive' : 'secondary'}>
               <StatusIcon
                 className={cn(
-                  (status === 'initializing' || status === 'thinking') && 'animate-spin'
+                  (status === 'initializing' ||
+                    status === 'recognizing' ||
+                    status === 'thinking') &&
+                    'animate-spin'
                 )}
                 size={13}
               />
@@ -270,12 +278,16 @@ export default function ConversationPage(): React.JSX.Element {
                 aria-hidden="true"
                 className={cn(
                   'flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/45 text-muted-foreground',
-                  status === 'listening' && 'border-primary/30 bg-primary/8 text-primary'
+                  (status === 'listening' || status === 'recognizing') &&
+                    'border-primary/30 bg-primary/8 text-primary'
                 )}
               >
                 <StatusIcon
                   className={cn(
-                    (status === 'initializing' || status === 'thinking') && 'animate-spin'
+                    (status === 'initializing' ||
+                      status === 'recognizing' ||
+                      status === 'thinking') &&
+                      'animate-spin'
                   )}
                   size={18}
                 />

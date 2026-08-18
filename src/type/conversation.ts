@@ -3,6 +3,7 @@ export type ConversationStatus =
   | 'idle'
   | 'initializing'
   | 'listening'
+  | 'recognizing'
   | 'awaiting-input'
   | 'thinking'
   | 'speaking'
@@ -117,6 +118,6 @@ export type RecognitionWorkerRequest =
 /** 识别 Worker 响应 */
 export type RecognitionWorkerResponse =
   | { type: 'ready' }
-  | { type: 'partial'; text: string }
+  | { type: 'processing' }
   | { type: 'final'; text: string }
   | { type: 'error'; message: string }

@@ -69,6 +69,6 @@ app.on('before-quit', () => {
   void terminateOcrWorker()
   // 退出前释放语音 Worker
   void speechService.dispose()
-  // 退出前释放实时识别 Worker
+  // 退出前释放本地识别 Worker
   void recognitionService.dispose()
 })

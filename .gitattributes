@@ -1,6 +1,6 @@
 resources/tts/kokoro-int8-multi-lang-v1_1/model.int8.onnx filter=lfs diff=lfs merge=lfs -text
 resources/tts/kokoro-int8-multi-lang-v1_1/voices.bin filter=lfs diff=lfs merge=lfs -text
-resources/asr/sherpa-onnx-streaming-zipformer-en-2023-06-26/encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx filter=lfs diff=lfs merge=lfs -text
-resources/asr/sherpa-onnx-streaming-zipformer-en-2023-06-26/decoder-epoch-99-avg-1-chunk-16-left-128.onnx filter=lfs diff=lfs merge=lfs -text
-resources/asr/sherpa-onnx-streaming-zipformer-en-2023-06-26/joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx filter=lfs diff=lfs merge=lfs -text
+resources/asr/sherpa-onnx-whisper-base.en/base.en-encoder.int8.onnx filter=lfs diff=lfs merge=lfs -text
+resources/asr/sherpa-onnx-whisper-base.en/base.en-decoder.int8.onnx filter=lfs diff=lfs merge=lfs -text
+resources/asr/silero_vad.onnx filter=lfs diff=lfs merge=lfs -text
 resources/**/*.txt text eol=lf

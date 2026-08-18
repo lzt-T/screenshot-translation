@@ -11,15 +11,15 @@ const TTS_ASSETS = [
   { fileName: 'voices.bin', expectedSize: 53790720 }
 ]
 // 英文 ASR 资源目录
-const ASR_ASSET_DIRECTORY = 'sherpa-onnx-streaming-zipformer-en-2023-06-26'
+const ASR_ASSET_DIRECTORY = 'sherpa-onnx-whisper-base.en'
 // 英文 ASR 打包资源及其预期大小
 const ASR_ASSETS = [
-  { fileName: 'encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx', expectedSize: 70108816 },
-  { fileName: 'decoder-epoch-99-avg-1-chunk-16-left-128.onnx', expectedSize: 2093080 },
-  { fileName: 'joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx', expectedSize: 259416 },
-  { fileName: 'tokens.txt', expectedSize: 5048 },
-  { fileName: 'bpe.model', expectedSize: 244865 }
+  { fileName: 'base.en-encoder.int8.onnx', expectedSize: 29120534 },
+  { fileName: 'base.en-decoder.int8.onnx', expectedSize: 130669978 },
+  { fileName: 'base.en-tokens.txt', expectedSize: 835554 }
 ]
+// 语音活动检测资源及其预期大小
+const VAD_ASSETS = [{ fileName: 'silero_vad.onnx', expectedSize: 643854 }]
 
 /**
  * 读取资源文件开头，用于识别 Git LFS 指针。
@@ -87,16 +87,14 @@ function validateSpeechAssets(context) {
     'kokoro-int8-multi-lang-v1_1'
   )
 
-  // 英文 ASR 模型资源目录
-  const asrAssetDirectory = path.join(
-    context.packager.projectDir,
-    'resources',
-    'asr',
-    ASR_ASSET_DIRECTORY
-  )
+  // 英文 ASR 资源根目录
+  const asrRootDirectory = path.join(context.packager.projectDir, 'resources', 'asr')
+  // Whisper 英文 ASR 模型资源目录
+  const asrAssetDirectory = path.join(asrRootDirectory, ASR_ASSET_DIRECTORY)
 
   validateAssets(assetDirectory, TTS_ASSETS, 'TTS')
   validateAssets(asrAssetDirectory, ASR_ASSETS, 'ASR')
+  validateAssets(asrRootDirectory, VAD_ASSETS, 'VAD')
 }
 
 module.exports.default = validateSpeechAssets

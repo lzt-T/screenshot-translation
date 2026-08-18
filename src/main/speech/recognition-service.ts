@@ -4,7 +4,7 @@ import { Worker } from 'node:worker_threads'
 import { SendEnum } from '../../type/ipc-constants'
 import type { RecognitionWorkerResponse } from '../../type/conversation'
 
-/** 本地实时英文识别服务 */
+/** 本地英文识别服务 */
 class RecognitionService {
   // 识别 Worker
   private worker: Worker | null = null
@@ -12,18 +12,13 @@ class RecognitionService {
   private responseTarget: WebContents | null = null
 
   /**
-   * 获取英文识别模型目录
-   * @returns 模型绝对路径
+   * 获取英文识别资源根目录
+   * @returns 资源绝对路径
    */
-  private getModelDirectory(): string {
+  private getAssetDirectory(): string {
     return app.isPackaged
-      ? path.join(
-          process.resourcesPath,
-          'resources',
-          'asr',
-          'sherpa-onnx-streaming-zipformer-en-2023-06-26'
-        )
-      : path.join(__dirname, '../../resources/asr/sherpa-onnx-streaming-zipformer-en-2023-06-26')
+      ? path.join(process.resourcesPath, 'resources', 'asr')
+      : path.join(__dirname, '../../resources/asr')
   }
 
   /**
@@ -35,10 +30,15 @@ class RecognitionService {
       return this.worker
     }
 
+    // 英文识别资源根目录
+    const assetDirectory = this.getAssetDirectory()
     // 编译后的识别 Worker 路径
     const workerPath = path.join(__dirname, 'recognition-worker.js')
     this.worker = new Worker(workerPath, {
-      workerData: { modelDirectory: this.getModelDirectory() }
+      workerData: {
+        modelDirectory: path.join(assetDirectory, 'sherpa-onnx-whisper-base.en'),
+        vadModelPath: path.join(assetDirectory, 'silero_vad.onnx')
+      }
     })
     this.worker.on('message', (response: RecognitionWorkerResponse) => {
       this.forwardResponse(response)
@@ -66,7 +66,7 @@ class RecognitionService {
     // 识别响应对应的 IPC 通道
     const responseChannelMap: Record<RecognitionWorkerResponse['type'], SendEnum> = {
       ready: SendEnum.RECOGNITION_READY,
-      partial: SendEnum.RECOGNITION_PARTIAL,
+      processing: SendEnum.RECOGNITION_PROCESSING,
       final: SendEnum.RECOGNITION_FINAL,
       error: SendEnum.RECOGNITION_ERROR
     }
@@ -83,7 +83,7 @@ class RecognitionService {
   }
 
   /**
-   * 启动实时识别
+   * 启动英文识别
    * @param responseTarget 接收结果的渲染进程
    * @returns 无返回值
    */
@@ -107,7 +107,7 @@ class RecognitionService {
     this.worker.postMessage({ type: 'audio', samples, sampleRate }, [audioBuffer])
   }
 
-  /** 停止实时识别 */
+  /** 停止英文识别 */
   public stop(): void {
     this.worker?.postMessage({ type: 'stop' })
     this.responseTarget = null
@@ -125,5 +125,5 @@ class RecognitionService {
   }
 }
 
-// 全局实时英文识别服务
+// 全局本地英文识别服务
 export const recognitionService = new RecognitionService()
