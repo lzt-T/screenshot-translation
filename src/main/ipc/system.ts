@@ -9,6 +9,7 @@ import { ModelConnectionTestResult, TranslationModelProfile } from '../../type/m
 import { validateModelProfile } from '../../utils/modelProfiles'
 import { langchainGateway } from '../utils/aiClients/langchainGateway'
 import { getErrorMessage } from '../utils/error'
+import { applyProxySetting } from '../utils/proxy'
 
 // 连接测试使用的最小提示词
 const MODEL_CONNECTION_TEST_PROMPT = '请只回复 OK'
@@ -27,6 +28,9 @@ export const registerSystemIpcEvents = () => {
   ipcMain.on(SendEnum.SET_LOCAL_FORAGE, (event, setting) => {
     aiManage.setModelSettings(setting.activeModelId, setting.models)
     screenshotTranslationManager.setTargetLanguage(setting.targetLanguage)
+    void applyProxySetting(setting.proxy).catch((error) => {
+      console.error('应用代理设置失败：', error)
+    })
     aiManage.initAiClient()
   })
 
@@ -34,6 +38,9 @@ export const registerSystemIpcEvents = () => {
   ipcMain.on(SendEnum.INIT_LOCAL_FORAGE, (event, setting) => {
     aiManage.setModelSettings(setting.activeModelId, setting.models)
     screenshotTranslationManager.setTargetLanguage(setting.targetLanguage)
+    void applyProxySetting(setting.proxy).catch((error) => {
+      console.error('初始化代理设置失败：', error)
+    })
     aiManage.initAiClient()
   })
 

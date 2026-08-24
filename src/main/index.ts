@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, net } from 'electron'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { registerAutoUpdate } from './utils/update'
 import { mainWindow } from './windowClasses/mainWindow'
@@ -7,6 +7,7 @@ import { terminateOcrWorker } from './utils/imageOCR'
 import { speechService } from './speech/speech-service'
 import { recognitionService } from './speech/recognition-service'
 import { learningRepository } from './learning/learning-repository'
+import { applyProxySetting } from './utils/proxy'
 
 // 检查是否是第一个实例
 const gotTheLock = app.requestSingleInstanceLock()
@@ -36,7 +37,12 @@ function createWindow(): void {
   registerAutoUpdate()
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await applyProxySetting()
+  /** 让主进程请求使用支持系统代理的 Electron 网络栈 */
+  globalThis.fetch = ((input, init) =>
+    net.fetch(input instanceof URL ? input.toString() : input, init)) as typeof globalThis.fetch
+
   electronApp.setAppUserModelId('com.electron.app')
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

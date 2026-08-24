@@ -4,6 +4,7 @@ import _ from 'lodash'
 import { Language } from '@src/type/base'
 import { SendEnum } from '@src/type/ipc-constants'
 import localForage from 'localforage'
+import { DEFAULT_PROXY_SETTING } from '@src/utils/proxy'
 import { createDefaultModelProfiles, DEFAULT_ACTIVE_MODEL_ID } from '@src/utils/modelProfiles'
 import { ModelFieldKey, TranslationModelProfile } from '@src/type/model'
 import { v4 as uuidV4 } from 'uuid'
@@ -51,7 +52,8 @@ export default function useData() {
     models: createDefaultModelProfiles(),
     autoLaunch: {
       enabled: false
-    }
+    },
+    proxy: DEFAULT_PROXY_SETTING
   })
 
   /**

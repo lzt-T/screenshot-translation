@@ -8,6 +8,7 @@ import {
 } from '@renderer/components/ui/select'
 import { Label } from '@renderer/components/ui/label'
 import { Switch } from '@renderer/components/ui/switch'
+import { Input } from '@renderer/components/ui/input'
 import { toast } from 'sonner'
 import useData from './useData'
 import { Language } from '@src/type/base'
@@ -16,6 +17,8 @@ import { useSearchParams } from 'react-router-dom'
 import ThemeSelector from '@renderer/components/ThemeSelector'
 import ModelConfigurationSection from './components/ModelConfigurationSection'
 import { validateModelProfile } from '@src/utils/modelProfiles'
+import type { ProxyMode } from '@src/type/proxy'
+import { getProxyValidationMessage } from '@src/utils/proxy'
 
 /**
  * 渲染设置页面
@@ -40,6 +43,9 @@ const SettingPage: React.FC = () => {
   const modelConfigSectionRef = useRef<HTMLElement | null>(null)
   // 模型配置区域高亮状态
   const [isModelConfigHighlighted, setIsModelConfigHighlighted] = useState(false)
+  // 手动代理地址错误
+  const proxyValidationMessage =
+    data.proxy.mode === 'manual' ? getProxyValidationMessage(data.proxy.proxyUrl) : ''
 
   /**
    * 设置目标语言
@@ -73,6 +79,30 @@ const SettingPage: React.FC = () => {
   function handleAutoLaunchChange(checked: boolean): void {
     void changeData('autoLaunch', {
       enabled: checked
+    })
+  }
+
+  /**
+   * 设置代理模式
+   * @param mode 代理模式
+   * @returns 无返回值
+   */
+  function handleProxyModeChange(mode: ProxyMode): void {
+    void changeData('proxy', {
+      ...data.proxy,
+      mode
+    })
+  }
+
+  /**
+   * 设置手动代理地址
+   * @param proxyUrl 代理地址
+   * @returns 无返回值
+   */
+  function handleProxyUrlChange(proxyUrl: string): void {
+    void changeData('proxy', {
+      ...data.proxy,
+      proxyUrl
     })
   }
 
@@ -118,20 +148,17 @@ const SettingPage: React.FC = () => {
     <div className="mx-auto max-w-[1180px] space-y-6 px-5 py-5 lg:px-7 lg:py-6">
       <div>
         <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">设置</h1>
-        <p className="mt-1 text-sm text-muted-foreground">调整翻译偏好、界面外观与模型连接。</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          调整翻译偏好、界面外观、网络与模型连接。
+        </p>
       </div>
 
       <section className="space-y-3" aria-labelledby="general-settings-title">
         <div>
-          <h2
-            className="text-base font-semibold text-foreground"
-            id="general-settings-title"
-          >
+          <h2 className="text-base font-semibold text-foreground" id="general-settings-title">
             常规设置
           </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            设置目标语言、当前模型与开机自启。
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">设置目标语言、当前模型与开机自启。</p>
         </div>
 
         <div className="lab-panel overflow-hidden">
@@ -202,10 +229,7 @@ const SettingPage: React.FC = () => {
 
       <section className="space-y-3" aria-labelledby="appearance-title">
         <div>
-          <h2
-            className="text-base font-semibold text-foreground"
-            id="appearance-title"
-          >
+          <h2 className="text-base font-semibold text-foreground" id="appearance-title">
             外观
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -218,6 +242,65 @@ const SettingPage: React.FC = () => {
             <p className="mt-1 text-xs text-muted-foreground">选择适合当前环境光的显示方式。</p>
           </div>
           <ThemeSelector />
+        </div>
+      </section>
+
+      <section className="space-y-3" aria-labelledby="network-title">
+        <div>
+          <h2 className="text-base font-semibold text-foreground" id="network-title">
+            网络代理
+          </h2>
+        </div>
+        <div className="lab-panel overflow-hidden">
+          <div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <Label className="text-sm font-medium" htmlFor="proxy-mode-select">
+              代理方式
+            </Label>
+            <div className="w-full sm:w-70">
+              <Select value={data.proxy.mode} onValueChange={handleProxyModeChange}>
+                <SelectTrigger className="w-full cursor-pointer" id="proxy-mode-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem className="cursor-pointer" value="system">
+                    跟随系统
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="direct">
+                    直连
+                  </SelectItem>
+                  <SelectItem className="cursor-pointer" value="manual">
+                    手动代理
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {data.proxy.mode === 'manual' && (
+            <div className="border-t border-border px-4 py-3.5">
+              <div className="grid gap-2 sm:grid-cols-[1fr_280px] sm:items-start sm:gap-4">
+                <Label className="pt-2 text-sm font-medium" htmlFor="proxy-url-input">
+                  代理地址
+                </Label>
+                <div className="space-y-1.5">
+                  <Input
+                    aria-describedby={proxyValidationMessage ? 'proxy-url-error' : undefined}
+                    aria-invalid={Boolean(proxyValidationMessage)}
+                    id="proxy-url-input"
+                    onChange={(event) => handleProxyUrlChange(event.target.value)}
+                    placeholder="http://127.0.0.1:7890"
+                    spellCheck={false}
+                    value={data.proxy.proxyUrl}
+                  />
+                  {proxyValidationMessage && (
+                    <p className="text-xs text-destructive" id="proxy-url-error">
+                      {proxyValidationMessage}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

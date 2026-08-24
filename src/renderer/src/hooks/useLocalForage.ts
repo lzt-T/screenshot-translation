@@ -3,12 +3,15 @@ import { AutoLaunchSetting, TranslationModelProfile } from '@src/type/model'
 import { Language } from '@src/type/base'
 import localForage from 'localforage'
 import { createDefaultModelProfiles, DEFAULT_ACTIVE_MODEL_ID } from '@src/utils/modelProfiles'
+import type { ProxySetting } from '@src/type/proxy'
+import { DEFAULT_PROXY_SETTING } from '@src/utils/proxy'
 
 export interface StoreSetting {
   targetLanguage: Language
   activeModelId: string
   models: TranslationModelProfile[]
   autoLaunch: AutoLaunchSetting
+  proxy: ProxySetting
 }
 
 /**
@@ -23,7 +26,8 @@ export default function useLocalForage() {
     models: createDefaultModelProfiles(),
     autoLaunch: {
       enabled: false
-    }
+    },
+    proxy: DEFAULT_PROXY_SETTING
   }
 
   // 设置数据
@@ -51,6 +55,8 @@ export default function useLocalForage() {
     const targetLanguage = await localForage.getItem('targetLanguage')
     // 本地开机自启动配置
     const autoLaunch = await localForage.getItem('autoLaunch')
+    // 本地代理配置
+    const proxy = await localForage.getItem('proxy')
 
     if (activeModelId) {
       result.activeModelId = activeModelId as string
@@ -66,6 +72,10 @@ export default function useLocalForage() {
 
     if (autoLaunch) {
       result.autoLaunch = autoLaunch as AutoLaunchSetting
+    }
+
+    if (proxy) {
+      result.proxy = proxy as ProxySetting
     }
 
     setStoreSetting(result)
