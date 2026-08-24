@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { app } from 'electron'
 import { createWorker, PSM } from 'tesseract.js'
+import { prepareImageForOcr } from './ocr-image-preprocessor'
 
 // OCR 包围盒
 interface BoundingBox {
@@ -270,12 +271,15 @@ async function extractTextFromImage(imageDataUrl: string) {
       fs.writeFileSync(tempImage, imageBuffer)
     }
 
+    // 保持原尺寸的 OCR 高对比度图像
+    const ocrImageBuffer = prepareImageForOcr(imageBuffer)
+
     // 复用 OCR Worker
     const worker = await ensureOcrWorker()
 
     // OCR 识别结果
     const result = await worker.recognize(
-      imageBuffer,
+      ocrImageBuffer,
       {},
       {
         blocks: true,

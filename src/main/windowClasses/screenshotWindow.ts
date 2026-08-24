@@ -187,11 +187,18 @@ export class ScreenshotWindow {
   /**
    * @description 关闭截图窗口
    */
-  public closeWindow(): void {
+  public closeWindow(): Promise<void> {
     this.stopDisplayTracking()
-    if (this.window && !this.window.isDestroyed()) {
-      this.window.close()
+    // 当前待关闭的截图窗口
+    const activeWindow = this.window
+    if (!activeWindow || activeWindow.isDestroyed()) {
+      return Promise.resolve()
     }
+
+    return new Promise<void>((resolve) => {
+      activeWindow.once('closed', resolve)
+      activeWindow.close()
+    })
   }
 
   /** 取消截图并重置截图会话 */

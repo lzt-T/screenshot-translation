@@ -18,8 +18,8 @@ export const registerScreenshotIpcEvents = () => {
       return
     }
     screenshotWindow.setBounds(bounds) // 存储边界用于分析
-    screenshotTranslationManager.startTranslation()
-    screenshotWindow.closeWindow()
+    await screenshotWindow.closeWindow()
+    await screenshotTranslationManager.startTranslation()
   })
 
   /** 关闭截图窗口 */
