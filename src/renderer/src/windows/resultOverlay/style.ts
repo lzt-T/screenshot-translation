@@ -9,8 +9,8 @@ export type OverlayMode = 'show-original' | 'hide-original'
 
 // 各原图显示模式的结果区域背景
 const OVERLAY_BACKGROUND_COLORS: Record<OverlayMode, string> = {
-  'show-original': 'var(--floating-surface)',
-  'hide-original': 'var(--floating-surface-strong)'
+  'show-original': 'var(--result-overlay-surface)',
+  'hide-original': 'var(--result-overlay-surface-strong)'
 }
 
 /** 翻译浮层容器属性 */
@@ -47,7 +47,7 @@ export const TranslatedTextOverlay = styled.div`
   line-height: 1.4;
   white-space: pre-wrap;
   pointer-events: none;
-  text-shadow: 0 1px 2px var(--floating-surface-strong);
+  text-shadow: 0 1px 2px var(--result-overlay-surface-strong);
 `
 
 /** 浮层操作栏 */
@@ -61,7 +61,7 @@ export const FooterContainer = styled.div`
   gap: 4px;
   padding: 0 4px;
   border-radius: 6px 6px 0 0;
-  background: var(--floating-surface-strong);
+  background: var(--result-overlay-surface-strong);
   -webkit-app-region: no-drag;
 `
 

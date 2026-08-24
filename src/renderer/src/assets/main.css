@@ -90,8 +90,9 @@
   --sidebar-ring: #167a68;
   --action-shadow: rgba(16, 104, 89, 0.22);
   --capture-mask: rgba(0, 0, 0, 0.64);
-  --floating-surface: rgba(19, 33, 30, 0.76);
   --floating-surface-strong: rgba(19, 33, 30, 0.96);
+  --result-overlay-surface: rgba(0, 0, 0, 0.62);
+  --result-overlay-surface-strong: rgba(0, 0, 0, 0.96);
   --floating-foreground: #eef8f5;
   --floating-border: rgba(255, 255, 255, 0.2);
   --floating-accent: #74e1c1;
