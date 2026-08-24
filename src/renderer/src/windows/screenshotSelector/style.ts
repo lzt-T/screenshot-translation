@@ -48,7 +48,7 @@ export const SelectionBox = styled.div.attrs<RectProps>((props) => ({
   z-index: 10000;
   box-sizing: border-box;
   border: 2px solid var(--floating-accent);
-  background: color-mix(in oklab, var(--floating-accent) 8%, transparent);
+  background: transparent;
   box-shadow: 0 0 0 1px var(--floating-border);
   pointer-events: none;
 

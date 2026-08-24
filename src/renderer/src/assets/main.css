@@ -89,7 +89,7 @@
   --sidebar-border: #c7d6d0;
   --sidebar-ring: #167a68;
   --action-shadow: rgba(16, 104, 89, 0.22);
-  --capture-mask: rgba(8, 19, 16, 0.64);
+  --capture-mask: rgba(0, 0, 0, 0.64);
   --floating-surface: rgba(19, 33, 30, 0.76);
   --floating-surface-strong: rgba(19, 33, 30, 0.96);
   --floating-foreground: #eef8f5;
