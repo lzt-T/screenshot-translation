@@ -49,7 +49,7 @@ const STATUS_VIEW_MAP: Record<
   },
   thinking: { label: '正在思考', description: '正在组织自然回复和表达建议', icon: LoaderCircle },
   speaking: { label: '正在朗读', description: '朗读结束后会恢复之前的对话状态', icon: Volume2 },
-  paused: { label: '已暂停', description: '继续后会重新打开麦克风', icon: Pause },
+  paused: { label: '已暂停', description: '点击继续后恢复当前练习', icon: Pause },
   error: { label: '需要处理', description: '查看下方提示后重试', icon: AlertCircle }
 }
 
@@ -69,7 +69,7 @@ const VOICE_FOCAL_TEXT_MAP: Partial<Record<ConversationStatus, string>> = {
   listening: '正在聆听…',
   recognizing: '正在识别…',
   thinking: '正在思考…',
-  paused: '对话已暂停',
+  paused: '点击输入框继续输入…',
   error: '暂时无法继续'
 }
 
@@ -123,6 +123,8 @@ export default function ConversationPage(): React.JSX.Element {
   const canTypeMessage = inputMode === 'text' && status === 'awaiting-input'
   // 当前草稿是否可以发送
   const canSendText = canTypeMessage && Boolean(draftText.trim())
+  // 文字练习是否等待用户手动继续
+  const isTextConversationPaused = inputMode === 'text' && status === 'paused'
   // 语音工作区的当前主显示文本
   const voiceFocalText =
     manualSpeechTarget
@@ -163,6 +165,13 @@ export default function ConversationPage(): React.JSX.Element {
     }
     event.preventDefault()
     handleTextSubmit()
+  }
+
+  /** 聚焦暂停中的文字输入框时继续对话 */
+  const handleTextInputFocus = (): void => {
+    if (isTextConversationPaused) {
+      resumeConversation()
+    }
   }
   // 语音模式主操作配置
   const voiceActionMap: Partial<
@@ -319,10 +328,12 @@ export default function ConversationPage(): React.JSX.Element {
                 aria-describedby="text-conversation-shortcuts"
                 aria-label="英文对话输入"
                 className="min-h-20 resize-none bg-background leading-6"
-                disabled={!canTypeMessage}
+                disabled={!canTypeMessage && !isTextConversationPaused}
                 onChange={(event) => setDraftText(event.target.value)}
+                onFocus={handleTextInputFocus}
                 onKeyDown={handleTextKeyDown}
                 placeholder={canTypeMessage ? '输入你的英文回复…' : TEXT_FOCAL_TEXT_MAP[status]}
+                readOnly={isTextConversationPaused}
                 ref={textInputRef}
                 value={draftText}
               />

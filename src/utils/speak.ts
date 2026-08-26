@@ -2,10 +2,22 @@ import type { ElectronAPI } from '@electron-toolkit/preload'
 import { SendEnum } from '../type/ipc-constants'
 import type { SpeechAudioResult } from '../type/speech'
 
+/** 朗读被替代后的续接策略 */
+export type SpeechInterruptionPolicy = 'immediate' | 'after-replacement'
+
+/** 处理朗读中断回调的方法 */
+type SpeechInterruptionHandler = (callback: () => void) => void
+
 // 当前播放会话编号
 let activeSessionId = 0
 // 当前音频播放取消方法
 let cancelActivePlayback: (() => void) | null = null
+// 当前朗读被新任务抢占时的回调
+let activeInterruptionCallback: (() => void) | null = null
+// 当前朗读的中断续接策略
+let activeInterruptionPolicy: SpeechInterruptionPolicy = 'immediate'
+// 替代朗读结束后需要执行的续接回调
+let pendingContinuationCallback: (() => void) | null = null
 // 上一次缓存的完整文本
 let cachedText = ''
 // 上一次缓存的完整音频
@@ -13,6 +25,33 @@ let cachedAudioBuffer: ArrayBuffer | null = null
 
 // 已暴露的 Electron IPC 能力
 const electronIpcRenderer = (window as unknown as { electron: ElectronAPI }).electron.ipcRenderer
+
+/** 立即执行被中断朗读的回调 */
+function runInterruptionImmediately(callback: () => void): void {
+  callback()
+}
+
+/** 将被中断朗读的回调延迟到替代朗读结束 */
+function deferInterruptionUntilReplacementEnds(callback: () => void): void {
+  pendingContinuationCallback = callback
+}
+
+// 中断续接策略对应的处理方法
+const SPEECH_INTERRUPTION_HANDLER_MAP: Record<
+  SpeechInterruptionPolicy,
+  SpeechInterruptionHandler
+> = {
+  immediate: runInterruptionImmediately,
+  'after-replacement': deferInterruptionUntilReplacementEnds
+}
+
+/** 执行并清除等待中的对话续接回调 */
+function completePendingContinuation(): void {
+  // 当前等待执行的续接回调
+  const continuationCallback = pendingContinuationCallback
+  pendingContinuationCallback = null
+  continuationCallback?.()
+}
 
 /**
  * 播放 WAV 音频
@@ -108,14 +147,51 @@ async function synthesizeSpeech(text: string): Promise<ArrayBuffer> {
 }
 
 /**
- * 停止当前语音生成和播放
- * @returns {void} 无返回值
+ * 取消当前语音生成和播放
+ * @param {boolean} shouldNotifyInterruption 是否通知当前朗读已被抢占
+ * @param {boolean} shouldContinueInterruptedSpeech 是否完成等待中的对话续接
+ * @returns {Promise<number>} 取消完成后的播放会话编号
  */
-export function stopSpeaking(): void {
+async function cancelSpeaking(
+  shouldNotifyInterruption: boolean,
+  shouldContinueInterruptedSpeech: boolean
+): Promise<number> {
   activeSessionId += 1
+  // 本次取消对应的播放会话编号
+  const sessionId = activeSessionId
+  // 被取消朗读的抢占回调
+  const interruptionCallback = activeInterruptionCallback
+  // 被取消朗读的续接策略
+  const interruptionPolicy = activeInterruptionPolicy
+  activeInterruptionCallback = null
+  activeInterruptionPolicy = 'immediate'
   cancelActivePlayback?.()
   cancelActivePlayback = null
-  electronIpcRenderer.send(SendEnum.SPEECH_CANCEL)
+  if (shouldNotifyInterruption && interruptionCallback) {
+    SPEECH_INTERRUPTION_HANDLER_MAP[interruptionPolicy](interruptionCallback)
+  }
+  if (!shouldNotifyInterruption) {
+    if (shouldContinueInterruptedSpeech) {
+      completePendingContinuation()
+    } else {
+      pendingContinuationCallback = null
+    }
+  }
+  try {
+    await electronIpcRenderer.invoke(SendEnum.SPEECH_CANCEL)
+  } catch {
+    // 主进程已关闭时无需继续等待取消确认
+  }
+  return sessionId
+}
+
+/**
+ * 主动停止当前语音生成和播放
+ * @param {boolean} shouldContinueInterruptedSpeech 是否完成等待中的对话续接
+ * @returns {void} 无返回值
+ */
+export function stopSpeaking(shouldContinueInterruptedSpeech = false): void {
+  void cancelSpeaking(false, shouldContinueInterruptedSpeech)
 }
 
 /**
@@ -123,22 +199,31 @@ export function stopSpeaking(): void {
  * @param {string} text 待朗读文本
  * @param {() => void} onEnd 播放结束回调
  * @param {(error: Error) => void} onError 播放失败回调
+ * @param {() => void} onInterrupted 被新朗读抢占时的回调
+ * @param {SpeechInterruptionPolicy} interruptionPolicy 中断后的续接策略
  * @returns {Promise<void>} 朗读任务
  */
 export async function speakText(
   text: string,
   onEnd?: () => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
+  onInterrupted?: () => void,
+  interruptionPolicy: SpeechInterruptionPolicy = 'immediate'
 ): Promise<void> {
-  stopSpeaking()
   // 当前朗读会话编号
-  const sessionId = activeSessionId
+  const sessionId = await cancelSpeaking(true, false)
+  if (sessionId !== activeSessionId) {
+    return
+  }
   // 清理后的朗读文本
   const normalizedText = text.trim()
   if (!normalizedText) {
     onEnd?.()
+    completePendingContinuation()
     return
   }
+  activeInterruptionCallback = onInterrupted ?? null
+  activeInterruptionPolicy = interruptionPolicy
 
   try {
     // 当前完整朗读音频
@@ -158,12 +243,18 @@ export async function speakText(
       return
     }
 
+    activeInterruptionCallback = null
+    activeInterruptionPolicy = 'immediate'
     onEnd?.()
+    completePendingContinuation()
   } catch (error) {
     if (sessionId === activeSessionId) {
+      activeInterruptionCallback = null
+      activeInterruptionPolicy = 'immediate'
       // 可供界面展示的语音错误
       const speechError = error instanceof Error ? error : new Error(String(error))
       onError?.(speechError)
+      completePendingContinuation()
     }
   }
 }

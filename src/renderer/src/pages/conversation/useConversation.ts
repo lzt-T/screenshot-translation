@@ -362,7 +362,14 @@ export default function useConversation() {
         }
         toast.error(error.message)
         restoreManualSpeechStatus()
-      }
+      },
+      /** 替代朗读结束后恢复原状态 */
+      () => {
+        if (requestId === manualSpeechRequestIdRef.current) {
+          restoreManualSpeechStatus()
+        }
+      },
+      'after-replacement'
     )
   }
 
@@ -391,7 +398,14 @@ export default function useConversation() {
           }
           toast.error(error.message)
           void startListening(sessionId)
-        }
+        },
+        /** 替代朗读结束后暂停语音对话 */
+        () => {
+          if (sessionId === sessionIdRef.current) {
+            updateStatus('paused')
+          }
+        },
+        'after-replacement'
       )
     },
     [startListening, updateStatus]
@@ -424,7 +438,14 @@ export default function useConversation() {
           }
           toast.error(error.message)
           updateStatus('awaiting-input')
-        }
+        },
+        /** 替代朗读结束后暂停文字对话 */
+        () => {
+          if (sessionId === sessionIdRef.current) {
+            updateStatus('paused')
+          }
+        },
+        'after-replacement'
       )
     },
     [updateStatus]
@@ -628,9 +649,18 @@ export default function useConversation() {
     if (statusRef.current !== 'paused') {
       return
     }
-    updateStatus('initializing')
-    void startListening(sessionIdRef.current)
-  }, [startListening, updateStatus])
+    // 当前输入模式对应的继续操作
+    const resumeConversationMap: Record<ConversationInputMode, () => void> = {
+      /** 语音模式重新启动麦克风监听 */
+      voice: () => {
+        updateStatus('initializing')
+        void startListening(sessionIdRef.current)
+      },
+      /** 文字模式恢复输入 */
+      text: () => updateStatus('awaiting-input')
+    }
+    resumeConversationMap[inputMode]()
+  }, [inputMode, startListening, updateStatus])
 
   /** 结束当前对话并保留页面记录 */
   const endConversation = useCallback((): void => {

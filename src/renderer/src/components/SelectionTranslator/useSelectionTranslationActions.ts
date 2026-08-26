@@ -52,7 +52,10 @@ export default function useSelectionTranslationActions({
 
   /** 停止当前划词朗读 */
   function stopSpeech(): void {
-    stopSpeaking()
+    if (!speakingTarget) {
+      return
+    }
+    stopSpeaking(true)
     setSpeakingTarget(null)
   }
 
@@ -70,15 +73,17 @@ export default function useSelectionTranslationActions({
       return
     }
 
-    setSpeakingTarget(target)
     void speakText(
       text,
       () => setSpeakingTarget(null),
       (error) => {
         setSpeakingTarget(null)
         toast.error(error.message)
-      }
+      },
+      /** 被其他朗读抢占后清理划词朗读状态 */
+      () => setSpeakingTarget(null)
     )
+    setSpeakingTarget(target)
   }
 
   /** 切换当前划词翻译的收藏状态 */

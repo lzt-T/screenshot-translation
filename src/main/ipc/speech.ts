@@ -15,7 +15,7 @@ export function registerSpeechIpcEvents(): void {
     return speechService.synthesize(text)
   })
 
-  ipcMain.on(SendEnum.SPEECH_CANCEL, () => {
+  ipcMain.handle(SendEnum.SPEECH_CANCEL, () => {
     speechService.cancel()
   })
 }
