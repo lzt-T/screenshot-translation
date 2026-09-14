@@ -209,7 +209,7 @@ function postResponse(response: SpeechWorkerResponse): void {
  * @param {string} text 待朗读文本
  * @returns {Promise<void>} 无返回值
  */
-async function synthesizeSpeech(requestId: number, text: string): Promise<void> {
+async function synthesizeSpeech(requestId: number, text: string, speakerId?: number): Promise<void> {
   if (cancelledRequestIds.delete(requestId)) {
     return
   }
@@ -225,7 +225,7 @@ async function synthesizeSpeech(requestId: number, text: string): Promise<void> 
 
     // 语音生成配置
     const generationConfig = new GenerationConfig({
-      sid: getSpeakerId(text),
+      sid: speakerId ?? getSpeakerId(text),
       speed: 1,
       silenceScale: 0.2
     })
@@ -269,7 +269,7 @@ function handleSpeechMessage(message: SpeechWorkerRequest): void {
     preload: preloadSpeechModel,
     synthesize: () => {
       if (message.type === 'synthesize') {
-        synthesisQueue = synthesisQueue.then(() => synthesizeSpeech(message.requestId, message.text))
+        synthesisQueue = synthesisQueue.then(() => synthesizeSpeech(message.requestId, message.text, message.speakerId))
       }
     },
     cancel: () => {

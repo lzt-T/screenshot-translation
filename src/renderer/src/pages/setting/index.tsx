@@ -19,6 +19,7 @@ import ModelConfigurationSection from './components/ModelConfigurationSection'
 import { validateModelProfile } from '@src/utils/modelProfiles'
 import type { ProxyMode } from '@src/type/proxy'
 import { getProxyValidationMessage } from '@src/utils/proxy'
+import SpeechSettingsSection from '@renderer/pages/setting/components/SpeechSettingsSection'
 
 /**
  * 渲染设置页面
@@ -303,6 +304,8 @@ const SettingPage: React.FC = () => {
           )}
         </div>
       </section>
+
+      <SpeechSettingsSection settings={data.speech} saveStatus={saveStatus} onChange={(settings) => changeData('speech', settings)} />
 
       <ModelConfigurationSection
         activeModelId={data.activeModelId}

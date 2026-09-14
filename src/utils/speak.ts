@@ -1,6 +1,10 @@
 import type { ElectronAPI } from '@electron-toolkit/preload'
 import { SendEnum } from '../type/ipc-constants'
 import type { SpeechAudioResult } from '../type/speech'
+import localForage from 'localforage'
+import type { SpeechSettings, SpeechSource } from '../type/speech-settings'
+import { getSpeechValidationMessage, normalizeSpeechSettings } from './speech-settings'
+import { playBrowserSpeech } from './browser-speech'
 
 /** 朗读被替代后的续接策略 */
 export type SpeechInterruptionPolicy = 'immediate' | 'after-replacement'
@@ -22,6 +26,10 @@ let pendingContinuationCallback: (() => void) | null = null
 let cachedText = ''
 // 上一次缓存的完整音频
 let cachedAudioBuffer: ArrayBuffer | null = null
+// 缓存对应的配置快照，仅用于内存比较，不记录凭据
+let cachedSettings: SpeechSettings | null = null
+// 最近缓存的媒体类型
+let cachedMimeType = 'audio/wav'
 
 // 已暴露的 Electron IPC 能力
 const electronIpcRenderer = (window as unknown as { electron: ElectronAPI }).electron.ipcRenderer
@@ -58,9 +66,9 @@ function completePendingContinuation(): void {
  * @param {ArrayBuffer} audioBuffer WAV 音频数据
  * @returns {Promise<void>} 播放结束任务
  */
-function playAudioBuffer(audioBuffer: ArrayBuffer): Promise<void> {
+function playAudioBuffer(audioBuffer: ArrayBuffer, mimeType: string, onStart?: () => void): Promise<void> {
   // 音频 Blob
-  const audioBlob = new Blob([audioBuffer], { type: 'audio/wav' })
+  const audioBlob = new Blob([audioBuffer], { type: mimeType })
   // 临时音频地址
   const audioUrl = URL.createObjectURL(audioBlob)
   // 浏览器音频实例
@@ -112,7 +120,7 @@ function playAudioBuffer(audioBuffer: ArrayBuffer): Promise<void> {
       // 浏览器媒体错误信息
       const errorMessage = audio.error?.message
       cleanup()
-      reject(new Error(errorMessage ? `本地语音播放失败：${errorMessage}` : '本地语音播放失败'))
+      reject(new Error(errorMessage ? `语音播放失败：${errorMessage}` : '语音播放失败'))
     }
 
     /**
@@ -128,6 +136,7 @@ function playAudioBuffer(audioBuffer: ArrayBuffer): Promise<void> {
     cancelActivePlayback = cancelPlayback
     audio.addEventListener('ended', handleEnded, { once: true })
     audio.addEventListener('error', handleMediaError, { once: true })
+    audio.addEventListener('playing', () => onStart?.(), { once: true })
     void audio.play().catch(handlePlayError)
   })
 }
@@ -137,13 +146,61 @@ function playAudioBuffer(audioBuffer: ArrayBuffer): Promise<void> {
  * @param {string} text 待生成的完整文本
  * @returns {Promise<ArrayBuffer>} WAV 音频数据
  */
-async function synthesizeSpeech(text: string): Promise<ArrayBuffer> {
+async function synthesizeSpeech(text: string, settings: SpeechSettings): Promise<SpeechAudioResult> {
   // 完整文本的本地语音生成结果
   const result = (await electronIpcRenderer.invoke(
     SendEnum.SPEECH_SYNTHESIZE,
-    text
+    { text, settings }
   )) as SpeechAudioResult
-  return result.audioBuffer
+  return result
+}
+
+/** 播放来源调度上下文 */
+interface SpeechPlaybackContext {
+  text: string
+  settings: SpeechSettings
+  sessionId: number
+  onStart?: () => void
+}
+
+/** 合成或复用与当前配置匹配的音频 */
+async function playGeneratedSpeech({ text, settings, sessionId, onStart }: SpeechPlaybackContext): Promise<void> {
+  // 仅比较内存快照，不将凭据写入缓存键或日志
+  const isCacheMatch = cachedText === text && JSON.stringify(cachedSettings) === JSON.stringify(settings)
+  // 当前完整音频
+  let audioBuffer = isCacheMatch ? cachedAudioBuffer : null
+  if (!audioBuffer) {
+    // 当前生成结果
+    const result = await synthesizeSpeech(text, settings)
+    if (sessionId !== activeSessionId) return
+    audioBuffer = result.audioBuffer
+    cachedText = text
+    cachedSettings = settings
+    cachedAudioBuffer = audioBuffer
+    cachedMimeType = result.mimeType ?? 'audio/wav'
+  }
+  await playAudioBuffer(audioBuffer, cachedMimeType, onStart)
+}
+
+/** 将浏览器语音纳入现有停止与会话生命周期 */
+async function playSystemSpeech({ text, settings, onStart }: SpeechPlaybackContext): Promise<void> {
+  // 可在等待音色时取消的播放任务
+  const playback = playBrowserSpeech(text, settings.browserVoice, onStart)
+  cancelActivePlayback = playback.cancel
+  try { await playback.finished } finally {
+    if (cancelActivePlayback === playback.cancel) cancelActivePlayback = null
+  }
+}
+
+// 固定来源对应的播放策略
+const SPEECH_PLAYERS: Record<SpeechSource, (context: SpeechPlaybackContext) => Promise<void>> = {
+  browser: playSystemSpeech, kokoro: playGeneratedSpeech, 'third-party': playGeneratedSpeech
+}
+
+/** 试听可显式指定界面配置并接收实际播放事件 */
+export interface SpeechPlaybackOptions {
+  settings?: SpeechSettings
+  onStart?: () => void
 }
 
 /**
@@ -195,12 +252,13 @@ export function stopSpeaking(shouldContinueInterruptedSpeech = false): void {
 }
 
 /**
- * 使用本地模型朗读文本
+ * 使用所选来源朗读文本，保留统一中断与续接行为
  * @param {string} text 待朗读文本
  * @param {() => void} onEnd 播放结束回调
  * @param {(error: Error) => void} onError 播放失败回调
  * @param {() => void} onInterrupted 被新朗读抢占时的回调
  * @param {SpeechInterruptionPolicy} interruptionPolicy 中断后的续接策略
+ * @param {SpeechPlaybackOptions} options 试听配置与实际开始播放回调
  * @returns {Promise<void>} 朗读任务
  */
 export async function speakText(
@@ -208,7 +266,8 @@ export async function speakText(
   onEnd?: () => void,
   onError?: (error: Error) => void,
   onInterrupted?: () => void,
-  interruptionPolicy: SpeechInterruptionPolicy = 'immediate'
+  interruptionPolicy: SpeechInterruptionPolicy = 'immediate',
+  options?: SpeechPlaybackOptions
 ): Promise<void> {
   // 当前朗读会话编号
   const sessionId = await cancelSpeaking(true, false)
@@ -226,19 +285,16 @@ export async function speakText(
   activeInterruptionPolicy = interruptionPolicy
 
   try {
-    // 当前完整朗读音频
-    let audioBuffer = cachedText === normalizedText ? cachedAudioBuffer : null
-    if (!audioBuffer) {
-      audioBuffer = await synthesizeSpeech(normalizedText)
-      if (sessionId !== activeSessionId) {
-        return
-      }
-
-      cachedText = normalizedText
-      cachedAudioBuffer = audioBuffer
-    }
-
-    await playAudioBuffer(audioBuffer)
+    // 每次读取已保存配置，试听则固定使用界面传入快照
+    const settings = normalizeSpeechSettings(options?.settings ?? await localForage.getItem<SpeechSettings>('speech'))
+    if (sessionId !== activeSessionId) return
+    // 当前来源的字段校验结果
+    const validationMessage = getSpeechValidationMessage(settings)
+    if (validationMessage) throw new Error(validationMessage)
+    await SPEECH_PLAYERS[settings.source]({
+      text: normalizedText, settings, sessionId,
+      onStart: () => { if (sessionId === activeSessionId) options?.onStart?.() }
+    })
     if (sessionId !== activeSessionId) {
       return
     }

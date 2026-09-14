@@ -9,6 +9,7 @@ import { createDefaultModelProfiles, DEFAULT_ACTIVE_MODEL_ID } from '@src/utils/
 import { ModelFieldKey, TranslationModelProfile } from '@src/type/model'
 import { v4 as uuidV4 } from 'uuid'
 import { toast } from 'sonner'
+import { createDefaultSpeechSettings } from '@src/utils/speech-settings'
 
 /** 自动保存状态 */
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
@@ -53,7 +54,8 @@ export default function useData() {
     autoLaunch: {
       enabled: false
     },
-    proxy: DEFAULT_PROXY_SETTING
+    proxy: DEFAULT_PROXY_SETTING,
+    speech: createDefaultSpeechSettings()
   })
 
   /**

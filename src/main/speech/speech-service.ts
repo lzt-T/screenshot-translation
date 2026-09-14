@@ -109,7 +109,7 @@ class SpeechService {
    * @param {string} text 待朗读文本
    * @returns {Promise<SpeechAudioResult>} WAV 音频
    */
-  public synthesize(text: string): Promise<SpeechAudioResult> {
+  public synthesize(text: string, speakerId?: number): Promise<SpeechAudioResult> {
     this.cancel()
     // 当前请求编号
     const requestId = this.nextRequestId
@@ -118,7 +118,7 @@ class SpeechService {
 
     return new Promise((resolve, reject) => {
       this.pendingRequests.set(requestId, { resolve, reject })
-      this.getWorker().postMessage({ type: 'synthesize', requestId, text })
+      this.getWorker().postMessage({ type: 'synthesize', requestId, text, speakerId })
     })
   }
 

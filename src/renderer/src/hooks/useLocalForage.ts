@@ -5,6 +5,8 @@ import localForage from 'localforage'
 import { createDefaultModelProfiles, DEFAULT_ACTIVE_MODEL_ID } from '@src/utils/modelProfiles'
 import type { ProxySetting } from '@src/type/proxy'
 import { DEFAULT_PROXY_SETTING } from '@src/utils/proxy'
+import type { SpeechSettings } from '@src/type/speech-settings'
+import { createDefaultSpeechSettings, normalizeSpeechSettings } from '@src/utils/speech-settings'
 
 export interface StoreSetting {
   targetLanguage: Language
@@ -12,6 +14,7 @@ export interface StoreSetting {
   models: TranslationModelProfile[]
   autoLaunch: AutoLaunchSetting
   proxy: ProxySetting
+  speech: SpeechSettings
 }
 
 /**
@@ -27,7 +30,8 @@ export default function useLocalForage() {
     autoLaunch: {
       enabled: false
     },
-    proxy: DEFAULT_PROXY_SETTING
+    proxy: DEFAULT_PROXY_SETTING,
+    speech: createDefaultSpeechSettings()
   }
 
   // 设置数据
@@ -57,6 +61,9 @@ export default function useLocalForage() {
     const autoLaunch = await localForage.getItem('autoLaunch')
     // 本地代理配置
     const proxy = await localForage.getItem('proxy')
+    // 已保存的语音偏好，旧配置缺少时使用 Kokoro
+    const speech = await localForage.getItem<SpeechSettings>('speech')
+    result.speech = normalizeSpeechSettings(speech)
 
     if (activeModelId) {
       result.activeModelId = activeModelId as string

@@ -2,6 +2,8 @@
 export interface SpeechAudioResult {
   /** WAV 音频数据 */
   audioBuffer: ArrayBuffer
+  /** 音频媒体类型；本地模型默认为 WAV */
+  mimeType?: string
 }
 
 /** 语音 Worker 预加载消息 */
@@ -18,6 +20,8 @@ export interface SpeechSynthesizeMessage {
   requestId: number
   /** 待朗读文本 */
   text: string
+  /** 指定音色，为空时按语言选择 */
+  speakerId?: number
 }
 
 /** 语音 Worker 取消消息 */
