@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import localForage from 'localforage'
 import { SendEnum } from '@src/type/ipc-constants'
 import { toast } from 'sonner'
 import { speakText, stopSpeaking } from '@src/utils/speak'
-import { TranslateResponse } from '@src/type/base'
+import { Language, TextType, TranslateResponse } from '@src/type/base'
 import useLocalForage from '@renderer/hooks/useLocalForage'
 import useSentenceAnalysis from '@renderer/hooks/useSentenceAnalysis'
 import { useNavigate } from 'react-router-dom'
@@ -20,6 +21,37 @@ import {
 
 /** 当前朗读目标，数字表示译文条目索引 */
 type SpeakingTarget = 'input' | number | null
+
+/** 本地持久化最近翻译记录的键名与上限 */
+const RECENT_TRANSLATIONS_STORAGE_KEY = 'bai-ze-recent-translations'
+const MAX_RECENT_TRANSLATION_COUNT = 5
+
+/** 最近翻译历史条目 */
+export interface RecentTranslationItem {
+  id: string
+  sourceText: string
+  previewText: string
+  result: TranslateResponse
+  updatedAt: number
+}
+
+/** 提取用于最近历史列表展示的简短译文摘要 */
+function extractPreviewText(result: TranslateResponse): string {
+  if (result.textType === TextType.WORD) {
+    const meaning = result.exampleSentences?.find((item) => item.wordTranslation)?.wordTranslation
+    if (meaning) {
+      return meaning
+    }
+  }
+  const firstItem = result.translation?.[0]
+  if (!firstItem) {
+    return ''
+  }
+  if (result.sourceLanguage === Language.ZH) {
+    return firstItem.en || firstItem.zh || ''
+  }
+  return firstItem.zh || firstItem.en || ''
+}
 
 /**
  * 首页翻译数据 Hook
@@ -64,13 +96,15 @@ export default function useData() {
     analyzeSentence,
     resetSentenceAnalysis
   } = useSentenceAnalysis()
+  // 最近翻译历史记录
+  const [recentItems, setRecentItems] = useState<RecentTranslationItem[]>([])
 
   /**
    * 跳转到设置页并聚焦模型配置区域
    * @returns {void} 无返回值
    */
   const goToSettingPage = useCallback(() => {
-    navigate('/setting?focus=model-config')
+    navigate('/setting?tab=model&focus=model-config')
   }, [navigate])
 
   /**
@@ -117,6 +151,18 @@ export default function useData() {
     return true
   }, [getActiveModel, goToSettingPage, isInit])
 
+  /** 清空原文与当前译文状态 */
+  const clearInputText = () => {
+    stopSpeaking()
+    setSpeakingTarget(null)
+    setTranslationText('')
+    setTranslationResult(null)
+    setTranslationError('')
+    lastTranslationText.current = ''
+    translateSuccess.current = false
+    resetSentenceAnalysis()
+  }
+
   /** 处理输入文本变化 */
   const handleInputTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     // 最新输入文本
@@ -148,12 +194,13 @@ export default function useData() {
   }
 
   /** 英汉互译 */
-  const onEnglishChineseTranslation = () => {
+  const onEnglishChineseTranslation = (overrideText?: string) => {
     if (isLoading) {
-      toast.error('正在翻译中...')
       return
     }
-    if (translationText.trim() === '') {
+    // 本次待翻译文本
+    const targetText = (overrideText ?? translationText).trim()
+    if (targetText === '') {
       toast.error('请输入要翻译的文本')
       return
     }
@@ -161,21 +208,70 @@ export default function useData() {
       return
     }
 
-    if (translateSuccess.current && lastTranslationText.current === translationText) {
-      toast.error('已翻译')
-      return
-    }
-
-    // 清理后的待翻译文本
-    const normalizedText = translationText.trim()
-    lastTranslationText.current = normalizedText
+    lastTranslationText.current = targetText
     stopSpeaking()
     setSpeakingTarget(null)
     setTranslationResult(null)
     setTranslationError('')
     resetSentenceAnalysis()
     setIsLoading(true)
-    window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, normalizedText)
+    window.electron.ipcRenderer.send(SendEnum.ENGLISH_CHINESE_TRANSLATION, targetText)
+  }
+
+  /**
+   * 填入推荐例句并立即执行翻译
+   * @param sample 示例英文句子
+   * @returns {void} 无返回值
+   */
+  const translateSampleText = (sample: string): void => {
+    if (isLoading) {
+      return
+    }
+    setTranslationText(sample)
+    onEnglishChineseTranslation(sample)
+  }
+
+  /**
+   * 读取剪贴板文本并直接发起翻译
+   * @returns {Promise<void>} 异步读取任务
+   */
+  const pasteAndTranslate = async (): Promise<void> => {
+    if (isLoading) {
+      return
+    }
+    try {
+      const clipboardText = (await navigator.clipboard.readText()).trim()
+      if (!clipboardText) {
+        toast.info('剪贴板暂无可翻译文本')
+        return
+      }
+      setTranslationText(clipboardText)
+      onEnglishChineseTranslation(clipboardText)
+    } catch {
+      toast.info('无法读取剪贴板，请直接在左侧粘贴')
+    }
+  }
+
+  /**
+   * 回看最近翻译条目，直接恢复原文与结果
+   * @param item 历史翻译记录
+   * @returns {void} 无返回值
+   */
+  const selectRecentItem = (item: RecentTranslationItem): void => {
+    stopSpeaking()
+    setSpeakingTarget(null)
+    resetSentenceAnalysis()
+    setTranslationError('')
+    setTranslationText(item.sourceText)
+    lastTranslationText.current = item.sourceText
+    translateSuccess.current = true
+    setTranslationResult(item.result)
+  }
+
+  /** 清空最近翻译记录 */
+  const clearRecentHistory = (): void => {
+    setRecentItems([])
+    void localForage.removeItem(RECENT_TRANSLATIONS_STORAGE_KEY).catch(() => undefined)
   }
 
   /**
@@ -308,6 +404,22 @@ export default function useData() {
       .catch(() => toast.error('句子分析已完成，但收藏更新失败'))
   }, [bookmarkedItemId, sentenceAnalysis, translationResult])
 
+  /** 首次挂载时读取最近翻译历史 */
+  useEffect(() => {
+    let isCancelled = false
+    void localForage
+      .getItem<RecentTranslationItem[]>(RECENT_TRANSLATIONS_STORAGE_KEY)
+      .then((stored) => {
+        if (!isCancelled && Array.isArray(stored)) {
+          setRecentItems(stored)
+        }
+      })
+      .catch(() => undefined)
+    return () => {
+      isCancelled = true
+    }
+  }, [])
+
   useEffect(() => {
     // 移除可能存在的旧监听器
     window.electron.ipcRenderer.removeAllListeners(SendEnum.ENGLISH_CHINESE_TRANSLATION_SUCCESS)
@@ -319,6 +431,24 @@ export default function useData() {
       setTranslationError('')
       setTranslationResult(result)
       translateSuccess.current = true
+
+      const sourceText = (result.sourceWords || lastTranslationText.current).trim()
+      if (sourceText) {
+        const nextItem: RecentTranslationItem = {
+          id: `${Date.now()}`,
+          sourceText,
+          previewText: extractPreviewText(result),
+          result,
+          updatedAt: Date.now()
+        }
+        setRecentItems((previous) => {
+          const deduped = previous.filter((item) => item.sourceText !== sourceText)
+          const nextList = [nextItem, ...deduped].slice(0, MAX_RECENT_TRANSLATION_COUNT)
+          void localForage.setItem(RECENT_TRANSLATIONS_STORAGE_KEY, nextList).catch(() => undefined)
+          return nextList
+        })
+      }
+
       toast.success('翻译成功', {
         id: 'translation-success'
       })
@@ -366,10 +496,16 @@ export default function useData() {
     translationResult,
     bookmarkedItemId,
     isBookmarkSaving,
+    recentItems,
+    clearInputText,
     handleInputTextChange,
     handleKeyDown,
     onScreenshot,
     onEnglishChineseTranslation,
+    translateSampleText,
+    pasteAndTranslate,
+    selectRecentItem,
+    clearRecentHistory,
     onAnalyzeSentence,
     toggleBookmark,
     speakInputText,

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import localForage from 'localforage'
 import { toast } from 'sonner'
 import useLocalForage from '@renderer/hooks/useLocalForage'
+import { useLocalModels } from '@renderer/hooks/useLocalModels'
 import type {
   ConversationCoachResponse,
   ConversationHistoryItem,
@@ -25,6 +26,11 @@ import {
 } from '@src/utils/conversation-opening'
 import { speakText, stopSpeaking } from '@src/utils/speak'
 import { MicrophoneCapture } from './audio/microphone-capture'
+
+/** 对话记录与偏好持久化键名 */
+const CONVERSATION_MESSAGES_STORAGE_KEY = 'bai-ze-conversation-messages'
+const CONVERSATION_INPUT_MODE_STORAGE_KEY = 'bai-ze-conversation-input-mode'
+const CONVERSATION_TEXT_SPEECH_STORAGE_KEY = 'bai-ze-conversation-text-speech'
 
 /** 等待重试的模型请求 */
 interface FailedConversationRequest {
@@ -113,6 +119,17 @@ export default function useConversation() {
   const navigate = useNavigate()
   // 当前模型设置
   const { isInit, storeSetting } = useLocalForage()
+  // 本地按需模型状态
+  const {
+    modelsMap,
+    isLoading: isLocalModelsLoading,
+    downloadModel,
+    cancelDownload
+  } = useLocalModels()
+  const whisperModelState = modelsMap['whisper-asr']
+  // 最新 Whisper 安装状态引用
+  const whisperModelStatusRef = useRef(whisperModelState.status)
+  whisperModelStatusRef.current = whisperModelState.status
   // 当前对话状态
   const [status, setStatus] = useState<ConversationStatus>('idle')
   // 当前对话输入模式
@@ -163,7 +180,7 @@ export default function useConversation() {
     window.electron.ipcRenderer.send(SendEnum.RECOGNITION_STOP)
   }, [])
 
-  /** 切换空闲会话的输入模式 */
+  /** 切换空闲会话的输入模式并持久化 */
   const changeInputMode = useCallback(
     (nextInputMode: ConversationInputMode): boolean => {
       if (nextInputMode === inputMode) {
@@ -178,15 +195,17 @@ export default function useConversation() {
       setErrorMessage('')
       updateStatus('idle')
       setInputMode(nextInputMode)
+      void localForage.setItem(CONVERSATION_INPUT_MODE_STORAGE_KEY, nextInputMode).catch(() => undefined)
       return true
     },
     [inputMode, updateStatus]
   )
 
-  /** 切换文字模式的 AI 回复朗读偏好 */
+  /** 切换文字模式的 AI 回复朗读偏好并持久化 */
   const changeTextReplySpeech = (isEnabled: boolean): void => {
     isTextReplySpeechEnabledRef.current = isEnabled
     setIsTextReplySpeechEnabled(isEnabled)
+    void localForage.setItem(CONVERSATION_TEXT_SPEECH_STORAGE_KEY, isEnabled).catch(() => undefined)
   }
 
   /** 检查当前 AI 模型是否可用于对话 */
@@ -201,7 +220,7 @@ export default function useConversation() {
       toast.error('请先完成当前 AI 模型配置', {
         action: {
           label: '去设置',
-          onClick: () => navigate('/setting?focus=model-config')
+          onClick: () => navigate('/setting?tab=model&focus=model-config')
         }
       })
       return false
@@ -210,7 +229,7 @@ export default function useConversation() {
   }, [isInit, navigate, storeSetting.activeModelId, storeSetting.models])
 
   /**
-   * 将消息写入页面和同步引用
+   * 将消息写入页面、同步引用并持久化到本地
    * @param nextMessages 最新消息或更新函数
    * @returns 无返回值
    */
@@ -225,6 +244,9 @@ export default function useConversation() {
         const resolvedMessages =
           typeof nextMessages === 'function' ? nextMessages(previousMessages) : nextMessages
         messagesRef.current = resolvedMessages
+        void localForage
+          .setItem(CONVERSATION_MESSAGES_STORAGE_KEY, resolvedMessages)
+          .catch(() => undefined)
         return resolvedMessages
       })
     },
@@ -272,6 +294,11 @@ export default function useConversation() {
   const startListening = useCallback(
     async (sessionId: number): Promise<void> => {
       if (sessionId !== sessionIdRef.current || statusRef.current === 'paused') {
+        return
+      }
+      if (whisperModelStatusRef.current !== 'installed') {
+        updateStatus('idle')
+        toast.info('Whisper 英文识别模型尚未就绪，请先下载模型')
         return
       }
       updateStatus('initializing')
@@ -580,6 +607,10 @@ export default function useConversation() {
     if (!ensureModelReady()) {
       return
     }
+    if (inputMode === 'voice' && whisperModelStatusRef.current !== 'installed') {
+      toast.info('请先下载 Whisper 英文识别模型，或切换为文字练习')
+      return
+    }
     sessionIdRef.current += 1
     manualSpeechRequestIdRef.current += 1
     manualSpeechRestoreStatusRef.current = null
@@ -613,12 +644,19 @@ export default function useConversation() {
     updateMessages
   ])
 
-  /** 提交打字模式中的用户英文表达 */
+  /** 提交打字模式中的用户英文表达（支持空闲态直接输入开聊） */
   const submitTextMessage = useCallback(
     (text: string): boolean => {
       // 清理首尾空白后的用户输入
       const userText = text.trim()
-      if (inputMode !== 'text' || statusRef.current !== 'awaiting-input' || !userText) {
+      if (
+        inputMode !== 'text' ||
+        (statusRef.current !== 'awaiting-input' && statusRef.current !== 'idle') ||
+        !userText
+      ) {
+        return false
+      }
+      if (!ensureModelReady()) {
         return false
       }
 
@@ -632,8 +670,24 @@ export default function useConversation() {
       void requestConversationReply({ isOpening: false, userText }, sessionIdRef.current)
       return true
     },
-    [inputMode, requestConversationReply, updateMessages]
+    [ensureModelReady, inputMode, requestConversationReply, updateMessages]
   )
+
+  /** 清空历史消息，回到全新空闲状态 */
+  const clearConversation = useCallback((): void => {
+    sessionIdRef.current += 1
+    manualSpeechRequestIdRef.current += 1
+    manualSpeechRestoreStatusRef.current = null
+    setManualSpeechTarget(null)
+    if (inputMode === 'voice') {
+      stopListening()
+    }
+    stopSpeaking()
+    failedRequestRef.current = null
+    setErrorMessage('')
+    updateStatus('idle')
+    updateMessages([])
+  }, [inputMode, stopListening, updateMessages, updateStatus])
 
   /** 暂停当前监听 */
   const pauseConversation = useCallback((): void => {
@@ -732,7 +786,11 @@ export default function useConversation() {
       }
       stopListening()
       updateStatus('error')
-      setErrorMessage(`本地英文识别失败：${response.message}`)
+      setErrorMessage(
+        response.code === 'MODEL_MISSING'
+          ? response.message
+          : `本地英文识别失败：${response.message}`
+      )
     }
 
     window.electron.ipcRenderer.on(SendEnum.RECOGNITION_READY, handleReady)
@@ -748,6 +806,38 @@ export default function useConversation() {
     }
   }, [requestConversationReply, startListening, stopListening, updateMessages, updateStatus])
 
+  /** 页面首次挂载时恢复持久化的对话记录与输入偏好 */
+  useEffect(() => {
+    let isCancelled = false
+
+    async function restoreConversation(): Promise<void> {
+      const [savedMessages, savedMode, savedTextSpeech] = await Promise.all([
+        localForage.getItem<ConversationMessage[]>(CONVERSATION_MESSAGES_STORAGE_KEY),
+        localForage.getItem<ConversationInputMode>(CONVERSATION_INPUT_MODE_STORAGE_KEY),
+        localForage.getItem<boolean>(CONVERSATION_TEXT_SPEECH_STORAGE_KEY)
+      ])
+      if (isCancelled) {
+        return
+      }
+      if (Array.isArray(savedMessages) && savedMessages.length > 0 && messagesRef.current.length === 0) {
+        messagesRef.current = savedMessages
+        setMessages(savedMessages)
+      }
+      if (savedMode === 'voice' || savedMode === 'text') {
+        setInputMode(savedMode)
+      }
+      if (typeof savedTextSpeech === 'boolean') {
+        isTextReplySpeechEnabledRef.current = savedTextSpeech
+        setIsTextReplySpeechEnabled(savedTextSpeech)
+      }
+    }
+
+    void restoreConversation()
+    return () => {
+      isCancelled = true
+    }
+  }, [])
+
   /** 页面卸载时释放所有会话资源 */
   useEffect(() => {
     return () => {
@@ -758,6 +848,21 @@ export default function useConversation() {
     }
   }, [])
 
+  /** 下载 Whisper 英文识别模型 */
+  const downloadWhisperModel = useCallback((): void => {
+    void downloadModel('whisper-asr', storeSetting.localModelSource)
+  }, [downloadModel, storeSetting.localModelSource])
+
+  /** 取消 Whisper 英文识别模型下载 */
+  const cancelWhisperDownload = useCallback((): void => {
+    void cancelDownload('whisper-asr')
+  }, [cancelDownload])
+
+  /** 跳转设置页配置本地模型下载源 */
+  const openLocalModelSettings = useCallback((): void => {
+    navigate('/setting?tab=speech&focus=local-models')
+  }, [navigate])
+
   return {
     status,
     inputMode,
@@ -765,6 +870,8 @@ export default function useConversation() {
     messages,
     manualSpeechTarget,
     errorMessage,
+    whisperModelState,
+    isWhisperModelLoading: isLocalModelsLoading,
     isConversationActive: ACTIVE_CONVERSATION_STATUSES.has(status),
     canRetryReply: Boolean(failedRequestRef.current),
     canPlayMessageSpeech:
@@ -777,6 +884,10 @@ export default function useConversation() {
     pauseConversation,
     resumeConversation,
     endConversation,
-    retryReply
+    clearConversation,
+    retryReply,
+    downloadWhisperModel,
+    cancelWhisperDownload,
+    openLocalModelSettings
   }
 }

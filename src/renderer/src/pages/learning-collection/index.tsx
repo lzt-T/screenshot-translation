@@ -4,20 +4,22 @@ import {
   ChevronDown,
   ChevronUp,
   CircleAlert,
-  Copy,
   Loader2,
+  MessageCircleMore,
   Search,
   Trash2,
-  Volume2,
-  VolumeX
+  X
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import type { LearningItem, LearningItemKind } from '@src/type/learning'
+import CopyIconButton from '@renderer/components/CopyIconButton'
+import SpeakingIndicator from '@renderer/components/SpeakingIndicator'
+import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { cn } from '@renderer/lib/utils'
 import useLearningCollection, { type LearningKindFilter } from './useLearningCollection'
 import LearningItemDetails from './components/LearningItemDetails'
-import '../../scroll.css'
 
 /** 收藏筛选项 */
 const FILTER_OPTIONS: ReadonlyArray<{ value: LearningKindFilter; label: string }> = [
@@ -26,10 +28,16 @@ const FILTER_OPTIONS: ReadonlyArray<{ value: LearningKindFilter; label: string }
   { value: 'sentence', label: '句子' }
 ]
 
-/** 收藏类型文案映射 */
-const KIND_LABELS: Readonly<Record<LearningItemKind, string>> = {
-  word: '单词',
-  sentence: '句子'
+/** 收藏类型文案与温润徽标样式映射 */
+const KIND_META_MAP: Readonly<Record<LearningItemKind, { label: string; className: string }>> = {
+  word: {
+    label: '单词',
+    className: 'border-marginalia-border/80 bg-marginalia text-marginalia-foreground'
+  },
+  sentence: {
+    label: '句子',
+    className: 'border-border/80 bg-muted/70 text-muted-foreground'
+  }
 }
 
 /** 收藏来源文案映射 */
@@ -38,11 +46,7 @@ const SOURCE_LABELS: Readonly<Record<LearningItem['source'], string>> = {
   screenshot: '截图翻译'
 }
 
-/**
- * 格式化收藏时间
- * @param timestamp 时间戳
- * @returns 本地日期时间
- */
+/** 格式化收藏时间 */
 function formatLearningTime(timestamp: number): string {
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
@@ -53,18 +57,17 @@ function formatLearningTime(timestamp: number): string {
   }).format(timestamp)
 }
 
-/**
- * 判断收藏记录是否包含可展开详情
- * @param item 学习收藏记录
- * @returns 是否包含详细学习内容
- */
+/** 判断收藏记录是否包含可展开详情 */
 function hasLearningDetails(item: LearningItem): boolean {
   return Boolean(item.sentenceAnalysis || item.translationResult?.exampleSentences?.length)
 }
 
-/** 渲染学习收藏页面 */
+/**
+ * 渲染纯净顶栏与辞书词条排版的学习收藏页面
+ * @returns {React.JSX.Element} 收藏页节点
+ */
 export default function LearningCollectionPage(): React.JSX.Element {
-  // 收藏页状态与交互
+  const navigate = useNavigate()
   const {
     items,
     total,
@@ -83,58 +86,83 @@ export default function LearningCollectionPage(): React.JSX.Element {
     toggleLearningItemSpeech,
     removeItem
   } = useLearningCollection()
-  // 当前是否启用了筛选
   const hasActiveFilter = Boolean(query.trim()) || kindFilter !== 'all'
 
-  return (
-    <div className="mx-auto min-h-full w-full max-w-[1180px] px-5 py-5 lg:px-7 lg:py-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-foreground">学习收藏</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-            收拢值得再次理解和朗读的单词与句子。
-          </p>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          共 {total} 条 · 当前 {items.length} 条
-        </p>
-      </header>
+  /** 将当前收藏条目送入口语对话练习 */
+  const handlePracticeItem = (item: LearningItem): void => {
+    navigate('/conversation', {
+      state: { practiceText: item.originalText.trim() }
+    })
+  }
 
-      <section className="lab-panel mt-5 overflow-hidden" aria-busy={isLoading}>
-        <div className="flex flex-col gap-3 border-b border-border bg-muted/30 p-3 sm:flex-row sm:items-center">
-          <label className="relative min-w-0 flex-1">
+  return (
+    <div className="mx-auto min-h-full w-full max-w-[1200px] px-5 py-4 lg:px-7 lg:py-5">
+      <h1 className="sr-only">学习收藏</h1>
+
+      <section className="lexicon-sheet overflow-hidden" aria-busy={isLoading}>
+        <div className="flex flex-col gap-3 border-b border-border/55 px-5 py-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            <div
+              aria-label="收藏类型筛选"
+              className="flex items-center gap-0.5 rounded-md bg-muted/70 p-0.5"
+              role="group"
+            >
+              {FILTER_OPTIONS.map((option) => {
+                const isSelected = kindFilter === option.value
+                return (
+                  <button
+                    aria-pressed={isSelected}
+                    className={cn(
+                      'h-7 cursor-pointer rounded-sm px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45',
+                      isSelected
+                        ? 'bg-card text-foreground shadow-2xs'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                    key={option.value}
+                    onClick={() => setKindFilter(option.value)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            <span className="text-xs text-muted-foreground/85">
+              {hasActiveFilter ? `${items.length} / ${total} 条` : `共 ${total} 条`}
+            </span>
+          </div>
+
+          <label className="relative w-full sm:w-72">
             <Search
               aria-hidden="true"
               className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
-              size={15}
+              size={14}
             />
             <span className="sr-only">搜索学习收藏</span>
             <Input
-              className="pl-9"
+              className={cn('h-8 pl-8 text-xs', query && 'pr-8')}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索原文或译文"
+              placeholder="搜索原文或译文…"
               value={query}
             />
-          </label>
-          <div className="flex items-center gap-1" aria-label="收藏类型筛选">
-            {FILTER_OPTIONS.map((option) => (
-              <Button
-                aria-pressed={kindFilter === option.value}
-                className="cursor-pointer"
-                key={option.value}
-                onClick={() => setKindFilter(option.value)}
-                size="sm"
-                variant={kindFilter === option.value ? 'secondary' : 'ghost'}
+            {query && (
+              <button
+                aria-label="清空搜索关键词"
+                className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer rounded-sm p-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45"
+                onClick={() => setQuery('')}
+                title="清空搜索"
+                type="button"
               >
-                {option.label}
-              </Button>
-            ))}
-          </div>
+                <X size={13} />
+              </button>
+            )}
+          </label>
         </div>
 
         {isLoading && (
           <div className="flex min-h-56 items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="animate-spin text-primary" size={17} />
+            <Loader2 className="animate-spin text-foreground" size={17} />
             正在读取收藏
           </div>
         )}
@@ -144,7 +172,12 @@ export default function LearningCollectionPage(): React.JSX.Element {
             <CircleAlert className="text-destructive" size={22} />
             <p className="mt-3 text-sm font-medium">收藏数据暂不可用</p>
             <p className="mt-1 max-w-md text-xs leading-5 text-muted-foreground">{errorMessage}</p>
-            <Button className="mt-4" onClick={() => void loadItems()} size="sm" variant="outline">
+            <Button
+              className="mt-4 cursor-pointer"
+              onClick={() => void loadItems()}
+              size="sm"
+              variant="outline"
+            >
               重新读取
             </Button>
           </div>
@@ -152,106 +185,116 @@ export default function LearningCollectionPage(): React.JSX.Element {
 
         {!isLoading && !errorMessage && items.length === 0 && (
           <div className="flex min-h-56 flex-col items-center justify-center px-6 text-center">
-            {hasActiveFilter ? (
-              <Search className="text-muted-foreground" size={19} />
-            ) : (
-              <Bookmark className="text-muted-foreground" size={19} />
-            )}
-            <p className="mt-3 text-sm font-medium">
+            <div className="mb-3 flex size-9 items-center justify-center rounded-lg border border-border bg-muted/45 text-muted-foreground">
+              {hasActiveFilter ? <Search size={17} /> : <Bookmark size={17} />}
+            </div>
+            <p className="text-sm font-medium text-foreground">
               {hasActiveFilter ? '没有匹配的收藏' : '还没有学习收藏'}
             </p>
             <p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">
               {hasActiveFilter
                 ? '尝试缩短关键词或切换内容类型。'
-                : '在文本翻译结果或截图翻译浮层中点击收藏。'}
+                : '在文本翻译、对话纠错或截图浮层中点击收藏即可存入。'}
             </p>
           </div>
         )}
 
         {!isLoading && !errorMessage && items.length > 0 && (
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-border/60">
             {items.map((item) => {
-              // 当前记录是否展开
               const isExpanded = expandedItemId === item.id
-              // 当前记录是否正在朗读
               const isSpeaking = speakingItemId === item.id
-              // 当前记录是否正在删除
               const isRemoving = removingItemId === item.id
-              // 当前记录是否包含详情
               const hasDetails = hasLearningDetails(item)
+              const kindMeta = KIND_META_MAP[item.kind]
 
               return (
-                <article key={item.id}>
-                  <div className="group px-5 py-4 transition-colors hover:bg-accent/20">
+                <article className="lexicon-reveal" key={item.id}>
+                  <div className="group px-5 py-4 transition-colors hover:bg-accent/25">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-muted px-2 py-1 text-[11px] font-medium text-foreground">
-                        {KIND_LABELS[item.kind]}
+                      <Badge className={kindMeta.className} variant="outline">
+                        {kindMeta.label}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {SOURCE_LABELS[item.source]}
                       </span>
-                      <span className="text-xs text-muted-foreground">{SOURCE_LABELS[item.source]}</span>
-                      <time className="ml-auto text-xs text-muted-foreground">
+                      <time className="ml-auto text-xs text-muted-foreground/85">
                         {formatLearningTime(item.updatedAt)}
                       </time>
                     </div>
 
-                    <p className="mt-2 whitespace-pre-wrap break-words text-[15px] font-medium leading-7 text-foreground">
+                    <p className="mt-2.5 whitespace-pre-wrap break-words text-[15px] font-medium leading-7 text-foreground">
                       {item.originalText}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
                       {item.translatedText}
                     </p>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-1">
+                    <div className="-ml-2.5 mt-3 flex flex-wrap items-center gap-1">
                       {hasDetails && (
                         <Button
                           aria-expanded={isExpanded}
-                          className="cursor-pointer"
+                          className="h-7.5 cursor-pointer px-2.5 text-xs"
                           onClick={() => toggleExpandedItem(item.id)}
                           size="sm"
                           variant="ghost"
                         >
                           {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                          {isExpanded ? '收起详情' : '查看详情'}
+                          {isExpanded ? '收起批注' : '查看批注'}
                         </Button>
                       )}
                       <Button
-                        aria-label="复制原文与译文"
-                        onClick={() => copyLearningItem(item)}
-                        className="size-8 cursor-pointer"
-                        size="icon"
-                        title="复制原文与译文"
+                        className="h-7.5 cursor-pointer px-2.5 text-xs"
+                        onClick={() => handlePracticeItem(item)}
+                        size="sm"
+                        title="带入对话练习开口表达"
                         variant="ghost"
                       >
-                        <Copy size={14} />
+                        <MessageCircleMore size={13} />
+                        练口语
                       </Button>
-                      <Button
-                        aria-label={isSpeaking ? '停止朗读原文' : '朗读原文'}
-                        aria-pressed={isSpeaking}
-                        className="size-8 cursor-pointer"
-                        onClick={() => toggleLearningItemSpeech(item)}
-                        size="icon"
-                        title={isSpeaking ? '停止朗读原文' : '朗读原文'}
-                        variant="ghost"
-                      >
-                        {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                      </Button>
-                      <Button
-                        aria-label="取消收藏"
+
+                      <div
                         className={cn(
-                          'ml-auto size-8 cursor-pointer',
-                          isRemoving && 'cursor-not-allowed'
+                          'flex items-center gap-0.5 opacity-60 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
+                          (isSpeaking || isRemoving) && 'opacity-100'
                         )}
-                        disabled={isRemoving}
-                        onClick={() => void removeItem(item.id)}
-                        size="icon"
-                        title="取消收藏"
-                        variant="ghost"
                       >
-                        {isRemoving ? (
-                          <Loader2 className="animate-spin" size={14} />
-                        ) : (
-                          <Trash2 size={14} />
-                        )}
-                      </Button>
+                        <CopyIconButton
+                          ariaLabel="复制原文与译文"
+                          onCopy={() => copyLearningItem(item)}
+                          title="复制原文与译文"
+                        />
+                        <Button
+                          aria-label={isSpeaking ? '停止朗读原文' : '朗读原文'}
+                          aria-pressed={isSpeaking}
+                          className="size-7.5 cursor-pointer"
+                          onClick={() => toggleLearningItemSpeech(item)}
+                          size="icon"
+                          title={isSpeaking ? '停止朗读原文' : '朗读原文'}
+                          variant="ghost"
+                        >
+                          <SpeakingIndicator isSpeaking={isSpeaking} />
+                        </Button>
+                        <Button
+                          aria-label="取消收藏"
+                          className={cn(
+                            'size-7.5 cursor-pointer text-muted-foreground hover:text-destructive',
+                            isRemoving && 'cursor-not-allowed'
+                          )}
+                          disabled={isRemoving}
+                          onClick={() => void removeItem(item.id)}
+                          size="icon"
+                          title="取消收藏"
+                          variant="ghost"
+                        >
+                          {isRemoving ? (
+                            <Loader2 className="animate-spin" size={14} />
+                          ) : (
+                            <Trash2 size={14} />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
 

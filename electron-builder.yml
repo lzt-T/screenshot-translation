@@ -14,7 +14,12 @@ files:
   - 'out/**/*'
   - 'node_modules/**/*'
 extraResources:
-  - resources
+  - from: resources
+    to: resources
+    filter:
+      - '**/*'
+      - '!tts/**'
+      - '!asr/sherpa-onnx-whisper-base.en/**'
   - eng.traineddata
   - chi_sim.traineddata
   - from: drizzle

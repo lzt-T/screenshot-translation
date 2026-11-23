@@ -12,7 +12,7 @@ import { SaveStatus } from '../../useData'
 const SAVE_STATUS_TEXT: Readonly<Record<SaveStatus, string>> = {
   idle: '自动保存',
   saving: '保存中…',
-  saved: '已自动保存',
+  saved: '模型配置已保存',
   error: '保存失败，请重试'
 }
 
@@ -140,23 +140,30 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
       ref={sectionRef}
       tabIndex={-1}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2
-            className="text-base font-semibold text-foreground"
-            id="model-config-title"
-          >
-            模型配置
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">管理翻译引擎与连接凭据。</p>
-          <p
-            aria-live="polite"
-            className={`mt-2 text-xs ${saveStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}
-          >
-            {saveStatusText}
+          <div className="flex items-center gap-2.5">
+            <h2
+              className="text-base font-semibold text-foreground"
+              id="model-config-title"
+            >
+              模型配置
+            </h2>
+            {saveStatus !== 'idle' && (
+              <span
+                aria-live="polite"
+                className={`text-xs ${saveStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}
+                role="status"
+              >
+                {saveStatusText}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Gemini 模型直连 Google；其他模型请填写 API 根地址与凭据。
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button
             className="cursor-pointer"
             disabled={!canReset}
@@ -174,10 +181,6 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
           </Button>
         </div>
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        Gemini 模型将直接连接 Google；其他模型请填写 API 根地址。
-      </p>
 
       <div className="space-y-2">
         {models.map((model) => (

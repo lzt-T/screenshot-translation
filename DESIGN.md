@@ -1,167 +1,153 @@
 ---
 name: Bai_Ze
-description: 一套面向桌面翻译与英语学习的清新成长伙伴视觉系统
+description: 一套面向桌面翻译与英语学习的双语口袋辞书（Bilingual Lexicon & Marginalia）视觉系统
 colors:
-  primary: "#167A68"
-  primary-dark: "#59C5A8"
-  workbench-light: "#F3F5F4"
-  workbench-dark: "#111716"
+  primary: "#181C24"
+  primary-dark: "#ECEFF4"
+  workbench-light: "#F7F6F2"
+  workbench-dark: "#11141B"
+  shell-light: "#F1F0EB"
+  shell-dark: "#14171F"
   surface-light: "#FFFFFF"
-  surface-dark: "#181F1D"
-  ink-light: "#172522"
-  ink-dark: "#EAF3F0"
-  border-light: "#CBD8D3"
-  border-dark: "#35433F"
-  floating-accent: "#74E1C1"
+  surface-dark: "#181D27"
+  reading-light: "#FAF9F6"
+  reading-dark: "#151923"
+  ink-light: "#172030"
+  ink-dark: "#E8EDF5"
+  border-light: "#E3E2DC"
+  border-dark: "#2A3345"
+  marginalia-light: "#FEF6E4"
+  marginalia-dark: "#292216"
+  floating-accent: "#3B82F6"
 typography:
   display:
     fontFamily: "Smiley Sans, Segoe UI, sans-serif"
     fontSize: "1.5rem"
     fontWeight: 400
     lineHeight: 1.1
-    letterSpacing: "-0.03em"
+    letterSpacing: "-0.02em"
+  page-title:
+    fontFamily: "Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI, sans-serif"
+    fontSize: "1.25rem"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "-0.02em"
+  headword:
+    fontFamily: "Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI, sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: "-0.02em"
+  body-emphasis:
+    fontFamily: "Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI, sans-serif"
+    fontSize: "1rem"
+    fontWeight: 500
+    lineHeight: 1.75
   body:
     fontFamily: "Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI, sans-serif"
     fontSize: "0.9375rem"
     fontWeight: 400
     lineHeight: 1.75
+  body-compact:
+    fontFamily: "Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 400
+    lineHeight: 1.6
+  label:
+    fontFamily: "Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI, sans-serif"
+    fontSize: "0.75rem"
+    fontWeight: 500
+    lineHeight: 1.4
   measurement:
     fontFamily: "Cascadia Mono, SFMono-Regular, Consolas, monospace"
     fontSize: "0.6875rem"
     fontWeight: 400
     lineHeight: 1.4
-    letterSpacing: "0.08em"
+    letterSpacing: "0.06em"
 rounded:
+  badge: "6px"
   control: "8px"
   surface: "12px"
   feature: "16px"
+  pill: "9999px"
 spacing:
   compact: "8px"
   control: "12px"
   surface: "16px"
-  section: "28px"
+  section: "24px"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.surface-light}"
     rounded: "{rounded.control}"
-    padding: "0.6875rem 1.25rem"
-    height: "44px"
+    padding: "0.5rem 1rem"
+    height: "36px"
   panel:
     backgroundColor: "{colors.surface-light}"
     textColor: "{colors.ink-light}"
     rounded: "{rounded.surface}"
     padding: "1rem"
   status-badge:
-    backgroundColor: "color-mix(in oklch, {colors.primary} 10%, transparent)"
+    backgroundColor: "color-mix(in oklab, {colors.primary} 10%, transparent)"
     textColor: "{colors.primary}"
-    rounded: "{rounded.control}"
-    padding: "0.25rem 0.5rem"
+    rounded: "{rounded.badge}"
+    padding: "0.125rem 0.5rem"
 ---
 
 # Design System: Bai_Ze
 
 ## Overview
 
-**Creative North Star: "清新成长伙伴"**
+**Creative North Star: "双语口袋辞书 · Bilingual Lexicon & Marginalia"**
 
-Bai Ze 把英语理解与表达视作一段持续成长的学习过程：取景帮助用户看懂真实语境，双栏学习面支持理解和比对，对话界面陪伴用户练习表达。界面以通透雾白、深森林色和清新青绿构成，让 AI 能力显得聪明而亲近；强调色只标记主操作、当前选择、焦点与必要处理状态。
-
-白泽不以神兽插画出现，也不依赖实验室标签营造概念。密度服务高频桌面操作；装饰不得抢走截图、输入、译文和口语对话的注意力。
-
-**Key Characteristics:**
-
-- 雾白与深森林色构成适应环境光的双主题学习面。
-- 成长青绿实色只表示主操作，低强调薄荷色表示当前选择、焦点或处理状态。
-- 取景边界、紧凑工具栏和连续工作面形成跨窗口识别语言。
-- 控件触感明确，圆角克制，依靠边界和色调分层而非浮夸阴影。
+Bai_Ze 把桌面英语学习视作翻开一本随时可用的精装双语辞书：融合顶栏像轻量书脊统领主工作区，左侧原文与右侧译文以舒展对页并列，句法拆解与口语纠错化作温暖的荧光笔边注卡片，让用户在同一低干扰桌面工具中自然完成“看懂 → 收藏 → 开口”的闭环。
 
 ## Colors
 
-配色采用“清透学习面 + 单一成长信号色”的受限策略。
+配色采用“纸白 / 夜读靛黑对页 + 沉静墨黑主操作 + 低饱和藏青微点缀 + 琥珀批注边注”策略：
 
-### Primary
+### Primary & Accent
 
-- **成长青绿信号色：** 浅色主题使用 `#167A68`，深色主题使用 `#59C5A8`；实色用于截图按钮，低强调形态用于当前选择、焦点和处理中状态。
+- **沉静墨黑主色：** 浅色主题 `#181C24` 配 `#FFFFFF`，深色主题 `#ECEFF4` 配 `#12151C`；用于「翻译」「截图」等核心主按钮，彻底摆脱高饱和电光蓝的组件库模板感。
+- **低饱和藏青点缀：** 焦点环与交互微高亮使用 `#3B5B8C`（浅色）/ `#88A8DF`（深色）。
+- **边注批注暖色：** 浅色主题底面 `#FEF6E4` / 边界 `#EDD6A3` / 前景 `#9A5804`；深色主题底面 `#292216` / 边界 `#594624` / 前景 `#E5B567`。仅用于句子理解批注与“更自然的表达”纠错边注卡。
 
-### Neutral
+### Surfaces & Neutrals
 
-- **通透雾白学习面：** 浅色应用背景使用更中性的 `#F3F5F4`，内容表面保持纯白，让主工作区从画布中清晰浮现而不依赖阴影。
-- **石墨森林学习面：** 深色背景使用近中性石墨 `#111716`，侧栏使用更深的 `#0E1916`，内容表面使用 `#181F1D`；青绿只轻微影响中性色温度，不覆盖整个界面。
-- **柔和薄荷选择面：** 浅色导航选中使用 `#CFE5DE`，普通悬停使用更轻的薄荷表面；深色导航选中使用克制的 `#243B35`，只承担导航和交互层级，不与主按钮竞争。
-- **清晰青灰边界：** 浅色边界使用 `#CBD8D3`，深色边界使用 `#35433F`，明确分隔输入、译文和设置区域，同时保持整体轻盈。
-- **临时窗口信号：** 截图选区和翻译浮层使用 `#74E1C1`；截图选区外使用中性黑色遮罩，选区内部保持透明，保证复杂背景上的辨识度与原始色彩准确性。
-- **翻译结果叠加：** 显示原图时使用低强度中性黑色遮罩，译文不添加块级背景；隐藏原图和底部操作栏使用中性近黑表面，主题色只承担交互反馈。
-
-**The Single Signal Rule.** 成长青绿统一表示主操作、选中、聚焦与必要处理状态；完成和普通信息使用中性层级，天空蓝只能作为低强调层次，不得形成第二套主操作色。
+- **浅色书页画布：** 画布 `#F7F6F2`、融合顶栏 `#F1F0EB`、左页纯白 `#FFFFFF`、右页微暖纸面 `#FAF9F6`、深靛墨黑正文 `#172030`、轻边框 `#E3E2DC`。
+- **深色夜读画布：** 画布 `#11141B`、融合顶栏 `#14171F`、左页 `#181D27`、右页 `#151923`、浅月白正文 `#E8EDF5`、边界 `#2A3345`。
+- **危险与高对比保护：** 浅色 `--destructive` 为 `#C43D3D` 配 `#FFFFFF`；深色 `--destructive` 为 `#E06C6C` 配高对比深前景 `--destructive-foreground: #1B0A0A`。
+- **跨窗口浮层适配：** `hide-original` 模式响应当前浅/深主题纸面与文字 token；`show-original` 保持深色半透明对比底以保证复杂屏幕背景可读性。
 
 ## Typography
 
-**Brand Font:** Smiley Sans（自托管，Segoe UI 回退）
-**Body Font:** Segoe UI Variable Text / Microsoft YaHei UI  
-**Label/Mono Font:** Cascadia Mono / Consolas
+- **Brand Font:** Smiley Sans（仅用于顶栏和关于页的 `Bai_Ze` 字标，不用于正文或表单标签）
+- **UI & Reading Font:** Segoe UI Variable Text / Microsoft YaHei UI（页标题 `20px / 600`，正文 `14–15px / 400`，行高 `1.6–1.75`）
+- **Mono Font:** Cascadia Mono / Consolas（仅用于快捷键 `kbd` 与版本号，最小 `11px`）
 
-**Character:** Smiley Sans 的窄体与轻微倾斜只用于品牌字标；页面标题和正文使用桌面系统字体，等宽字体只承担快捷键与版本信息。
+## Layout & Window Shell
 
-### Hierarchy
+- 主窗口默认启动尺寸为 `1080×740`（最小 `840×600`），采用 `titleBarStyle: 'hidden'` + `titleBarOverlay` 融合标题栏，消除系统顶栏割裂。
+- 移除旧版 `200px` 左侧后台侧栏，改用 `48px` 顶部融合壳体栏居中三段切换（`翻译台` / `对话练习` / `学习收藏`），右侧挂载当前模型快捷入口、主题切换与 `设置 / 关于`。
+- 翻译台双栏书页工作面在 `>=780px` 保持左右对照并列与独立滚动。
+- 设置页拆分为 `常规与外观` / `AI 模型` / `语音朗读` / `网络代理` 四个清晰标签页。
 
-- **Brand：** 18-24px、400，只用于侧栏与关于页品牌字标。
-- **Page Title：** 24-28px、600，用于页面主标题。
-- **Title：** 17–18px、600，用于分区名称和关键组件标题。
-- **Body：** 14–15px、400，行高约 1.6–1.75，用于操作说明和译文。
-- **Label：** 12-13px、500，用于工作区标题与辅助状态。
+## Shapes, Elevation & Scrollbars
 
-**The Display Ration Rule.** Smiley Sans 只用于品牌字标，不用于页面标题、正文、表单标签或长译文。
-
-## Layout
-
-主窗口使用固定 200px 左侧导航与可滚动内容区。首页原文与译文属于一个连续工作面，宽度充足时按约 42% / 58% 并列，较窄窗口回落为单列。内容最大宽度约 1180px，主页面使用 20-28px 外边距。设置页按常规偏好、外观和模型配置顺序垂直组织。
-
-## Elevation & Depth
-
-系统以色调和 1px 边界为主要层级手段。阴影只出现在品牌孔径、主按钮和主题选中项，使用独立中性色并带垂直偏移和柔和衰减；静态内容面板保持平整。
-
-**The Flat Workbench Rule.** 普通内容表面默认无阴影，交互重点才获得轻微抬升。
-
-## Shapes
-
-常规导航与控件使用 8px 圆角，内容表面使用 12px，品牌或强调区域最多使用 16px。小圆点只表示当前状态；大面积药丸形不用于容器。截图选区保持精确直角轮廓，不模仿卡片。
-
-## Components
-
-### Buttons
-
-- 主按钮在浅色主题使用成长青绿底、深色主题使用浅薄荷绿底，并搭配高对比前景；40px 高、8px 圆角，按下时仅下移 1px。
-- 次级按钮依靠边界和内容底色，幽灵按钮只在悬停时出现淡色表面。
-- 焦点统一使用三像素半透明主题环，不能只靠颜色变化。
-
-### Cards / Containers
-
-- `lab-panel` 是主要内容表面：10px 圆角、1px 边界、无默认阴影。
-- 设置常规项共享一个分隔表面；模型配置按真实配置对象分开，避免无意义嵌套卡片。
-
-### Inputs / Fields
-
-- 输入框保持透明或内容面底色，使用语义边界；焦点转为主题色边界与焦点环。
-- 长文本区域取消内部卡片感，与 Source Sample 标题栏共同组成一个连续样本表面。
-
-### Navigation
-
-- 左侧导航采用图标与文字；活动项只使用中性侧栏强调面和文字变化，不叠加状态圆点。
-- 截图选区和翻译浮层继承同一主色、边界、字体与焦点规则。
-- 翻译浮层操作使用无背景文字按钮，仅通过文字颜色变化提供悬停反馈。
+- 圆角体系：微徽标 `6px`（`--radius-sm`）、控件/按钮/输入框 `8px`（`--radius-md`）、普通面板与边注卡 `12px`（`--radius-lg`）、主书页容器 `16px`（`--radius-xl`）。
+- 焦点环统一为 `3px` 语义色半透明光环（`ring-[3px] ring-ring/45`）。
+- 滚动区统一使用 `main.css` 中的 `.custom-scrollbar`（6px 圆角极细轨道），随浅/深主题自适应。
 
 ## Do's and Don'ts
 
 ### Do:
 
-- **Do** 保持当前页面的英语学习主任务始终比辅助设置更醒目。
-- **Do** 使用语义 token，让浅色、深色和临时窗口保持同一状态含义。
-- **Do** 为长原文与译文保留清晰段落结构和高对比正文。
+- **Do** 保持翻译、对话与收藏工作流自然联通（带入练口语、纠错一键收藏、对话持久保留）。
+- **Do** 使用语义 token，保证浅色、深色、融合标题栏与截图浮层视觉同源。
+- **Do** 为非技术用户提供可读分组（如 Kokoro 音色按语种/性别分组）与可逆操作反馈。
 
 ### Don't:
 
-- **Don't** 把白泽替换成字面神兽插画或古典纹样背景。
-- **Don't** 用成长青绿装饰普通内容，或让状态徽标使用与主按钮同等重量的实色背景。
-- **Don't** 引入 AI 紫色、玻璃拟态、渐变文字、发光描边或默认 AI 仪表盘式灰蓝卡片。
-- **Don't** 在普通内容面板同时叠加边框和宽阴影。
+- **Don't** 退回左侧 200px 后台侧栏或给聊天消息堆叠全宽 `border-b` 表格分割线。
+- **Don't** 使用无实体的空 CSS 文件、未定义 class 或小于 `11px` 的中文微字号。
+- **Don't** 将开发期方向契约注释写入 `index.html` 或渲染层源码。

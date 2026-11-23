@@ -13,8 +13,20 @@ const OVERLAY_BACKGROUND_COLORS: Record<OverlayMode, string> = {
   'hide-original': 'var(--result-overlay-surface-strong)'
 }
 
+// 各原图显示模式的译文文字颜色
+const OVERLAY_TEXT_COLORS: Record<OverlayMode, string> = {
+  'show-original': 'var(--floating-foreground)',
+  'hide-original': 'var(--result-overlay-text-strong)'
+}
+
 /** 翻译浮层容器属性 */
 interface OverlayContainerProps {
+  /* 原图显示模式 */
+  $overlayMode: OverlayMode
+}
+
+/** 翻译浮层文本属性 */
+interface TranslatedTextProps {
   /* 原图显示模式 */
   $overlayMode: OverlayMode
 }
@@ -27,73 +39,83 @@ export const OverlayContainer = styled.div<OverlayContainerProps>`
   overflow: hidden;
   box-sizing: border-box;
   padding: 5px;
-  border: 1px solid var(--floating-border);
-  border-radius: 6px;
+  border: 1px solid
+    ${({ $overlayMode }) =>
+      $overlayMode === 'hide-original' ? 'var(--result-overlay-bar-border)' : 'var(--floating-border)'};
+  border-radius: var(--radius-md);
   background-color: ${({ $overlayMode }) => OVERLAY_BACKGROUND_COLORS[$overlayMode]};
-  cursor: pointer;
+  cursor: move;
   user-select: none;
   -webkit-app-region: drag;
 `
 
 /** 单块译文 */
-export const TranslatedTextOverlay = styled.div`
+export const TranslatedTextOverlay = styled.div<TranslatedTextProps>`
   position: absolute;
   box-sizing: border-box;
   padding: 4px 6px;
-  border-radius: 4px;
-  color: var(--floating-foreground);
+  border-radius: var(--radius-sm);
+  color: ${({ $overlayMode }) => OVERLAY_TEXT_COLORS[$overlayMode]};
   font-family: var(--font-ui);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.45;
   white-space: pre-wrap;
   pointer-events: none;
-  text-shadow: 0 1px 2px var(--result-overlay-surface-strong);
+  text-shadow: ${({ $overlayMode }) =>
+    $overlayMode === 'show-original' ? '0 1px 2px rgba(0, 0, 0, 0.85)' : 'none'};
 `
 
 /** 浮层操作栏 */
 export const FooterContainer = styled.div`
   position: absolute;
-  right: 10px;
+  right: 8px;
   bottom: 0;
   display: flex;
   align-items: center;
   height: ${RESULT_WINDOW_BAR_HEIGHT}px;
-  gap: 4px;
-  padding: 0 4px;
-  border-radius: 6px 6px 0 0;
-  background: var(--result-overlay-surface-strong);
+  gap: 2px;
+  padding: 0 6px;
+  border: 1px solid var(--result-overlay-bar-border);
+  border-bottom: 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--result-overlay-bar-bg);
   -webkit-app-region: no-drag;
 `
 
 /** 浮层文本操作 */
 export const CopyButton = styled.button`
   z-index: 1000;
-  padding: 2px 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 6px;
   border: 0;
-  color: var(--floating-foreground);
-  background: none;
+  color: var(--result-overlay-bar-fg);
+  background: transparent;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 500;
   white-space: nowrap;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   outline: none;
   transition: color 150ms ease, background-color 150ms ease;
 
   &:disabled {
     cursor: default;
-    opacity: 0.6;
+    opacity: 0.55;
   }
 
-  &:hover {
-    color: var(--floating-accent);
-    background: color-mix(in oklab, var(--floating-accent) 10%, transparent);
+  &:hover:not(:disabled) {
+    color: var(--primary);
+    background: color-mix(in oklab, var(--primary) 12%, transparent);
   }
 
-  &:active {
+  &:active:not(:disabled) {
     transform: translateY(1px);
   }
 
   &:focus-visible {
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--floating-accent) 60%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 45%, transparent);
   }
 `

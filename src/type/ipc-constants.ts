@@ -77,5 +77,17 @@ export enum SendEnum {
   /** 取消学习收藏 */
   LEARNING_ITEM_REMOVE = 'LEARNING_ITEM_REMOVE',
   /** 查找学习收藏 */
-  LEARNING_ITEM_FIND = 'LEARNING_ITEM_FIND'
+  LEARNING_ITEM_FIND = 'LEARNING_ITEM_FIND',
+  /** 同步主窗口标题栏主题 */
+  SYNC_WINDOW_THEME = 'SYNC_WINDOW_THEME',
+  /** 获取全部本地模型状态 */
+  LOCAL_MODEL_LIST = 'LOCAL_MODEL_LIST',
+  /** 下载指定本地模型 */
+  LOCAL_MODEL_DOWNLOAD = 'LOCAL_MODEL_DOWNLOAD',
+  /** 取消指定本地模型下载 */
+  LOCAL_MODEL_CANCEL = 'LOCAL_MODEL_CANCEL',
+  /** 删除用户数据目录中的本地模型 */
+  LOCAL_MODEL_REMOVE = 'LOCAL_MODEL_REMOVE',
+  /** 本地模型状态变更广播 */
+  LOCAL_MODEL_STATE_CHANGED = 'LOCAL_MODEL_STATE_CHANGED'
 }

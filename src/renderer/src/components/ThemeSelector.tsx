@@ -41,9 +41,9 @@ export default function ThemeSelector(): React.JSX.Element {
           <button
             aria-checked={isActive}
             className={cn(
-              'flex h-8 flex-1 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-xs font-medium transition-[background-color,color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:flex-none',
+              'flex h-8 flex-1 cursor-pointer items-center justify-center gap-2 rounded-sm px-3 text-xs font-medium transition-[background-color,color,box-shadow] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45 sm:flex-none',
               isActive
-                ? 'bg-card text-foreground shadow-sm'
+                ? 'bg-card text-primary shadow-xs'
                 : 'text-muted-foreground hover:bg-card/55 hover:text-foreground'
             )}
             key={option.value}

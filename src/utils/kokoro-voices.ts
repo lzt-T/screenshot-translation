@@ -104,3 +104,73 @@ export const KOKORO_VOICES = [
   { id: '101', name: 'zm_098' },
   { id: '102', name: 'zm_100' },
 ] as const
+
+/** Kokoro 音色条目类型 */
+export type KokoroVoiceItem = (typeof KOKORO_VOICES)[number]
+
+/** 音色分组元信息 */
+export interface KokoroVoiceGroup {
+  id: 'en-us' | 'en-gb' | 'zh-female' | 'zh-male'
+  label: string
+  items: Array<{ id: string; rawName: string; displayLabel: string }>
+}
+
+/** 音色前缀分组配置表 */
+const KOKORO_PREFIX_RULES: ReadonlyArray<{
+  prefix: string
+  groupId: KokoroVoiceGroup['id']
+  groupLabel: string
+  formatLabel: (suffix: string, rawName: string) => string
+}> = [
+  {
+    prefix: 'af_',
+    groupId: 'en-us',
+    groupLabel: '美式英语女声',
+    formatLabel: (suffix, rawName) => `${suffix.charAt(0).toUpperCase()}${suffix.slice(1)} · 美式女声 (${rawName})`
+  },
+  {
+    prefix: 'bf_',
+    groupId: 'en-gb',
+    groupLabel: '英式英语女声',
+    formatLabel: (suffix, rawName) => `${suffix.charAt(0).toUpperCase()}${suffix.slice(1)} · 英式女声 (${rawName})`
+  },
+  {
+    prefix: 'zf_',
+    groupId: 'zh-female',
+    groupLabel: '中文普通话女声',
+    formatLabel: (suffix, rawName) => `普通话女声 ${suffix} (${rawName})`
+  },
+  {
+    prefix: 'zm_',
+    groupId: 'zh-male',
+    groupLabel: '中文普通话男声',
+    formatLabel: (suffix, rawName) => `普通话男声 ${suffix} (${rawName})`
+  }
+]
+
+/**
+ * 将 Kokoro 原始音色列表按语种与性别整理为可读分组
+ * @returns 分组后的音色目录
+ */
+export function getGroupedKokoroVoices(): KokoroVoiceGroup[] {
+  const groupMap = new Map<KokoroVoiceGroup['id'], KokoroVoiceGroup>()
+
+  for (const rule of KOKORO_PREFIX_RULES) {
+    groupMap.set(rule.groupId, { id: rule.groupId, label: rule.groupLabel, items: [] })
+  }
+
+  for (const voice of KOKORO_VOICES) {
+    const matchedRule = KOKORO_PREFIX_RULES.find((rule) => voice.name.startsWith(rule.prefix))
+    if (!matchedRule) {
+      continue
+    }
+    const suffix = voice.name.slice(matchedRule.prefix.length)
+    groupMap.get(matchedRule.groupId)?.items.push({
+      id: voice.id,
+      rawName: voice.name,
+      displayLabel: matchedRule.formatLabel(suffix, voice.name)
+    })
+  }
+
+  return Array.from(groupMap.values()).filter((group) => group.items.length > 0)
+}

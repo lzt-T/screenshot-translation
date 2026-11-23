@@ -59,11 +59,11 @@ export const SizeInfo = styled.div`
   position: absolute;
   z-index: 10001;
   padding: 6px 9px;
-  border: 1px solid color-mix(in oklab, var(--floating-accent) 24%, var(--floating-border));
-  border-radius: 7px;
+  border: 1px solid color-mix(in oklab, var(--floating-accent) 28%, var(--floating-border));
+  border-radius: var(--radius-md);
   color: var(--floating-foreground);
   background: var(--floating-surface-strong);
-  box-shadow: 0 8px 24px -18px rgba(0, 0, 0, 0.72);
+  box-shadow: 0 8px 24px -18px var(--floating-shadow);
   font-family: var(--font-measure);
   font-size: 11px;
   white-space: nowrap;

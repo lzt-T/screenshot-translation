@@ -10,6 +10,8 @@ import { validateModelProfile } from '../../utils/modelProfiles'
 import { langchainGateway } from '../utils/aiClients/langchainGateway'
 import { getErrorMessage } from '../utils/error'
 import { applyProxySetting } from '../utils/proxy'
+import { mainWindow } from '../windowClasses/mainWindow'
+import { speechService } from '../speech/speech-service'
 
 // 连接测试使用的最小提示词
 const MODEL_CONNECTION_TEST_PROMPT = '请只回复 OK'
@@ -31,6 +33,7 @@ export const registerSystemIpcEvents = () => {
     void applyProxySetting(setting.proxy).catch((error) => {
       console.error('应用代理设置失败：', error)
     })
+    speechService.syncWithSpeechSettings(setting?.speech)
     aiManage.initAiClient()
   })
 
@@ -41,6 +44,7 @@ export const registerSystemIpcEvents = () => {
     void applyProxySetting(setting.proxy).catch((error) => {
       console.error('初始化代理设置失败：', error)
     })
+    speechService.syncWithSpeechSettings(setting?.speech)
     aiManage.initAiClient()
   })
 
@@ -88,5 +92,12 @@ export const registerSystemIpcEvents = () => {
   /** 打开外部链接 */
   ipcMain.on(SendEnum.OPEN_EXTERNAL_URL, (event, url) => {
     shell.openExternal(url)
+  })
+
+  /** 同步融合标题栏明暗主题 */
+  ipcMain.on(SendEnum.SYNC_WINDOW_THEME, (_event, resolvedTheme: 'light' | 'dark') => {
+    if (resolvedTheme === 'light' || resolvedTheme === 'dark') {
+      mainWindow.syncTitleBarTheme(resolvedTheme)
+    }
   })
 }

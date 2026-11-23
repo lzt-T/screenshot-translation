@@ -4,7 +4,7 @@ import { getSpeechVoiceCompatibilityMessage } from './speech-presets'
 // 来源名称与说明
 export const SPEECH_SOURCES: Record<SpeechSource, { label: string; description: string }> = {
   browser: { label: '浏览器语音', description: '启动通常较快，音色取决于当前系统。' },
-  kokoro: { label: 'Kokoro 本地语音', description: '本地合成，支持离线朗读。' },
+  kokoro: { label: 'Kokoro 本地语音', description: '本地合成，支持离线朗读（需先下载约 205 MB 本地模型）。' },
   'third-party': { label: '第三方语音服务', description: '联网生成，所读文本将发送给选中的服务商，可能产生费用。' }
 }
 /** 第三方字段说明 */
@@ -50,7 +50,7 @@ export const SPEECH_FIELD_LABELS: Record<keyof SpeechProviderConfig, string> = {
 /** 创建互不共享可变对象的缺省语音配置 */
 export function createDefaultSpeechSettings(): SpeechSettings {
   return {
-    source: 'kokoro', browserVoice: 'auto', kokoroVoice: 'auto', provider: 'mimo',
+    source: 'browser', browserVoice: 'auto', kokoroVoice: 'auto', provider: 'mimo',
     providers: Object.fromEntries(Object.entries(SPEECH_PROVIDERS).map(([key, definition]) => [key, { ...definition.defaults }])) as SpeechSettings['providers']
   }
 }

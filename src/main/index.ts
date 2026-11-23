@@ -6,6 +6,7 @@ import { init } from './utils/init'
 import { terminateOcrWorker } from './utils/imageOCR'
 import { speechService } from './speech/speech-service'
 import { recognitionService } from './speech/recognition-service'
+import { localModelManager } from './speech/local-model-manager'
 import { learningRepository } from './learning/learning-repository'
 import { applyProxySetting } from './utils/proxy'
 
@@ -69,6 +70,8 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  // 退出前取消活动中的本地模型下载
+  localModelManager.cancelAll()
   // 退出前关闭学习收藏数据库
   learningRepository.close()
   // 退出前释放 OCR Worker

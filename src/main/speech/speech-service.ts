@@ -1,7 +1,12 @@
-import { app } from 'electron'
 import path from 'node:path'
 import { Worker } from 'node:worker_threads'
 import type { SpeechAudioResult, SpeechWorkerResponse } from '../../type/speech'
+import type { SpeechSettings } from '../../type/speech-settings'
+import { localModelManager } from './local-model-manager'
+
+// 未安装 Kokoro 模型时的提示文案
+const KOKORO_MODEL_MISSING_MESSAGE =
+  'Kokoro 本地语音模型尚未下载，请前往「设置 → 语音与模型」下载，或切换为浏览器语音'
 
 /** 等待中的语音请求 */
 interface PendingSpeechRequest {
@@ -23,20 +28,19 @@ class SpeechService {
   private readonly pendingRequests = new Map<number, PendingSpeechRequest>()
 
   /**
-   * 获取 Kokoro 模型目录
-   * @returns {string} 模型绝对路径
+   * 获取已就绪的 Kokoro 模型目录
+   * @returns {string | null} 模型绝对路径
    */
-  private getModelDirectory(): string {
-    return app.isPackaged
-      ? path.join(process.resourcesPath, 'resources', 'tts', 'kokoro-int8-multi-lang-v1_1')
-      : path.join(__dirname, '../../resources/tts/kokoro-int8-multi-lang-v1_1')
+  private getModelDirectory(): string | null {
+    return localModelManager.resolveModelDirectory('kokoro-tts')?.directory ?? null
   }
 
   /**
    * 创建并复用语音 Worker
+   * @param {string} modelDirectory 模型目录
    * @returns {Worker} 语音 Worker
    */
-  private getWorker(): Worker {
+  private getWorker(modelDirectory: string): Worker {
     if (this.worker) {
       return this.worker
     }
@@ -45,7 +49,7 @@ class SpeechService {
     const workerPath = path.join(__dirname, 'speech-worker.js')
     this.worker = new Worker(workerPath, {
       workerData: {
-        modelDirectory: this.getModelDirectory()
+        modelDirectory
       }
     })
     this.worker.on('message', (response: SpeechWorkerResponse) => {
@@ -99,9 +103,26 @@ class SpeechService {
     this.worker = null
   }
 
-  /** 预加载并复用本地语音模型 */
+  /** 预加载并复用本地语音模型（仅在模型已安装时生效） */
   public preload(): void {
-    this.getWorker().postMessage({ type: 'preload' })
+    const modelDirectory = this.getModelDirectory()
+    if (!modelDirectory) {
+      return
+    }
+    this.getWorker(modelDirectory).postMessage({ type: 'preload' })
+  }
+
+  /**
+   * 根据语音配置按需预热或释放 Kokoro Worker
+   * @param {Partial<SpeechSettings> | null} speech 当前语音配置
+   * @returns {void} 无返回值
+   */
+  public syncWithSpeechSettings(speech?: Partial<SpeechSettings> | null): void {
+    if (speech?.source === 'kokoro' && this.getModelDirectory()) {
+      this.preload()
+      return
+    }
+    void this.dispose()
   }
 
   /**
@@ -110,6 +131,11 @@ class SpeechService {
    * @returns {Promise<SpeechAudioResult>} WAV 音频
    */
   public synthesize(text: string, speakerId?: number): Promise<SpeechAudioResult> {
+    const modelDirectory = this.getModelDirectory()
+    if (!modelDirectory) {
+      return Promise.reject(new Error(KOKORO_MODEL_MISSING_MESSAGE))
+    }
+
     this.cancel()
     // 当前请求编号
     const requestId = this.nextRequestId
@@ -118,7 +144,7 @@ class SpeechService {
 
     return new Promise((resolve, reject) => {
       this.pendingRequests.set(requestId, { resolve, reject })
-      this.getWorker().postMessage({ type: 'synthesize', requestId, text, speakerId })
+      this.getWorker(modelDirectory).postMessage({ type: 'synthesize', requestId, text, speakerId })
     })
   }
 

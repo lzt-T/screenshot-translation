@@ -120,4 +120,4 @@ export type RecognitionWorkerResponse =
   | { type: 'ready' }
   | { type: 'processing' }
   | { type: 'final'; text: string }
-  | { type: 'error'; message: string }
+  | { type: 'error'; message: string; code?: 'MODEL_MISSING' }

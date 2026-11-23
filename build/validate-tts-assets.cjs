@@ -5,20 +5,7 @@ const path = require('node:path')
 
 // Git LFS 指针文件的固定开头
 const GIT_LFS_POINTER_PREFIX = 'version https://git-lfs.github.com/spec/v1'
-// Kokoro 打包资源及其预期大小
-const TTS_ASSETS = [
-  { fileName: 'model.int8.onnx', expectedSize: 114299010 },
-  { fileName: 'voices.bin', expectedSize: 53790720 }
-]
-// 英文 ASR 资源目录
-const ASR_ASSET_DIRECTORY = 'sherpa-onnx-whisper-base.en'
-// 英文 ASR 打包资源及其预期大小
-const ASR_ASSETS = [
-  { fileName: 'base.en-encoder.int8.onnx', expectedSize: 29120534 },
-  { fileName: 'base.en-decoder.int8.onnx', expectedSize: 130669978 },
-  { fileName: 'base.en-tokens.txt', expectedSize: 835554 }
-]
-// 语音活动检测资源及其预期大小
+// 随包内置的语音活动检测资源及其预期大小（TTS 与 Whisper 模型已改为按需下载）
 const VAD_ASSETS = [{ fileName: 'silero_vad.onnx', expectedSize: 643854 }]
 
 /**
@@ -74,26 +61,14 @@ function validateAssets(assetDirectory, assets, assetType) {
 }
 
 /**
- * 在 Electron Builder 打包前校验本地语音资源。
+ * 在 Electron Builder 打包前校验随包内置的 VAD 资源。
  * @param {{ packager: { projectDir: string } }} context Electron Builder 打包上下文
  * @returns {void} 无返回值
  */
 function validateSpeechAssets(context) {
-  // Kokoro 模型资源目录
-  const assetDirectory = path.join(
-    context.packager.projectDir,
-    'resources',
-    'tts',
-    'kokoro-int8-multi-lang-v1_1'
-  )
-
-  // 英文 ASR 资源根目录
+  // 英文 ASR 内置资源根目录
   const asrRootDirectory = path.join(context.packager.projectDir, 'resources', 'asr')
-  // Whisper 英文 ASR 模型资源目录
-  const asrAssetDirectory = path.join(asrRootDirectory, ASR_ASSET_DIRECTORY)
 
-  validateAssets(assetDirectory, TTS_ASSETS, 'TTS')
-  validateAssets(asrAssetDirectory, ASR_ASSETS, 'ASR')
   validateAssets(asrRootDirectory, VAD_ASSETS, 'VAD')
 }
 

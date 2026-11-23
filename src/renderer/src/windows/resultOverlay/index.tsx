@@ -3,6 +3,7 @@ import { SendEnum } from '@src/type/ipc-constants'
 import { TextType } from '@src/type/base'
 import type { SaveLearningItemInput } from '@src/type/learning'
 import { getTextType } from '@src/utils/ai'
+import { speakText, stopSpeaking } from '@src/utils/speak'
 import {
   findLearningItem,
   removeLearningItem,
@@ -66,27 +67,17 @@ const OVERLAY_MODE_BUTTON_LABELS: Record<OverlayMode, string> = {
  * @returns {React.JSX.Element} 翻译结果浮层
  */
 export default function ResultOverlay(): React.JSX.Element {
-  // 可展示的翻译文本块
   const [blocksToRender, setBlocksToRender] = useState<TextBlock[]>([])
-  // 当前原图显示模式
   const [overlayMode, setOverlayMode] = useState<OverlayMode>('show-original')
-  // 原始文本
   const originalText = useRef('')
-  // 翻译文本
   const translatedText = useRef('')
-  // 已收藏记录 ID
   const [bookmarkedItemId, setBookmarkedItemId] = useState<string | null>(null)
-  // 是否正在保存收藏
   const [isBookmarkSaving, setIsBookmarkSaving] = useState(false)
-  // 收藏操作错误状态
   const [hasBookmarkError, setHasBookmarkError] = useState(false)
-  /** 当前收藏查询编号 */
+  const [isSpeaking, setIsSpeaking] = useState(false)
   const activeBookmarkRequestId = useRef(0)
 
-  /**
-   * 创建当前截图收藏参数
-   * @returns 截图学习收藏参数
-   */
+  /** 创建当前截图收藏参数 */
   function createScreenshotLearningInput(): SaveLearningItemInput {
     return {
       kind: getTextType(originalText.current) === TextType.WORD ? 'word' : 'sentence',
@@ -96,38 +87,50 @@ export default function ResultOverlay(): React.JSX.Element {
     }
   }
 
-  /**
-   * 复制指定文本并通知主进程
-   * @param {string} text 待复制文本
-   * @returns {void} 无返回值
-   */
+  /** 复制指定文本并通知主进程 */
   function handleCopyText(text: string): void {
     navigator.clipboard.writeText(text)
     window.electron.ipcRenderer.send(SendEnum.COPY_TEXT_SUCCESS)
   }
 
-  /**
-   * 复制原文
-   * @returns {void} 无返回值
-   */
+  /** 复制原文 */
   function copyOriginalText(): void {
     handleCopyText(originalText.current)
   }
 
-  /**
-   * 复制译文
-   * @returns {void} 无返回值
-   */
+  /** 复制译文 */
   function copyTranslatedText(): void {
     handleCopyText(translatedText.current)
   }
 
-  /**
-   * 切换原图显示状态
-   * @returns {void} 无返回值
-   */
+  /** 切换原图显示状态 */
   function toggleOverlayMode(): void {
     setOverlayMode((mode) => NEXT_OVERLAY_MODE[mode])
+  }
+
+  /** 关闭当前翻译结果浮层 */
+  function closeOverlayWindow(): void {
+    stopSpeaking()
+    window.electron.ipcRenderer.send(SendEnum.RESULT_WINDOW_CLOSE)
+  }
+
+  /** 朗读或停止朗读截图原文 */
+  function toggleSpeakOriginal(): void {
+    if (isSpeaking) {
+      stopSpeaking()
+      setIsSpeaking(false)
+      return
+    }
+    const textToSpeak = originalText.current.trim()
+    if (!textToSpeak) {
+      return
+    }
+    setIsSpeaking(true)
+    void speakText(
+      textToSpeak,
+      () => setIsSpeaking(false),
+      () => setIsSpeaking(false)
+    )
   }
 
   /** 切换当前截图翻译的收藏状态 */
@@ -145,7 +148,6 @@ export default function ResultOverlay(): React.JSX.Element {
         return
       }
 
-      // 保存后的截图收藏
       const savedItem = await saveLearningItem(createScreenshotLearningInput())
       setBookmarkedItemId(savedItem.id)
     } catch {
@@ -160,12 +162,10 @@ export default function ResultOverlay(): React.JSX.Element {
     window.electron.ipcRenderer.on(
       SendEnum.DISPLAY_TRANSLATION_RESULT,
       (_event, arg: { result: ResultData }) => {
-        // 收到的翻译结果
         const result = arg.result
         setBlocksToRender([])
 
         if (result?.success && result.textBlocks?.length > 0) {
-          // 边界信息有效的翻译文本块
           const validBlocks = result.textBlocks.filter(
             (block) =>
               block.translation &&
@@ -186,6 +186,7 @@ export default function ResultOverlay(): React.JSX.Element {
     )
 
     return () => {
+      stopSpeaking()
       window.electron.ipcRenderer.removeAllListeners(SendEnum.DISPLAY_TRANSLATION_RESULT)
     }
   }, [])
@@ -193,7 +194,6 @@ export default function ResultOverlay(): React.JSX.Element {
   /** 截图翻译结果变化后同步收藏状态 */
   useEffect(() => {
     activeBookmarkRequestId.current += 1
-    // 本次收藏查询编号
     const requestId = activeBookmarkRequestId.current
     setBookmarkedItemId(null)
     setHasBookmarkError(false)
@@ -217,14 +217,9 @@ export default function ResultOverlay(): React.JSX.Element {
 
   /** 监听 Escape 键关闭浮层 */
   useEffect(() => {
-    /**
-     * 处理浮层键盘事件
-     * @param {KeyboardEvent} event 键盘事件
-     * @returns {void} 无返回值
-     */
     function handleKeyDown(event: KeyboardEvent): void {
       if (event.key === 'Escape') {
-        window.electron.ipcRenderer.send(SendEnum.RESULT_WINDOW_CLOSE)
+        closeOverlayWindow()
       }
     }
 
@@ -238,6 +233,7 @@ export default function ResultOverlay(): React.JSX.Element {
     <OverlayContainer $overlayMode={overlayMode}>
       {blocksToRender.map((block) => (
         <TranslatedTextOverlay
+          $overlayMode={overlayMode}
           key={block.id}
           style={{
             left: `${block.boundingBox.x}px`,
@@ -252,6 +248,9 @@ export default function ResultOverlay(): React.JSX.Element {
       <FooterContainer>
         <CopyButton onClick={toggleOverlayMode} type="button">
           {OVERLAY_MODE_BUTTON_LABELS[overlayMode]}
+        </CopyButton>
+        <CopyButton aria-pressed={isSpeaking} onClick={toggleSpeakOriginal} type="button">
+          {isSpeaking ? '停止朗读' : '朗读'}
         </CopyButton>
         <CopyButton onClick={copyOriginalText} type="button">
           复制原文
@@ -268,10 +267,13 @@ export default function ResultOverlay(): React.JSX.Element {
           {isBookmarkSaving
             ? '保存中'
             : hasBookmarkError
-              ? '收藏失败，重试'
+              ? '重试收藏'
               : bookmarkedItemId
-                ? '取消收藏'
+                ? '已收藏'
                 : '收藏'}
+        </CopyButton>
+        <CopyButton onClick={closeOverlayWindow} title="关闭浮层 (Esc)" type="button">
+          关闭
         </CopyButton>
       </FooterContainer>
     </OverlayContainer>

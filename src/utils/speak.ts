@@ -307,8 +307,10 @@ export async function speakText(
     if (sessionId === activeSessionId) {
       activeInterruptionCallback = null
       activeInterruptionPolicy = 'immediate'
-      // 可供界面展示的语音错误
-      const speechError = error instanceof Error ? error : new Error(String(error))
+      // 剥离 Electron IPC 包装前缀后的可读错误文本
+      const rawMessage = error instanceof Error ? error.message : String(error)
+      const cleanedMessage = rawMessage.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '')
+      const speechError = new Error(cleanedMessage)
       onError?.(speechError)
       completePendingContinuation()
     }

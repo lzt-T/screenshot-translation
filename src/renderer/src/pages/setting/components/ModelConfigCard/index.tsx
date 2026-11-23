@@ -97,12 +97,12 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
   const connectionStatusText = CONNECTION_STATUS_TEXT[connectionTestStatus]
 
   return (
-    <div className={cn('overflow-hidden rounded-lg border border-border bg-card', isActive && 'border-primary/40')}>
+    <div className={cn('lexicon-panel overflow-hidden', isActive && 'border-primary/45')}>
       <div className="flex items-center gap-2 p-3 sm:p-4">
         <button
           aria-controls={contentId}
           aria-expanded={isExpanded}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45"
           onClick={() => onToggle(model.id)}
           type="button"
         >
@@ -124,36 +124,22 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
           </span>
           <span className="hidden flex-wrap justify-end gap-1.5 sm:flex">
             {isActive && (
-              <Badge className="border-primary/40 bg-primary/8 text-primary" variant="outline">
+              <Badge variant="default">
                 当前使用
               </Badge>
             )}
             {isBuiltIn && (
-              <Badge className="border-border bg-muted/70 text-muted-foreground" variant="outline">
+              <Badge variant="secondary">
                 免费
               </Badge>
             )}
             {!isBuiltIn && (
-              <Badge
-                className={
-                  validation.isValid
-                    ? 'border-border bg-muted/70 text-muted-foreground'
-                    : 'border-destructive/40 bg-destructive/8 text-destructive'
-                }
-                variant="outline"
-              >
+              <Badge variant={validation.isValid ? 'secondary' : 'destructive'}>
                 {validation.isValid ? '配置完整' : '配置不完整'}
               </Badge>
             )}
             {connectionStatusText && (
-              <Badge
-                className={
-                  connectionTestStatus === 'error'
-                    ? 'border-destructive/40 bg-destructive/8 text-destructive'
-                    : 'border-border bg-muted/70 text-muted-foreground'
-                }
-                variant="outline"
-              >
+              <Badge variant={connectionTestStatus === 'error' ? 'destructive' : 'secondary'}>
                 {connectionStatusText}
               </Badge>
             )}
@@ -178,36 +164,22 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
         <div className="space-y-5 border-t border-border p-4 sm:p-5" id={contentId}>
           <div className="flex flex-wrap gap-1.5 sm:hidden">
             {isActive && (
-              <Badge className="border-primary/40 bg-primary/8 text-primary" variant="outline">
+              <Badge variant="default">
                 当前使用
               </Badge>
             )}
             {isBuiltIn && (
-              <Badge className="border-border bg-muted/70 text-muted-foreground" variant="outline">
+              <Badge variant="secondary">
                 免费
               </Badge>
             )}
             {!isBuiltIn && (
-              <Badge
-                className={
-                  validation.isValid
-                    ? 'border-border bg-muted/70 text-muted-foreground'
-                    : 'border-destructive/40 bg-destructive/8 text-destructive'
-                }
-                variant="outline"
-              >
+              <Badge variant={validation.isValid ? 'secondary' : 'destructive'}>
                 {validation.isValid ? '配置完整' : '配置不完整'}
               </Badge>
             )}
             {connectionStatusText && (
-              <Badge
-                className={
-                  connectionTestStatus === 'error'
-                    ? 'border-destructive/40 bg-destructive/8 text-destructive'
-                    : 'border-border bg-muted/70 text-muted-foreground'
-                }
-                variant="outline"
-              >
+              <Badge variant={connectionTestStatus === 'error' ? 'destructive' : 'secondary'}>
                 {connectionStatusText}
               </Badge>
             )}

@@ -1,13 +1,20 @@
-import { useEffect, useRef } from 'react'
-import { Check, Sparkles, Volume2, VolumeX } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Bookmark, BookmarkCheck, Check, Loader2, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
+import { TextType } from '@src/type/base'
 import type { ConversationMessage } from '@src/type/conversation'
+import { getTextType } from '@src/utils/ai'
+import SpeakingIndicator from '@renderer/components/SpeakingIndicator'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
+import { removeLearningItem, saveLearningItem } from '@renderer/services/learning-service'
 
 /** 对话记录属性 */
 interface ConversationTranscriptProps {
   /** 当前会话消息 */
   messages: ConversationMessage[]
+  /** AI 教练是否正在组织回复 */
+  isThinking?: boolean
   /** 当前是否允许手动朗读 */
   canPlaySpeech: boolean
   /** 当前手动朗读目标 */
@@ -28,6 +35,8 @@ interface SpeechButtonProps {
   speakingTarget: string | null
   /** 朗读内容名称 */
   label: string
+  /** 额外样式类名 */
+  className?: string
   /** 切换手动朗读回调 */
   onToggle: (target: string, text: string) => void
 }
@@ -39,17 +48,16 @@ function SpeechButton({
   canPlay,
   speakingTarget,
   label,
+  className,
   onToggle
 }: SpeechButtonProps): React.JSX.Element {
-  // 当前英文是否正在朗读
   const isSpeaking = speakingTarget === target
-  // 当前按钮操作说明
   const actionLabel = isSpeaking ? `停止朗读${label}` : `朗读${label}`
   return (
     <Button
       aria-label={actionLabel}
       aria-pressed={isSpeaking}
-      className="size-7 shrink-0 cursor-pointer"
+      className={cn('size-7 shrink-0 cursor-pointer', isSpeaking && 'text-foreground', className)}
       disabled={!canPlay && !isSpeaking}
       onClick={() => onToggle(target, text)}
       size="icon"
@@ -57,37 +65,81 @@ function SpeechButton({
       type="button"
       variant="ghost"
     >
-      {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+      <SpeakingIndicator isSpeaking={isSpeaking} />
     </Button>
   )
 }
 
-/** 渲染按时间排列的英语对话与纠错记录 */
+/**
+ * 渲染居中阅读列、强对比气泡与思考中反馈的对话记录视图
+ * @param props 对话记录属性
+ * @returns 对话记录视图
+ */
 export default function ConversationTranscript({
   messages,
+  isThinking = false,
   canPlaySpeech,
   speakingTarget,
   onToggleSpeech
 }: ConversationTranscriptProps): React.JSX.Element {
-  // 对话记录滚动容器
   const transcriptRef = useRef<HTMLDivElement | null>(null)
+  const [bookmarkedCorrectionMap, setBookmarkedCorrectionMap] = useState<Record<string, string>>({})
+  const [savingCorrectionId, setSavingCorrectionId] = useState<string | null>(null)
 
-  /** 新消息出现时滚动至最新内容 */
+  /** 新消息出现或教练开始思考时滚动至最新位置 */
   useEffect(() => {
-    // 当前对话记录滚动容器
     const transcriptElement = transcriptRef.current
     if (transcriptElement) {
       transcriptElement.scrollTop = transcriptElement.scrollHeight
     }
-  }, [messages])
+  }, [isThinking, messages])
 
-  if (messages.length === 0) {
+  /** 一键收藏或取消收藏「更自然的表达」 */
+  async function handleToggleBookmarkCorrection(message: ConversationMessage): Promise<void> {
+    if (!message.correction || savingCorrectionId === message.id) {
+      return
+    }
+    const existingId = bookmarkedCorrectionMap[message.id]
+    setSavingCorrectionId(message.id)
+    try {
+      if (existingId) {
+        await removeLearningItem(existingId)
+        setBookmarkedCorrectionMap((prev) => {
+          const next = { ...prev }
+          delete next[message.id]
+          return next
+        })
+        toast.success('已取消收藏该表达')
+        return
+      }
+      const savedItem = await saveLearningItem({
+        kind:
+          getTextType(message.correction.suggestedText) === TextType.WORD ? 'word' : 'sentence',
+        source: 'text',
+        originalText: message.correction.suggestedText,
+        translatedText: message.correction.explanation
+      })
+      setBookmarkedCorrectionMap((prev) => ({
+        ...prev,
+        [message.id]: savedItem.id
+      }))
+      toast.success('已收藏更自然的表达')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '收藏操作失败，请稍后重试')
+    } finally {
+      setSavingCorrectionId(null)
+    }
+  }
+
+  if (messages.length === 0 && !isThinking) {
     return (
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-        <Sparkles className="text-muted-foreground" size={18} />
-        <p className="mt-3 text-sm font-medium text-foreground">对话会从一句轻松的问候开始</p>
+        <div className="mb-3 flex size-10 items-center justify-center rounded-xl border border-border bg-reading-surface text-foreground">
+          <Sparkles size={18} />
+        </div>
+        <p className="text-sm font-medium text-foreground">对话会从一句轻松的问候开始</p>
         <p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground">
-          AI 会用英语与你交谈，并在需要时给出更自然的表达建议。
+          可以在下方直接输入英文开聊，或点击「让教练先开口」。
         </p>
       </div>
     )
@@ -96,45 +148,68 @@ export default function ConversationTranscript({
   return (
     <div
       aria-label="当前对话记录"
-      className="custom-scrollbar min-h-0 flex-1 overflow-y-auto"
+      className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-6"
       ref={transcriptRef}
     >
-      {messages.map((message) => {
-        // 当前消息是否来自用户
-        const isUserMessage = message.role === 'user'
-        // 消息正文朗读目标
-        const messageSpeechTarget = `${message.id}:message`
-        // 表达建议朗读目标
-        const correctionSpeechTarget = `${message.id}:correction`
-        return (
-          <article
-            className="flex flex-col gap-2 border-b border-border px-4 py-4 sm:px-5"
-            key={message.id}
-          >
-            <div
-              className={cn(
-                'flex items-start pt-0.5 text-xs font-medium text-muted-foreground',
-                isUserMessage ? 'justify-end pr-1' : 'pl-1'
-              )}
-            >
-              <span>{isUserMessage ? '我' : '教练'}</span>
-            </div>
+      <div className="mx-auto w-full max-w-3xl space-y-5">
+        {messages.map((message) => {
+          const isUserMessage = message.role === 'user'
+          const messageSpeechTarget = `${message.id}:message`
+          const correctionSpeechTarget = `${message.id}:correction`
+          const isCorrectionBookmarked = Boolean(bookmarkedCorrectionMap[message.id])
+          const isSavingCorrection = savingCorrectionId === message.id
+          const hasMultilineOrTranslation =
+            Boolean(message.translation) || message.text.includes('\n') || message.text.length > 48
 
-            <div
-              className={cn(
-                'flex min-w-0 flex-col',
-                isUserMessage ? 'items-end' : 'items-start'
-              )}
-            >
+          return (
+            <article className="lexicon-reveal flex flex-col gap-1.5" key={message.id}>
               <div
                 className={cn(
-                  'relative max-w-[85%] rounded-lg py-2 pl-3 pr-10 text-left',
-                  isUserMessage ? 'bg-muted' : 'bg-muted/45'
+                  'flex items-center text-xs font-medium text-muted-foreground',
+                  isUserMessage ? 'justify-end pr-1' : 'pl-1'
                 )}
               >
-                <div className="absolute right-2 top-2">
+                <span>{isUserMessage ? '我' : '教练'}</span>
+              </div>
+
+              <div
+                className={cn(
+                  'flex min-w-0 flex-col',
+                  isUserMessage ? 'items-end' : 'items-start'
+                )}
+              >
+                <div
+                  className={cn(
+                    'flex max-w-[85%] gap-2 rounded-xl px-4 py-2.5 text-left',
+                    hasMultilineOrTranslation ? 'items-start' : 'items-center',
+                    isUserMessage
+                      ? 'bg-primary text-primary-foreground'
+                      : 'border border-border/80 bg-reading-surface text-foreground'
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        'whitespace-pre-wrap break-words text-[15px] leading-6',
+                        isUserMessage ? 'text-primary-foreground' : 'text-foreground'
+                      )}
+                    >
+                      {message.text}
+                    </p>
+                    {message.translation && (
+                      <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+                        {message.translation}
+                      </p>
+                    )}
+                  </div>
+
                   <SpeechButton
                     canPlay={canPlaySpeech}
+                    className={
+                      isUserMessage
+                        ? 'text-primary-foreground/75 hover:bg-primary-foreground/15 hover:text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }
                     label={isUserMessage ? '我的英文' : '教练英文'}
                     onToggle={onToggleSpeech}
                     speakingTarget={speakingTarget}
@@ -142,51 +217,81 @@ export default function ConversationTranscript({
                     text={message.text}
                   />
                 </div>
-                <p className="whitespace-pre-wrap text-[15px] leading-7 text-foreground">
-                  {message.text}
-                </p>
-                {message.translation && (
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {message.translation}
-                  </p>
+
+                {message.correction && (
+                  <div className="marginalia-card relative mt-2 max-w-[85%] py-3 pl-3.5 pr-3 text-left">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-marginalia-foreground">
+                        <Sparkles size={13} />
+                        <span>更自然的表达</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          aria-label={isCorrectionBookmarked ? '取消收藏该表达' : '收藏该表达'}
+                          aria-pressed={isCorrectionBookmarked}
+                          className={cn(
+                            'h-7 cursor-pointer px-2 text-xs',
+                            isCorrectionBookmarked && 'text-foreground'
+                          )}
+                          disabled={isSavingCorrection}
+                          onClick={() => void handleToggleBookmarkCorrection(message)}
+                          size="sm"
+                          title={isCorrectionBookmarked ? '取消收藏' : '加入学习收藏'}
+                          variant="ghost"
+                        >
+                          {isSavingCorrection ? (
+                            <Loader2 className="animate-spin" size={13} />
+                          ) : isCorrectionBookmarked ? (
+                            <BookmarkCheck size={13} />
+                          ) : (
+                            <Bookmark size={13} />
+                          )}
+                          <span>{isCorrectionBookmarked ? '已收藏' : '收藏'}</span>
+                        </Button>
+                        <SpeechButton
+                          canPlay={canPlaySpeech}
+                          label="更自然的表达"
+                          onToggle={onToggleSpeech}
+                          speakingTarget={speakingTarget}
+                          target={correctionSpeechTarget}
+                          text={message.correction.suggestedText}
+                        />
+                      </div>
+                    </div>
+                    <p className="mt-1.5 text-sm font-medium leading-6 text-foreground">
+                      {message.correction.suggestedText}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      {message.correction.explanation}
+                    </p>
+                  </div>
+                )}
+
+                {isUserMessage && message.correction === null && (
+                  <div className="mt-1.5 flex items-center gap-1.5 pr-1 text-xs text-muted-foreground">
+                    <Check size={13} className="text-emerald-600 dark:text-emerald-400" />
+                    <span>表达自然，无需纠正</span>
+                  </div>
                 )}
               </div>
+            </article>
+          )
+        })}
 
-              {message.correction && (
-                <div className="relative mt-3 max-w-[85%] rounded-lg border border-primary/15 bg-primary/7 py-3 pl-3 pr-10 text-left">
-                  <div className="absolute right-2 top-2">
-                    <SpeechButton
-                      canPlay={canPlaySpeech}
-                      label="更自然的表达"
-                      onToggle={onToggleSpeech}
-                      speakingTarget={speakingTarget}
-                      target={correctionSpeechTarget}
-                      text={message.correction.suggestedText}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 text-xs font-medium text-primary">
-                    <Sparkles size={14} />
-                    更自然的表达
-                  </div>
-                  <p className="mt-1.5 text-sm font-medium leading-6 text-foreground">
-                    {message.correction.suggestedText}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {message.correction.explanation}
-                  </p>
-                </div>
-              )}
-
-              {isUserMessage && message.correction === null && (
-                <div className="mt-2 flex items-center gap-1.5 pr-1 text-xs text-muted-foreground">
-                  <Check size={13} />
-                  表达自然，无需纠正
-                </div>
-              )}
+        {isThinking && (
+          <article aria-live="polite" className="lexicon-reveal flex flex-col gap-1.5" role="status">
+            <div className="flex items-center pl-1 text-xs font-medium text-muted-foreground">
+              <span>教练</span>
+            </div>
+            <div className="flex items-start">
+              <div className="inline-flex items-center gap-2 rounded-xl border border-border/80 bg-reading-surface px-4 py-2.5 text-sm text-muted-foreground">
+                <Loader2 className="animate-spin" size={14} />
+                <span>教练正在组织回复…</span>
+              </div>
             </div>
           </article>
-        )
-      })}
+        )}
+      </div>
     </div>
   )
 }
