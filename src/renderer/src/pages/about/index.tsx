@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { BookOpen, ExternalLink, Github, RefreshCw, Sparkles } from 'lucide-react'
+import { ExternalLink, Github, RefreshCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
+import appLogo from '@renderer/assets/logo.png'
 import { SendEnum } from '@src/type/ipc-constants'
 import type { UpdateCheckCompleteResult } from '@src/type/update'
 
@@ -56,9 +57,12 @@ export default function AboutPage(): React.JSX.Element {
 
       <section className="lexicon-sheet overflow-hidden">
         <div className="flex flex-col gap-4 border-b border-border px-5 py-5 sm:flex-row sm:items-center">
-          <div className="brand-aperture flex size-11 shrink-0 items-center justify-center rounded-xl">
-            <BookOpen size={20} />
-          </div>
+          <img
+            alt="Bai_Ze Logo"
+            className="size-11 shrink-0 select-none object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
+            draggable={false}
+            src={appLogo}
+          />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-baseline gap-2.5">

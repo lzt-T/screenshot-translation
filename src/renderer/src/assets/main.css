@@ -199,12 +199,6 @@
     border-radius: var(--radius-lg);
   }
 
-  .brand-aperture {
-    border: 1px solid color-mix(in oklab, var(--primary) 24%, transparent);
-    background: color-mix(in oklab, var(--primary) 11%, transparent);
-    color: var(--primary);
-  }
-
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) transparent;

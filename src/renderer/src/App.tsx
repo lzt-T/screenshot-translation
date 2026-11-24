@@ -18,6 +18,7 @@ import { ThemeMode } from '@renderer/components/ThemeProvider'
 import { AppSettingsProvider, useAppSettings } from '@renderer/contexts/AppSettingsContext'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
+import appLogo from '@renderer/assets/logo.png'
 
 /** 顶栏主工作区导航项 */
 const WORKSPACE_NAV_ITEMS = [
@@ -84,16 +85,19 @@ function AppShell(): React.JSX.Element {
 
   return (
     <div className="app-shell flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
-      <header className="titlebar-drag relative flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-shell px-4 pr-[144px] text-shell-foreground">
+      <header className="titlebar-drag grid h-12 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border bg-shell pl-4 pr-[144px] text-shell-foreground">
         <button
-          className="titlebar-no-drag flex shrink-0 cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-card/60 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45"
+          className="titlebar-no-drag flex shrink-0 cursor-pointer items-center gap-2 justify-self-start rounded-md px-1.5 py-1 transition-colors hover:bg-card/60 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45"
           onClick={() => navigate('/home')}
           title="Bai_Ze · 从看懂到开口"
           type="button"
         >
-          <span className="brand-aperture flex size-6.5 items-center justify-center rounded-md">
-            <BookOpen size={14} strokeWidth={2} />
-          </span>
+          <img
+            alt="Bai_Ze Logo"
+            className="size-7 shrink-0 select-none object-contain drop-shadow-[0_1px_1px_rgba(0,0,0,0.08)]"
+            draggable={false}
+            src={appLogo}
+          />
           <span className="font-display text-lg tracking-[-0.02em] text-foreground">
             Bai_Ze
           </span>
@@ -101,7 +105,7 @@ function AppShell(): React.JSX.Element {
 
         <nav
           aria-label="主导航"
-          className="titlebar-no-drag flex items-center gap-0.5 rounded-lg border border-border/80 bg-background/75 p-0.5 min-[900px]:absolute min-[900px]:left-1/2 min-[900px]:-translate-x-1/2"
+          className="titlebar-no-drag flex items-center gap-0.5 justify-self-center rounded-lg border border-border/80 bg-background/75 p-0.5"
         >
           {WORKSPACE_NAV_ITEMS.map((item) => {
             const NavigationIcon = item.icon
@@ -130,7 +134,7 @@ function AppShell(): React.JSX.Element {
           })}
         </nav>
 
-        <div className="titlebar-no-drag flex shrink-0 items-center gap-1.5">
+        <div className="titlebar-no-drag flex shrink-0 items-center gap-1.5 justify-self-end">
           <UpdateDialog />
 
           <button

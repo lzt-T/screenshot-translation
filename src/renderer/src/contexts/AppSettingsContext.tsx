@@ -121,8 +121,22 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
   })
   // 是否已完成向主进程的首次同步
   const hasSyncedInitialRef = useRef(false)
+  // 各区块“已保存”提示自动回落定时器
+  const savedResetTimersRef = useRef<Partial<Record<SettingSaveScope, number>>>({})
 
   settingsRef.current = settings
+
+  /** 卸载时清理所有待回落的保存提示定时器 */
+  useEffect(() => {
+    const timers = savedResetTimersRef.current
+    return () => {
+      Object.values(timers).forEach((timerId) => {
+        if (timerId !== undefined) {
+          window.clearTimeout(timerId)
+        }
+      })
+    }
+  }, [])
 
   /** 首次从 localForage 加载配置并同步主进程 */
   useEffect(() => {
@@ -178,6 +192,11 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
       value: StoreSetting[TKey],
       scope: SettingSaveScope
     ): Promise<boolean> => {
+      const existingTimerId = savedResetTimersRef.current[scope]
+      if (existingTimerId !== undefined) {
+        window.clearTimeout(existingTimerId)
+        delete savedResetTimersRef.current[scope]
+      }
       if (pendingCountRef.current[scope] === 0) {
         scopeErrorRef.current[scope] = false
       }
@@ -196,6 +215,16 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
           if (pendingCountRef.current[scope] === 0) {
             const nextStatus: SaveStatus = scopeErrorRef.current[scope] ? 'error' : 'saved'
             setSaveStatusByScope((prev) => ({ ...prev, [scope]: nextStatus }))
+            if (nextStatus === 'saved') {
+              savedResetTimersRef.current[scope] = window.setTimeout(() => {
+                delete savedResetTimersRef.current[scope]
+                if (pendingCountRef.current[scope] === 0) {
+                  setSaveStatusByScope((prev) =>
+                    prev[scope] === 'saved' ? { ...prev, [scope]: 'idle' } : prev
+                  )
+                }
+              }, 2600)
+            }
           }
         }
       })

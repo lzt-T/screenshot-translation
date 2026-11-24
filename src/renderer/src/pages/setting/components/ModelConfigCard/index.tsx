@@ -4,7 +4,17 @@ import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
-import { ChevronDown, Copy, Eye, EyeOff, LoaderCircle, PlugZap, Trash2 } from 'lucide-react'
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  Copy,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  PlugZap,
+  Trash2
+} from 'lucide-react'
 import useData, { ConnectionTestStatus } from './useData'
 import { cn } from '@renderer/lib/utils'
 
@@ -95,10 +105,23 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
   const apiKeyErrorId = `${fieldIds.apiKey}-error`
   // 连接状态标签
   const connectionStatusText = CONNECTION_STATUS_TEXT[connectionTestStatus]
+  // 显示名称与模型名一致时无需重复副标题
+  const showModelSubtitle = !model.model || model.model.trim() !== modelTitle.trim()
+  // 卡片底栏协议静默说明
+  const protocolHint = isBuiltIn
+    ? '由应用内置提供，无需额外配置'
+    : isGemini
+      ? '已自动匹配 Google Gemini 官方直连接口'
+      : 'OpenAI 兼容接口协议'
 
   return (
-    <div className={cn('lexicon-panel overflow-hidden', isActive && 'border-primary/45')}>
-      <div className="flex items-center gap-2 p-3 sm:p-4">
+    <div
+      className={cn(
+        'lexicon-panel overflow-hidden transition-[border-color,box-shadow] duration-150',
+        isActive && 'border-primary/35 shadow-xs'
+      )}
+    >
+      <div className="flex items-center gap-2 px-3.5 py-3 sm:px-4">
         <button
           aria-controls={contentId}
           aria-expanded={isExpanded}
@@ -109,82 +132,84 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
           <ChevronDown
             aria-hidden="true"
             className={cn(
-              'shrink-0 text-muted-foreground transition-transform',
+              'shrink-0 text-muted-foreground transition-transform duration-200',
               isExpanded && 'rotate-180'
             )}
             size={16}
           />
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-foreground sm:text-base">
-              {modelTitle}
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="truncate text-sm font-medium text-foreground sm:text-base">
+                {modelTitle}
+              </span>
+              {isBuiltIn && <Badge variant="secondary">免费</Badge>}
+              {!isBuiltIn && !validation.isValid && (
+                <Badge variant="destructive">配置不完整</Badge>
+              )}
+              {!isExpanded && connectionStatusText && (
+                <Badge
+                  className={
+                    connectionTestStatus === 'success'
+                      ? 'border-emerald-600/20 bg-emerald-600/10 text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/12 dark:text-emerald-300'
+                      : undefined
+                  }
+                  variant={connectionTestStatus === 'error' ? 'destructive' : 'secondary'}
+                >
+                  {connectionStatusText}
+                </Badge>
+              )}
             </span>
-            <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-              {model.model || '等待填写模型名'}
-            </span>
-          </span>
-          <span className="hidden flex-wrap justify-end gap-1.5 sm:flex">
-            {isActive && (
-              <Badge variant="default">
-                当前使用
-              </Badge>
-            )}
-            {isBuiltIn && (
-              <Badge variant="secondary">
-                免费
-              </Badge>
-            )}
-            {!isBuiltIn && (
-              <Badge variant={validation.isValid ? 'secondary' : 'destructive'}>
-                {validation.isValid ? '配置完整' : '配置不完整'}
-              </Badge>
-            )}
-            {connectionStatusText && (
-              <Badge variant={connectionTestStatus === 'error' ? 'destructive' : 'secondary'}>
-                {connectionStatusText}
-              </Badge>
+            {showModelSubtitle && (
+              <span className="mt-0.5 block truncate font-mono text-xs text-muted-foreground">
+                {model.model || '等待填写模型名'}
+              </span>
             )}
           </span>
         </button>
-        {canDelete && (
-          <Button
-            aria-label={`删除模型 ${modelTitle}`}
-            className="text-muted-foreground hover:text-destructive"
-            onClick={handleRequestDelete}
-            size="icon"
-            title="删除模型"
-            type="button"
-            variant="ghost"
-          >
-            <Trash2 size={14} />
-          </Button>
-        )}
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          {isActive ? (
+            <span className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-emerald-600/20 bg-emerald-600/10 px-2.5 text-xs font-medium text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/12 dark:text-emerald-300">
+              <span
+                aria-hidden="true"
+                className="size-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400"
+              />
+              当前使用
+            </span>
+          ) : (
+            <Button
+              className="h-7 shrink-0 cursor-pointer px-2.5 text-xs"
+              disabled={!validation.isValid}
+              onClick={() => onSetActive(model.id)}
+              size="sm"
+              title={validation.isValid ? '设为当前使用模型' : '请先展开并完善模型配置'}
+              type="button"
+              variant="outline"
+            >
+              启用
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              aria-label={`删除模型 ${modelTitle}`}
+              className="size-7 shrink-0 cursor-pointer text-muted-foreground hover:text-destructive"
+              onClick={handleRequestDelete}
+              size="icon"
+              title="删除模型"
+              type="button"
+              variant="ghost"
+            >
+              <Trash2 size={14} />
+            </Button>
+          )}
+        </div>
       </div>
 
       {isExpanded && (
-        <div className="space-y-5 border-t border-border p-4 sm:p-5" id={contentId}>
-          <div className="flex flex-wrap gap-1.5 sm:hidden">
-            {isActive && (
-              <Badge variant="default">
-                当前使用
-              </Badge>
-            )}
-            {isBuiltIn && (
-              <Badge variant="secondary">
-                免费
-              </Badge>
-            )}
-            {!isBuiltIn && (
-              <Badge variant={validation.isValid ? 'secondary' : 'destructive'}>
-                {validation.isValid ? '配置完整' : '配置不完整'}
-              </Badge>
-            )}
-            {connectionStatusText && (
-              <Badge variant={connectionTestStatus === 'error' ? 'destructive' : 'secondary'}>
-                {connectionStatusText}
-              </Badge>
-            )}
-          </div>
-
+        <div
+          className="lexicon-reveal space-y-4 border-t border-border bg-reading-surface/35 p-4 sm:px-5 sm:py-4"
+          id={contentId}
+        >
           {isBuiltIn ? (
             <dl className="grid gap-4 text-sm sm:grid-cols-2">
               <div>
@@ -206,6 +231,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor={fieldIds.displayName}>显示名称</Label>
                   <Input
+                    className="bg-background/60 transition-colors focus-visible:bg-card"
                     id={fieldIds.displayName}
                     onChange={(event) => handleChangeField('displayName', event.target.value)}
                     placeholder="模型显示名"
@@ -217,6 +243,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                   <Input
                     aria-describedby={validation.errors.model ? modelErrorId : undefined}
                     aria-invalid={Boolean(validation.errors.model)}
+                    className="bg-background/60 transition-colors focus-visible:bg-card"
                     id={fieldIds.model}
                     onChange={(event) => handleChangeField('model', event.target.value)}
                     placeholder="输入模型名，如 gpt-4.1"
@@ -237,6 +264,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                   <Input
                     aria-describedby={baseUrlHelpId}
                     aria-invalid={Boolean(validation.errors.baseUrl)}
+                    className="bg-background/60 transition-colors focus-visible:bg-card"
                     id={fieldIds.baseUrl}
                     onChange={(event) => handleChangeField('baseUrl', event.target.value)}
                     placeholder="输入 Base URL，如 https://api.openai.com/v1"
@@ -260,7 +288,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                   <Input
                     aria-describedby={validation.errors.apiKey ? apiKeyErrorId : undefined}
                     aria-invalid={Boolean(validation.errors.apiKey)}
-                    className="min-w-0 flex-1"
+                    className="min-w-0 flex-1 bg-background/60 transition-colors focus-visible:bg-card"
                     id={fieldIds.apiKey}
                     onChange={(event) => handleChangeField('apiKey', event.target.value)}
                     type={isApiKeyVisible ? 'text' : 'password'}
@@ -268,6 +296,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                   />
                   <Button
                     aria-label={isApiKeyVisible ? '隐藏 API Key' : '显示 API Key'}
+                    className="cursor-pointer"
                     onClick={toggleApiKeyVisibility}
                     size="icon"
                     title={isApiKeyVisible ? '隐藏 API Key' : '显示 API Key'}
@@ -278,6 +307,7 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                   </Button>
                   <Button
                     aria-label="复制 API Key"
+                    className="cursor-pointer"
                     disabled={!model.apiKey}
                     onClick={handleCopyApiKey}
                     size="icon"
@@ -297,25 +327,38 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
             </>
           )}
 
-          <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-border/80 pt-3.5 sm:flex-row sm:items-center sm:justify-between">
             <div aria-live="polite" className="min-w-0 text-xs" role="status">
-              {connectionTestMessage && (
+              {connectionTestMessage ? (
                 <span
-                  className={
+                  className={cn(
+                    'inline-flex items-center gap-1.5 break-words',
                     connectionTestStatus === 'error'
-                      ? 'break-words text-destructive'
-                      : 'text-muted-foreground'
-                  }
+                      ? 'text-destructive'
+                      : connectionTestStatus === 'success'
+                        ? 'text-emerald-700 dark:text-emerald-400'
+                        : 'text-muted-foreground'
+                  )}
                 >
-                  {connectionTestMessage}
+                  {connectionTestStatus === 'success' && (
+                    <CheckCircle2 className="shrink-0" size={14} />
+                  )}
+                  {connectionTestStatus === 'error' && (
+                    <AlertCircle className="shrink-0" size={14} />
+                  )}
+                  <span>{connectionTestMessage}</span>
                 </span>
+              ) : (
+                <span className="text-muted-foreground">{protocolHint}</span>
               )}
             </div>
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
-              {!isBuiltIn && (
+            {!isBuiltIn && (
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <Button
+                  className="cursor-pointer"
                   disabled={!validation.isValid || isTestingConnection}
                   onClick={() => void testConnection()}
+                  size="sm"
                   type="button"
                   variant="outline"
                 >
@@ -326,17 +369,8 @@ const ModelConfigCard: React.FC<ModelConfigCardProps> = ({
                   )}
                   {isTestingConnection ? '测试中…' : '测试连接'}
                 </Button>
-              )}
-              {!isActive && (
-                <Button
-                  disabled={!validation.isValid}
-                  onClick={() => onSetActive(model.id)}
-                  type="button"
-                >
-                  设为当前模型
-                </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Cpu, Globe, SlidersHorizontal, Volume2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
-import { toast } from 'sonner'
 import { Language } from '@src/type/base'
 import type { ProxyMode } from '@src/type/proxy'
 import { getLanguageText } from '@src/utils/ai'
-import { validateModelProfile } from '@src/utils/modelProfiles'
 import { getProxyValidationMessage } from '@src/utils/proxy'
 import ThemeSelector from '@renderer/components/ThemeSelector'
 import { Input } from '@renderer/components/ui/input'
@@ -36,7 +34,7 @@ const SETTING_TABS: ReadonlyArray<{
 }> = [
   { key: 'general', label: '常规与外观', icon: SlidersHorizontal },
   { key: 'model', label: 'AI 模型', icon: Cpu },
-  { key: 'speech', label: '语音与模型', icon: Volume2 },
+  { key: 'speech', label: '语音与离线模型', icon: Volume2 },
   { key: 'network', label: '网络代理', icon: Globe }
 ]
 
@@ -100,16 +98,6 @@ const SettingPage: React.FC = () => {
   /** 设置目标语言 */
   function handleTargetLanguageChange(value: Language): void {
     void changeData('targetLanguage', value, 'general')
-  }
-
-  /** 设置当前使用模型 */
-  function handleActiveModelChange(modelId: string): void {
-    const selectedModel = data.models.find((model) => model.id === modelId)
-    if (!selectedModel || !validateModelProfile(selectedModel).isValid) {
-      toast.error('请先完成模型配置')
-      return
-    }
-    void setActiveModel(modelId)
   }
 
   /** 设置开机自启动 */
@@ -178,39 +166,43 @@ const SettingPage: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-5 py-4 lg:px-7 lg:py-5">
-      <h1 className="sr-only">设置</h1>
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-5 py-5 md:flex-row md:items-start md:gap-8 lg:px-8 lg:py-6">
+      <aside className="shrink-0 md:sticky md:top-5 md:w-44">
+        <h1 className="hidden px-2.5 pb-2 text-xs font-medium tracking-[0.04em] text-muted-foreground md:block">
+          设置
+        </h1>
 
-      <nav
-        aria-label="设置分类"
-        className="flex w-fit flex-wrap items-center gap-1 rounded-lg border border-border bg-card p-1"
-        role="tablist"
-      >
-        {SETTING_TABS.map((tab) => {
-          const TabIcon = tab.icon
-          const isSelected = activeTab === tab.key
-          return (
-            <button
-              aria-selected={isSelected}
-              className={cn(
-                'flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45',
-                isSelected
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              )}
-              key={tab.key}
-              onClick={() => handleTabChange(tab.key)}
-              role="tab"
-              type="button"
-            >
-              <TabIcon size={14} />
-              <span>{tab.label}</span>
-            </button>
-          )
-        })}
-      </nav>
+        <nav aria-label="设置分类" className="flex flex-wrap gap-1 md:flex-col" role="tablist">
+          {SETTING_TABS.map((tab) => {
+            const TabIcon = tab.icon
+            const isSelected = activeTab === tab.key
+            return (
+              <button
+                aria-selected={isSelected}
+                className={cn(
+                  'flex h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium transition-[background-color,color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45 md:w-full',
+                  isSelected
+                    ? 'bg-card text-foreground shadow-xs ring-1 ring-border/80'
+                    : 'text-muted-foreground hover:bg-accent/70 hover:text-foreground'
+                )}
+                key={tab.key}
+                onClick={() => handleTabChange(tab.key)}
+                role="tab"
+                type="button"
+              >
+                <TabIcon
+                  className={cn(isSelected ? 'text-foreground' : 'text-muted-foreground')}
+                  size={15}
+                />
+                <span>{tab.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+      </aside>
 
-      {activeTab === 'general' && (
+      <div className="min-w-0 max-w-3xl flex-1">
+        {activeTab === 'general' && (
         <div className="space-y-6" role="tabpanel">
           <section className="space-y-3" aria-labelledby="appearance-title">
             <div>
@@ -289,47 +281,7 @@ const SettingPage: React.FC = () => {
       )}
 
       {activeTab === 'model' && (
-        <div className="space-y-6" role="tabpanel">
-          <section className="space-y-3" aria-labelledby="active-model-title">
-            <div>
-              <h2 className="text-base font-semibold text-foreground" id="active-model-title">
-                当前默认模型
-              </h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                翻译台、截图翻译、句子批注和口语对话均使用此处选中的 AI 引擎。
-              </p>
-            </div>
-            <div className="lexicon-panel flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-              <Label className="text-sm font-medium" htmlFor="active-model-select">
-                当前使用模型
-              </Label>
-              <div className="w-full sm:w-76">
-                <Select value={data.activeModelId} onValueChange={handleActiveModelChange}>
-                  <SelectTrigger className="w-full cursor-pointer" id="active-model-select">
-                    <SelectValue placeholder="选择模型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {data.models.map((model) => {
-                      const modelText = model.displayName || model.model || '未命名模型'
-                      const isModelValid = validateModelProfile(model).isValid
-                      return (
-                        <SelectItem
-                          className="cursor-pointer"
-                          disabled={!isModelValid && model.id !== data.activeModelId}
-                          key={model.id}
-                          value={model.id}
-                        >
-                          {modelText}
-                          {isModelValid ? '' : '（配置不完整）'}
-                        </SelectItem>
-                      )
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </section>
-
+        <div role="tabpanel">
           <ModelConfigurationSection
             activeModelId={data.activeModelId}
             isHighlighted={isModelConfigHighlighted}
@@ -443,6 +395,7 @@ const SettingPage: React.FC = () => {
           </div>
         </section>
       )}
+      </div>
     </div>
   )
 }

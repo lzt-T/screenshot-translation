@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { Plus, RotateCcw } from 'lucide-react'
+import React, { useState } from 'react'
+import { Check, LoaderCircle, Plus, RotateCcw } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { ModelFieldKey, TranslationModelProfile } from '@src/type/model'
 import { DEFAULT_ACTIVE_MODEL_ID } from '@src/utils/modelProfiles'
@@ -12,7 +12,7 @@ import { SaveStatus } from '../../useData'
 const SAVE_STATUS_TEXT: Readonly<Record<SaveStatus, string>> = {
   idle: '自动保存',
   saving: '保存中…',
-  saved: '模型配置已保存',
+  saved: '已自动保存',
   error: '保存失败，请重试'
 }
 
@@ -92,12 +92,11 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
   }
 
   /**
-   * 激活并展开模型
+   * 设为当前使用模型
    * @param modelId 模型 ID
    * @returns 无返回值
    */
   const handleSetActiveModel = (modelId: string): void => {
-    setExpandedModelId(modelId)
     void onSetActiveModel(modelId)
   }
 
@@ -127,11 +126,6 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
     })
   }
 
-  /** 当前模型变化后同步展开对应卡片 */
-  useEffect(() => {
-    setExpandedModelId(activeModelId)
-  }, [activeModelId])
-
   return (
     <section
       aria-labelledby="model-config-title"
@@ -147,30 +141,38 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
               className="text-base font-semibold text-foreground"
               id="model-config-title"
             >
-              模型配置
+              AI 模型
             </h2>
             {saveStatus !== 'idle' && (
               <span
                 aria-live="polite"
-                className={`text-xs ${saveStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}
+                className={`inline-flex items-center gap-1 text-xs ${
+                  saveStatus === 'error'
+                    ? 'text-destructive'
+                    : saveStatus === 'saved'
+                      ? 'text-emerald-700 dark:text-emerald-400'
+                      : 'text-muted-foreground'
+                }`}
                 role="status"
               >
+                {saveStatus === 'saving' && <LoaderCircle className="animate-spin" size={12} />}
+                {saveStatus === 'saved' && <Check size={12} />}
                 {saveStatusText}
               </span>
             )}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Gemini 模型直连 Google；其他模型请填写 API 根地址与凭据。
+            翻译台、截图翻译、句子批注与口语对话均使用当前启用的 AI 引擎；Gemini 直连 Google，其他模型请填写兼容 API 地址。
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           <Button
-            className="cursor-pointer"
+            className="cursor-pointer text-muted-foreground hover:text-foreground"
             disabled={!canReset}
             onClick={() => setIsResetDialogOpen(true)}
-            type="button"
-            variant="outline"
             size="sm"
+            type="button"
+            variant="ghost"
           >
             <RotateCcw size={14} />
             重置配置
@@ -182,7 +184,7 @@ const ModelConfigurationSection: React.FC<ModelConfigurationSectionProps> = ({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {models.map((model) => (
           <ModelConfigCard
             isActive={model.id === activeModelId}
