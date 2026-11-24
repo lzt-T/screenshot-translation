@@ -9,6 +9,7 @@ import { promptManage } from '../../utils/promptManage'
 import { BUILTIN_FREE_MODEL, TranslationModelProfile } from '../../type/model'
 import { createDefaultModelProfiles, DEFAULT_ACTIVE_MODEL_ID } from '../../utils/modelProfiles'
 import { langchainGateway } from './aiClients/langchainGateway'
+import { StructuredOutputParseError } from './aiClients/modelError'
 import {
   type EnglishChineseTranslation,
   type ScreenshotTranslation,
@@ -56,9 +57,7 @@ class AiManage {
    * @returns {boolean} 是否是结构化校验失败
    */
   private isStructuredOutputValidationError(error: unknown): boolean {
-    // 错误消息
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    return errorMessage.includes('parseError=true')
+    return error instanceof StructuredOutputParseError
   }
 
   /**

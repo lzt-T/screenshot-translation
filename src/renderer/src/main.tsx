@@ -15,6 +15,7 @@ createRoot(rootElement).render(
     <ThemeProvider>
       <RouterProvider router={router} />
       <Toaster
+        offset={{ top: 56 }}
         position="top-center"
         toastOptions={{
           duration: 3000

@@ -85,7 +85,7 @@ function AppShell(): React.JSX.Element {
 
   return (
     <div className="app-shell flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
-      <header className="titlebar-drag grid h-12 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border bg-shell pl-4 pr-[144px] text-shell-foreground">
+      <header className="titlebar-drag grid h-12 shrink-0 grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-4 border-b border-border bg-shell pl-4 pr-[144px] text-shell-foreground lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
         <button
           className="titlebar-no-drag flex shrink-0 cursor-pointer items-center gap-2 justify-self-start rounded-md px-1.5 py-1 transition-colors hover:bg-card/60 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45"
           onClick={() => navigate('/home')}
@@ -105,7 +105,7 @@ function AppShell(): React.JSX.Element {
 
         <nav
           aria-label="主导航"
-          className="titlebar-no-drag flex items-center gap-0.5 justify-self-center rounded-lg border border-border/80 bg-background/75 p-0.5"
+          className="titlebar-no-drag flex items-center gap-0.5 justify-self-start rounded-lg border border-border/80 bg-background/75 p-0.5 lg:justify-self-center"
         >
           {WORKSPACE_NAV_ITEMS.map((item) => {
             const NavigationIcon = item.icon
@@ -134,11 +134,11 @@ function AppShell(): React.JSX.Element {
           })}
         </nav>
 
-        <div className="titlebar-no-drag flex shrink-0 items-center gap-1.5 justify-self-end">
+        <div className="titlebar-no-drag flex max-w-full min-w-0 items-center gap-1.5 justify-self-end">
           <UpdateDialog />
 
           <button
-            className="hidden h-7.5 max-w-36 cursor-pointer items-center gap-2 rounded-md border border-border/80 bg-card/75 px-2.5 text-xs text-muted-foreground transition-colors hover:border-input hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45 md:flex"
+            className="hidden h-7.5 min-w-0 max-w-36 cursor-pointer items-center gap-2 rounded-md border border-border/80 bg-card/75 px-2.5 text-xs text-muted-foreground transition-colors hover:border-input hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45 md:flex"
             onClick={() => navigate('/setting?tab=model')}
             title={`当前引擎：${activeModelLabel}（点击配置模型）`}
             type="button"
@@ -153,7 +153,7 @@ function AppShell(): React.JSX.Element {
             <span className="truncate">{activeModelLabel}</span>
           </button>
 
-          <span aria-hidden="true" className="mx-0.5 hidden h-4 w-px bg-border md:block" />
+          <span aria-hidden="true" className="mx-0.5 hidden h-4 w-px shrink-0 bg-border md:block" />
 
           <Button
             aria-label={currentThemeMeta.label}

@@ -1,8 +1,9 @@
 import { GoogleGenAI } from '@google/genai'
 import { ChatOpenAI } from '@langchain/openai'
-import { ZodError, type ZodType, type ZodTypeDef } from 'zod'
+import type { ZodType, ZodTypeDef } from 'zod'
 import { TranslationModelProfile } from '../../../type/model'
 import { isGeminiModel } from '../../../utils/modelProfiles'
+import { formatModelInvokeError, isStructuredParseError, sanitizeErrorMessage } from './modelError'
 
 /** 统一 LLM 调用结果 */
 export interface LlmInvokeResult {
@@ -109,27 +110,6 @@ const getStructuredOutputMethod = (profile: TranslationModelProfile): Structured
     ([modelPrefix]) => normalizedModelName.startsWith(modelPrefix)
   )
   return matchedMethod?.[1] || 'default'
-}
-
-/**
- * 判断是否是结构化解析错误
- * @param {unknown} error 错误对象
- * @returns {boolean} 是否是解析错误
- */
-const isStructuredParseError = (error: unknown): boolean => {
-  if (error instanceof ZodError) {
-    return true
-  }
-
-  // 错误消息
-  const errorMessage = error instanceof Error ? error.message.toLowerCase() : ''
-  if (!errorMessage) {
-    return false
-  }
-
-  return ['parse', 'json', 'schema', 'zod'].some((keyword) => {
-    return errorMessage.includes(keyword)
-  })
 }
 
 /**
@@ -241,27 +221,40 @@ class LangchainGateway {
    * @returns {Promise<LlmInvokeResult>} 调用结果
    */
   public async invoke(profile: TranslationModelProfile, prompt: string): Promise<LlmInvokeResult> {
-    if (isGeminiModel(profile.model)) {
-      const text = await this.invokeGemini(profile, prompt, false)
+    // 是否为 Gemini 模型
+    const isGemini = isGeminiModel(profile.model)
+
+    try {
+      if (isGemini) {
+        const text = await this.invokeGemini(profile, prompt, false)
+        return {
+          success: true,
+          text,
+          msg: 'gemini invoke success'
+        }
+      }
+
+      // LangChain 客户端
+      const client = this.createOpenAiClient(profile)
+      // 当前模型请求中止信号
+      const requestSignal = AbortSignal.timeout(MODEL_REQUEST_TIMEOUT_MS)
+      // 模型响应
+      const response = await client.invoke(prompt, { signal: requestSignal })
+      // 文本内容
+      const text = extractTextFromContent(response.content)
       return {
         success: true,
         text,
-        msg: 'gemini invoke success'
+        msg: 'langchain invoke success'
       }
-    }
-
-    // LangChain 客户端
-    const client = this.createOpenAiClient(profile)
-    // 当前模型请求中止信号
-    const requestSignal = AbortSignal.timeout(MODEL_REQUEST_TIMEOUT_MS)
-    // 模型响应
-    const response = await client.invoke(prompt, { signal: requestSignal })
-    // 文本内容
-    const text = extractTextFromContent(response.content)
-    return {
-      success: true,
-      text,
-      msg: 'langchain invoke success'
+    } catch (error) {
+      // 脱敏后的调试错误消息
+      const rawMessage = error instanceof Error ? error.message : String(error)
+      console.error(
+        `[langchainGateway.invoke] model=${profile.model}; message=${sanitizeErrorMessage(rawMessage, profile.apiKey)}`,
+        error
+      )
+      throw formatModelInvokeError(error, { isGemini })
     }
   }
 
@@ -327,32 +320,24 @@ class LangchainGateway {
         // 记录最后错误
         lastError = error
         // 当前错误是否可重试
-        const shouldRetry = attemptIndex < maxAttemptCount - 1 && isStructuredParseError(error)
+        const parseError = isStructuredParseError(error)
+        const shouldRetry = attemptIndex < maxAttemptCount - 1 && parseError
         if (shouldRetry) {
           continue
         }
 
-        // 错误消息
+        // 脱敏后的调试错误消息
         const rawMessage = error instanceof Error ? error.message : String(error)
-        // 响应是否缺少 OpenAI Chat Completions 必需的数组字段
-        const isInvalidOpenAiResponse =
-          !isGemini && rawMessage === "Cannot read properties of undefined (reading 'map')"
-        if (isInvalidOpenAiResponse) {
-          throw new Error(
-            '模型网关响应不符合 OpenAI Chat Completions 格式，请检查 Base URL 是否包含正确的 API 路径（常见为 /v1 或 /api/v1）',
-            { cause: error }
-          )
-        }
-        // 带上下文的错误消息
-        const errorMessage = `langchain structured invoke failed: model=${profile.model}; method=${method}; parseError=${isStructuredParseError(error)}; message=${rawMessage}`
-        throw new Error(errorMessage)
+        console.error(
+          `[langchainGateway.invokeStructured] model=${profile.model}; method=${method}; parseError=${parseError}; message=${sanitizeErrorMessage(rawMessage, profile.apiKey)}`,
+          error
+        )
+        throw formatModelInvokeError(error, { isGemini, isStructured: true })
       }
     }
 
     // 理论兜底
-    throw new Error(
-      `langchain structured invoke failed: model=${profile.model}; method=${method}; parseError=${isStructuredParseError(lastError)}; message=unknown error`
-    )
+    throw formatModelInvokeError(lastError, { isGemini, isStructured: true })
   }
 }
 
