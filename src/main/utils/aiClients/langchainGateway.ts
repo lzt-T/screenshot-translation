@@ -1,4 +1,4 @@
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
+import { GoogleGenAI } from '@google/genai'
 import { ChatOpenAI } from '@langchain/openai'
 import { ZodError, type ZodType, type ZodTypeDef } from 'zod'
 import { TranslationModelProfile } from '../../../type/model'
@@ -47,14 +47,24 @@ type StructuredOutputMethod = 'default' | 'jsonMode' | 'textJson'
 // 模型请求超时时间
 const MODEL_REQUEST_TIMEOUT_MS = 60_000
 
-// 模型前缀对应的结构化输出方式
+// OpenAI 兼容模型前缀对应的结构化输出方式
 const STRUCTURED_OUTPUT_METHOD_BY_MODEL_PREFIX: Readonly<Record<string, StructuredOutputMethod>> = {
-  'gemini-': 'textJson',
   'deepseek-': 'jsonMode',
   'glm-': 'jsonMode',
   qwen: 'jsonMode',
   'claude-': 'textJson',
   'anthropic/claude-': 'textJson'
+}
+
+/**
+ * 去除模型输出外层可能附带的 Markdown JSON 代码围栏
+ * @param {string} text 模型原始输出文本
+ * @returns {string} 清洗后的 JSON 文本
+ */
+const stripJsonCodeFence = (text: string): string => {
+  const trimmed = text.trim()
+  const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)
+  return fenceMatch ? fenceMatch[1].trim() : trimmed
 }
 
 /**
@@ -123,27 +133,19 @@ const isStructuredParseError = (error: unknown): boolean => {
 }
 
 /**
- * LangChain 统一网关
+ * AI 模型统一网关（Gemini 走官方 @google/genai SDK，其余模型走 LangChain OpenAI 兼容协议）
  */
 class LangchainGateway {
   /**
-   * 创建模型客户端
+   * 创建 OpenAI 兼容模型客户端
    * @param {TranslationModelProfile} profile 模型配置
    * @param {number} temperature 模型采样温度
    * @returns {LangchainRunnableClient} LangChain 客户端
    */
-  private createClient(
+  private createOpenAiClient(
     profile: TranslationModelProfile,
     temperature?: number
   ): LangchainRunnableClient {
-    if (isGeminiModel(profile.model)) {
-      return new ChatGoogleGenerativeAI({
-        apiKey: profile.apiKey,
-        model: profile.model,
-        temperature
-      }) as unknown as LangchainRunnableClient
-    }
-
     // OpenAI 兼容 Base URL
     const openAiBaseUrl = profile.baseUrl || 'https://api.openai.com/v1'
     return new ChatOpenAI({
@@ -155,7 +157,41 @@ class LangchainGateway {
   }
 
   /**
-   * 调用结构化输出并解析
+   * 使用 Google 官方 @google/genai SDK（Interactions API）调用 Gemini 模型
+   * @param {TranslationModelProfile} profile 模型配置
+   * @param {string} prompt 输入提示词
+   * @param {boolean} expectJson 是否启用原生 JSON 响应格式
+   * @returns {Promise<string>} 去除首尾空白后的模型文本输出
+   */
+  private async invokeGemini(
+    profile: TranslationModelProfile,
+    prompt: string,
+    expectJson = false
+  ): Promise<string> {
+    // 官方 Gemini 客户端（默认使用 GA v1 接口）
+    const ai = new GoogleGenAI({ apiKey: profile.apiKey })
+    // 调用 Interactions API；关闭服务端持久化以保护桌面翻译隐私
+    const interaction = await ai.interactions.create(
+      {
+        model: profile.model,
+        input: prompt,
+        store: false,
+        ...(expectJson
+          ? {
+              response_format: {
+                type: 'text' as const,
+                mime_type: 'application/json' as const
+              }
+            }
+          : {})
+      },
+      { timeout: MODEL_REQUEST_TIMEOUT_MS }
+    )
+    return (interaction.output_text ?? '').trim()
+  }
+
+  /**
+   * 调用 OpenAI 兼容模型结构化输出并解析
    * @template TData 结构化输出类型
    * @param {LangchainRunnableClient} client LangChain 客户端
    * @param {string} prompt 输入提示词
@@ -173,14 +209,14 @@ class LangchainGateway {
     const requestSignal = AbortSignal.timeout(MODEL_REQUEST_TIMEOUT_MS)
 
     if (method === 'textJson') {
-      // Gemini 严格 JSON 输出提示词
+      // 严格 JSON 输出提示词
       const jsonPrompt = `${prompt}\n只返回一个可被 JSON.parse 直接解析的 JSON 对象，不要使用 Markdown 代码块，不要添加解释。`
-      // Gemini 文本响应
+      // 文本响应
       const response = await client.invoke(jsonPrompt, { signal: requestSignal })
-      // Gemini 返回的 JSON 文本
+      // 返回的 JSON 文本
       const text = extractTextFromContent(response.content)
       // 严格解析后的原始数据
-      const parsedData: unknown = JSON.parse(text)
+      const parsedData: unknown = JSON.parse(stripJsonCodeFence(text))
       return schema.parse(parsedData)
     }
 
@@ -205,22 +241,27 @@ class LangchainGateway {
    * @returns {Promise<LlmInvokeResult>} 调用结果
    */
   public async invoke(profile: TranslationModelProfile, prompt: string): Promise<LlmInvokeResult> {
-    try {
-      // LangChain 客户端
-      const client = this.createClient(profile)
-      // 当前模型请求中止信号
-      const requestSignal = AbortSignal.timeout(MODEL_REQUEST_TIMEOUT_MS)
-      // 模型响应
-      const response = await client.invoke(prompt, { signal: requestSignal })
-      // 文本内容
-      const text = extractTextFromContent(response.content)
+    if (isGeminiModel(profile.model)) {
+      const text = await this.invokeGemini(profile, prompt, false)
       return {
         success: true,
         text,
-        msg: 'langchain invoke success'
+        msg: 'gemini invoke success'
       }
-    } catch (error) {
-      throw error
+    }
+
+    // LangChain 客户端
+    const client = this.createOpenAiClient(profile)
+    // 当前模型请求中止信号
+    const requestSignal = AbortSignal.timeout(MODEL_REQUEST_TIMEOUT_MS)
+    // 模型响应
+    const response = await client.invoke(prompt, { signal: requestSignal })
+    // 文本内容
+    const text = extractTextFromContent(response.content)
+    return {
+      success: true,
+      text,
+      msg: 'langchain invoke success'
     }
   }
 
@@ -246,15 +287,36 @@ class LangchainGateway {
     const maxRetryCount = options.maxRetryCount ?? 1
     // 最大尝试次数
     const maxAttemptCount = Math.max(1, maxRetryCount + 1)
+    // 是否为 Gemini 模型
+    const isGemini = isGeminiModel(profile.model)
     // 当前模型的结构化输出方式
-    const method = getStructuredOutputMethod(profile)
+    const method = isGemini ? 'geminiJson' : getStructuredOutputMethod(profile)
 
     for (let attemptIndex = 0; attemptIndex < maxAttemptCount; attemptIndex += 1) {
       try {
-        // LangChain 客户端
-        const client = this.createClient(profile, options.temperature)
+        if (isGemini) {
+          // Gemini 原生 JSON 响应提示词
+          const jsonPrompt = `${prompt}\n只返回一个可被 JSON.parse 直接解析的 JSON 对象，不要使用 Markdown 代码块，不要添加解释。`
+          // Gemini 响应文本
+          const rawText = await this.invokeGemini(profile, jsonPrompt, true)
+          // 严格解析后的原始数据
+          const parsedData: unknown = JSON.parse(stripJsonCodeFence(rawText))
+          return {
+            success: true,
+            data: schema.parse(parsedData),
+            msg: 'gemini invoke structured success'
+          }
+        }
+
+        // LangChain OpenAI 兼容客户端
+        const client = this.createOpenAiClient(profile, options.temperature)
         // 结构化数据
-        const data = await this.invokeWithSchema(client, prompt, schema, method)
+        const data = await this.invokeWithSchema(
+          client,
+          prompt,
+          schema,
+          method as StructuredOutputMethod
+        )
 
         return {
           success: true,
@@ -274,7 +336,7 @@ class LangchainGateway {
         const rawMessage = error instanceof Error ? error.message : String(error)
         // 响应是否缺少 OpenAI Chat Completions 必需的数组字段
         const isInvalidOpenAiResponse =
-          rawMessage === "Cannot read properties of undefined (reading 'map')"
+          !isGemini && rawMessage === "Cannot read properties of undefined (reading 'map')"
         if (isInvalidOpenAiResponse) {
           throw new Error(
             '模型网关响应不符合 OpenAI Chat Completions 格式，请检查 Base URL 是否包含正确的 API 路径（常见为 /v1 或 /api/v1）',

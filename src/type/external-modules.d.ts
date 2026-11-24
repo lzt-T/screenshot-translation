@@ -1,10 +1,3 @@
-declare module '@langchain/google-genai' {
-  export class ChatGoogleGenerativeAI {
-    constructor(config: { apiKey: string; model: string; temperature?: number })
-    invoke(input: string): Promise<{ content: unknown }>
-  }
-}
-
 declare module '@langchain/openai' {
   export class ChatOpenAI {
     constructor(config: {
