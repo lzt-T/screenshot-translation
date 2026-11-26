@@ -1,3 +1,9 @@
+/** 检查更新选项 */
+export interface CheckUpdateOptions {
+  /* 是否为静默检查（启动自动检查失败时不弹错误提示） */
+  silent?: boolean
+}
+
 /** 更新检查完成结果 */
 export interface UpdateCheckCompleteResult {
   /* 是否存在可用更新 */

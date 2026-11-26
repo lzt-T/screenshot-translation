@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { SendEnum } from '@src/type/ipc-constants'
+import type { CheckUpdateOptions } from '@src/type/update'
 import SelectionTranslator from '@renderer/components/SelectionTranslator'
 import UpdateDialog from '@renderer/components/UpdateDialog'
 import { ThemeMode } from '@renderer/components/ThemeProvider'
@@ -44,6 +45,9 @@ const THEME_META_MAP: Record<ThemeMode, { label: string; icon: typeof Monitor }>
   dark: { label: '主题：深色（点击切换）', icon: Moon }
 }
 
+/** 启动后延迟静默检查更新的毫秒数，避免与开机网络及代理初始化争抢 */
+const STARTUP_UPDATE_CHECK_DELAY_MS = 8000
+
 /**
  * 渲染融合标题栏与顶栏工作区外壳
  * @returns {React.JSX.Element} 主应用壳体
@@ -54,7 +58,7 @@ function AppShell(): React.JSX.Element {
   // 当前路由位置
   const location = useLocation()
   // 全局共享模型与设置
-  const { activeModel } = useAppSettings()
+  const { activeModel, isReady } = useAppSettings()
   // 当前主题状态与切换器
   const { theme, setTheme } = useTheme()
   // 归一化后的当前路径
@@ -70,13 +74,22 @@ function AppShell(): React.JSX.Element {
   // 当前主题图标
   const ThemeIcon = currentThemeMeta.icon
 
-  /** 首次加载时检查应用更新 */
+  /** 待本地配置与代理同步完成后，延迟静默检查应用更新 */
   useEffect(() => {
-    window.electron.ipcRenderer.send(SendEnum.CHECK_UPDATE)
-    return () => {
-      window.electron.ipcRenderer.removeAllListeners(SendEnum.CHECK_UPDATE_RESULT)
+    if (!isReady) {
+      return
     }
-  }, [])
+
+    // 启动静默检查参数
+    const checkOptions: CheckUpdateOptions = { silent: true }
+    const timerId = window.setTimeout(() => {
+      window.electron.ipcRenderer.send(SendEnum.CHECK_UPDATE, checkOptions)
+    }, STARTUP_UPDATE_CHECK_DELAY_MS)
+
+    return () => {
+      window.clearTimeout(timerId)
+    }
+  }, [isReady])
 
   /** 切换浅色/深色/跟随系统主题 */
   const handleCycleTheme = (): void => {
